@@ -1,0 +1,399 @@
+/* ---------- Variables ---------- */
+:root{
+  /*--bg: #fff7fb;*/
+  --bg:rgba(240, 156, 156, 0.5);
+  --text: #222;
+  --muted: #777;
+  --accent: #e0487f;
+  --accent2: #cf1810;
+  --overlay-rose: rgba(224,72,128,0.84);
+  --card-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  --card-shadow-soft: 0 4px 12px rgba(0,0,0,0.08);
+  --radius: 12px;
+
+  /* tamaños por defecto */
+  --product-card-width: 410px;
+  --product-image-height: 275px;
+  --product-image-height-md: 210px;
+  --product-image-height-sm: 160px;
+
+  /* wheel gallery */
+  --wheel-gap: 16px;
+  --wheel-item-width: 260px;
+  --wheel-item-image-height: 160px;
+}
+
+/* =========================
+   Reset / Base
+   ========================= */
+*{ box-sizing: border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  font-family: 'Poppins', system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  line-height:1.35;
+  -webkit-text-size-adjust:100%;
+}
+
+/* Layout principal */
+main{
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0;
+}
+
+/* Headings y párrafos */
+h1,h2,h3{ margin:0 0 0.5rem 0; }
+p{ margin:0; }
+
+/* =========================
+   Social Buttons
+   ========================= */
+.btn-social{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  line-height: 0;
+  box-sizing: border-box;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+/* Colores por botón */
+.btn-whatsapp{ background: #25D366; color: #fff; }
+.btn-ig{ background: linear-gradient(45deg,#f58529,#dd2a7b); color: #fff; }
+
+/* Forzar que el SVG use el color del botón y tenga tamaño correcto */
+.btn-social svg{
+  width: 18px;
+  height: 18px;
+  display: block;
+  flex: 0 0 auto;
+  fill: currentColor;      /* importante: pinta el path con el color del botón */
+  stroke: none;            /* si el SVG usa stroke, podés ajustar stroke: currentColor; */
+}
+
+/* Si los paths del SVG tienen fill explícito, forzamos override */
+.btn-social svg [fill]{ fill: currentColor !important; }
+.btn-social svg [stroke]{ stroke: currentColor !important; }
+
+/* Efecto hover/focus */
+@media (hover: hover) and (pointer: fine){
+  .btn-social:hover{ transform: translateY(-3px); box-shadow: 0 6px 14px rgba(0,0,0,0.12); }
+}
+.btn-social:focus{ outline: 3px solid rgba(224,72,127,0.18); outline-offset: 3px; }
+
+/* Evitar que reglas globales de img o svg afecten estos iconos */
+.header-actions .btn-social img,
+.header-actions .btn-social svg{ max-width: none; max-height: none; }
+
+/* =========================
+   Hero / Banner
+   ========================= */
+.phrase-banner{
+  position: relative;
+  height: 280px;
+  background: url("../media/banner.jpg") center/cover no-repeat;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin:0;
+  overflow:hidden;
+}
+
+.phrase-banner::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: var(--overlay-rose);
+  pointer-events:none;
+}
+
+.phrase-overlay{
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 700;
+  max-width: 800px;
+  padding: 0 1rem;
+}
+
+/* =========================
+   Productos destacados
+   ========================= */
+.products-section{
+  padding: 3rem 1rem;
+  text-align: center;
+}
+
+.products-title{
+  font-size: 2rem;
+  color: var(--accent);
+  margin-bottom: 2rem;
+}
+
+/* Grid de productos */
+.products-grid{
+  display:flex;
+  gap: 2rem;
+  justify-content:center;
+  flex-wrap:wrap;
+  align-items:flex-start;
+}
+
+/* Tarjeta de producto */
+.product-card{
+  width: var(--product-card-width);
+  display:flex;
+  flex-direction:column;
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow-soft);
+  background: #fff;
+}
+
+/* Contenedor de la imagen (recorta el zoom) */
+.product-image{
+  height: var(--product-image-height);
+  background: #f0f0f0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  overflow:hidden;
+  border-top-left-radius: var(--radius);
+  border-top-right-radius: var(--radius);
+  z-index:0;
+}
+
+/* Imagen que ocupa todo el contenedor */
+.product-image img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+  transition: transform 300ms cubic-bezier(.2,.8,.2,1);
+  transform-origin:center center;
+  will-change: transform;
+}
+
+/* Label debajo de la imagen */
+.product-label{
+  background:#fff;
+  padding:0.75rem;
+  font-weight:600;
+  color:#333;
+  text-align:center;
+  position:relative;
+  z-index:2;
+  border-bottom-left-radius: var(--radius);
+  border-bottom-right-radius: var(--radius);
+}
+
+/* Hover/Focus para tarjetas (solo en dispositivos con hover) */
+@media (hover: hover) and (pointer: fine){
+  .product-card{
+    transition: transform 260ms cubic-bezier(.2,.8,.2,1);
+  }
+  .product-card:hover{
+    transform: translateY(-4px);
+  }
+  .product-card:hover .product-image img,
+  .product-card:focus-within .product-image img{
+    transform: scale(1.06);
+  }
+}
+
+/* =========================
+   Wheel gallery (estilos necesarios)
+   ========================= */
+.wheel-gallery{
+  padding: 2.5rem 1rem;
+  text-align:center;
+}
+
+.wheel-gallery .gallery-title{
+  color: var(--accent);
+  font-size: 1.6rem;
+  margin-bottom: 1rem;
+}
+
+/* Wrapper que recorta la pista */
+.wheel-carousel{
+  max-width: 1200px;
+  margin: 0 auto;
+  overflow: visible;
+}
+
+.wheel-track-wrapper{
+  overflow: hidden;
+  width: 100%;
+}
+
+/* Pista: fila horizontal no envolvente */
+.wheel-track{
+  display: flex;                 /* fila horizontal */
+  gap: var(--wheel-gap);
+  align-items: center;
+  flex-wrap: nowrap;             /* evitar salto a la siguiente línea */
+  transform: translateX(0);
+  will-change: transform;
+}
+
+/* Cada item de la rueda (tarjeta compacta) */
+.carousel-item{
+  flex: 0 0 auto;                /* no crecer, no encoger */
+  width: var(--wheel-item-width);
+  display:flex;
+  flex-direction:column;
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  background: #fff;
+  cursor: pointer;
+  transition: transform 260ms cubic-bezier(.2,.8,.2,1);
+}
+
+/* Imagen dentro del item */
+.carousel-item .product-image{
+  height: var(--wheel-item-image-height);
+  overflow: hidden;
+  border-top-left-radius: var(--radius);
+  border-top-right-radius: var(--radius);
+  background: #f0f0f0;
+}
+
+.carousel-item .product-image img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+  transition: transform 420ms cubic-bezier(.2,.8,.2,1);
+  transform-origin:center center;
+  will-change: transform;
+}
+
+/* Label del item */
+.carousel-item .product-label{
+  padding: 0.6rem 0.75rem;
+  text-align:center;
+  font-weight:700;
+  color:#333;
+  background:#fff;
+  border-bottom-left-radius: var(--radius);
+  border-bottom-right-radius: var(--radius);
+  z-index:2;
+}
+
+/* Hover en items de la rueda (solo en dispositivos con hover) */
+@media (hover: hover) and (pointer: fine){
+  .carousel-item:hover{
+    transform: scale(1.06);
+    z-index: 5;
+  }
+  .carousel-item:hover .product-image img{
+    transform: scale(1.08);
+  }
+}
+
+/* Cuando el JS añade .paused al track, no se aplica animación CSS aquí,
+   el JS controla transform directamente. Mantener clase para compatibilidad. */
+.wheel-track.paused{
+  /* placeholder: no-op; JS detiene el loop */
+}
+
+/* =========================
+   Utilities
+   ========================= */
+.hidden{ display:none !important; }
+.center{ display:flex; align-items:center; justify-content:center; }
+
+/* =========================
+   Responsive
+   ========================= */
+
+/* Mobile first */
+@media (max-width: 720px){
+  :root{
+    --product-card-width: 90%;
+    --product-image-height: var(--product-image-height-sm);
+    --wheel-item-width: 86%;
+    --wheel-item-image-height: 140px;
+  }
+
+  .products-grid{
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .product-card{
+    max-width: 320px;
+    width: var(--product-card-width);
+  }
+
+  .product-image{
+    height: var(--product-image-height);
+  }
+
+  /* Wheel: items ocupan ancho casi completo en móvil */
+  .carousel-item{
+    width: var(--wheel-item-width);
+    max-width: 320px;
+  }
+}
+
+/* Tablet / small desktop */
+@media (min-width: 721px) and (max-width: 879px){
+  :root{
+    --product-card-width: 320px;
+    --product-image-height: var(--product-image-height-md);
+    --wheel-item-width: 240px;
+    --wheel-item-image-height: 150px;
+  }
+
+  .products-grid{
+    gap: 1.25rem;
+  }
+
+  .product-card{ width: var(--product-card-width); }
+  .product-image{ height: var(--product-image-height); }
+}
+
+/* Desktop and up */
+@media (min-width: 880px){
+  :root{
+    --product-card-width: 410px;
+    --product-image-height: 275px;
+    --wheel-item-width: 260px;
+    --wheel-item-image-height: 160px;
+  }
+
+  .products-grid{
+    justify-content: center;
+    gap: 2rem;
+  }
+
+  .product-card{ width: var(--product-card-width); }
+  .product-image{ height: var(--product-image-height); }
+}
+
+/* =========================
+   Accessibility helpers
+   ========================= */
+:focus{ outline: none; }
+a:focus, button:focus, input:focus, [tabindex]:focus{
+  outline: 3px solid rgba(224,72,127,0.18);
+  outline-offset: 3px;
+}

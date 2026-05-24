@@ -1,0 +1,176 @@
+/* admin.css - header fijo y sidebar full-height consistente con el resto del sitio */
+
+/* Variables y fallback */
+:root{
+  --header-height: 64px;
+  --accent: #e0487f;
+  --muted: #666;
+  --sidebar-width: 220px;
+}
+
+/* ===== Header fijo ===== */
+.admin-header {
+  position: fixed;
+  inset: 0 0 auto 0;                 /* top:0; left:0; right:0 */
+  height: var(--header-height);
+  background: var(--accent) !important; /* forzar color correcto */
+  color: #fff;
+  padding-top: env(safe-area-inset-top);
+  box-sizing: border-box;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+
+/* Inner del header */
+.admin-header .header-inner {
+  width: 100%;
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 0 1rem;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+/* Texto y botones del header */
+.admin-left { font-weight:700; font-size:1.05rem; color:#fff; }
+.admin-center .btn {
+  background:#fff;
+  color:var(--accent);
+  font-weight:600;
+  padding:0.45rem 0.85rem;
+  border-radius:8px;
+  text-decoration:none;
+  display:inline-flex;
+  align-items:center;
+  gap:0.5rem;
+}
+.admin-right { font-weight:600; color:#fff; }
+
+/* ===== Layout principal =====
+   El header es fijo; el contenido debe empezar debajo del header.
+   Aplicamos padding-top al contenedor principal y usamos sidebar fijo. */
+.admin-layout {
+  display:flex;
+  min-height: calc(100vh - var(--header-height));
+  padding-top: calc(var(--header-height) + env(safe-area-inset-top));
+  box-sizing: border-box;
+}
+
+/* ===== Sidebar fijo y full-height =====
+   El sidebar queda fijo debajo del header y ocupa toda la altura restante. */
+/* Sidebar: layout vertical con top + bottom para fijar logout */
+.sidebar {
+  position: fixed;
+  top: calc(var(--header-height) + env(safe-area-inset-top));
+  left: 0;
+  bottom: 0;
+  width: var(--sidebar-width, 220px);
+  background: #fff;                      /* recuadro blanco que llega hasta abajo */
+  border-right: 1px solid rgba(0,0,0,0.08);
+  padding: 1rem;
+  box-sizing: border-box;
+  overflow-y: auto;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;       /* empuja .sidebar-bottom al final */
+}
+
+/* Contenedor superior (links) */
+.sidebar-top {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Contenedor inferior (logout) */
+.sidebar-bottom {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Ajuste visual de la lista del sidebar */
+.sidebar nav {
+  display:flex;
+  flex-direction:column;
+  gap:0.5rem;
+}
+.tab-btn {
+  background:transparent;
+  border:1px solid rgba(0,0,0,0.06);
+  padding:0.6rem;
+  border-radius:8px;
+  cursor:pointer;
+  text-align:left;
+  font-weight:600;
+  color: #222;
+}
+.tab-btn.active {
+  background: var(--accent);
+  color:#fff;
+  border:none;
+}
+
+/* ===== Contenido principal (dashboard) =====
+   Dejamos margen izquierdo para que no quede debajo del sidebar fijo. */
+.dashboard {
+  margin-left: var(--sidebar-width);
+  flex:1;
+  padding: 2rem;
+  min-height: calc(100vh - var(--header-height));
+  box-sizing: border-box;
+}
+
+/* Ajuste para que el contenido no quede oculto por el header en pantallas pequeñas */
+.dashboard { padding-top: 1rem; }
+
+/* Tab content */
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+
+/* Botón Cerrar sesión: color distinto y prominente */
+:root { 
+    --logout-bg: #e0487f; 
+    --logout-color: #2a2929; 
+}
+
+.logout-btn {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: none;
+  background: var(--logout-bg);
+  color: var(--logout-color);
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+.logout-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(0,0,0,0.08); }
+.logout-btn:focus { outline: 3px solid rgba(224,72,127,0.18); outline-offset: 3px; }
+
+/* ===== Responsive ===== */
+@media (max-width: 880px) {
+  :root { --sidebar-width: 0px; } /* en móvil el sidebar puede colapsar */
+  .sidebar { display: none; }
+  .dashboard { margin-left: 0; padding: 1rem; }
+}
+
+/* ===== Seguridad contra stacking contexts que oculten el header ===== */
+.admin-layout, .dashboard, .sidebar {
+  transform: none;
+  will-change: auto;
+}
+
+/* ===== Focus / accesibilidad ===== */
+.tab-btn:focus, .admin-center .btn:focus {
+  outline: 3px solid rgba(224,72,127,0.18);
+  outline-offset: 3px;
+}

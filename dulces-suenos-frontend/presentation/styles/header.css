@@ -1,0 +1,259 @@
+/* Variables locales del header */
+:root{
+  /* --bg: #ff0000; */
+  --accent: #e0487f;
+  --muted: #666;
+  --header-height: 64px;
+  --container-max: 1100px;
+
+  /* Colores de botones (personalizables) */
+  --btn-whatsapp-bg: #25D366;
+  --btn-ig-bg: linear-gradient(45deg,#f58529,#dd2a7b);
+  --btn-login-bg: linear-gradient(90deg,#ff7aa8,#d43b73);
+  --btn-cart-bg: #ffffff; /* por defecto blanco con icono en --accent */
+
+  /* Icon color para botones con fondo claro */
+  --btn-icon-color: var(--accent);
+}
+
+/* Reset / base para header */
+.site-header{
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--header-height);
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  z-index: 1000;
+  display: block;
+}
+
+.header-inner{
+  height: var(--header-height);
+  min-height: var(--header-height);
+  max-width: var(--container-max);
+  margin: 0 auto;
+  display:flex;
+  align-items:center;
+  gap:1rem;
+  padding:0 1rem;
+  box-sizing:border-box;
+}
+
+/* Brand */
+.brand{
+  display:flex;
+  align-items:center;
+  gap:0.6rem;
+  text-decoration:none;
+  color:inherit;
+}
+.brand-icon{ flex:0 0 auto; border-radius:6px; }
+.brand-text{ font-weight:700; color:var(--accent); font-size:1rem; }
+
+/* Nav centrado (desktop) */
+.main-nav{
+  flex:1 1 auto;
+  display:flex;
+  justify-content:center;
+}
+.nav-list{
+  list-style:none;
+  margin:0;
+  padding:0;
+  display:flex;
+  gap:1.25rem;
+  align-items:center;
+}
+.nav-list a{
+  text-decoration:none;
+  color:#222;
+  font-weight:600;
+  padding:0.35rem 0.45rem;
+  border-radius:6px;
+}
+.nav-list a:hover, .nav-list a:focus{
+  color:var(--accent);
+  outline:none;
+}
+
+/* Acciones a la derecha */
+.header-actions{
+  display:flex;
+  align-items:center;
+  gap:0.5rem;
+  flex:0 0 auto;
+  margin-left:auto;
+}
+
+/* Botones base reutilizables */
+.header-actions .btn {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:0.5rem;
+  padding:0.45rem 0.6rem;
+  border-radius:10px;
+  text-decoration:none;
+  color: #fff;
+  font-weight:700;
+  font-size:0.95rem;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+}
+
+/* Icon-only buttons (cart, social icons) */
+.header-actions .icon-btn {
+  width:44px;
+  height:44px;
+  padding:0;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:10px;
+  background: #fff;
+  color: var(--btn-icon-color);
+}
+
+/* SVG dentro de botones */
+.header-actions svg { 
+  width:25px; 
+  height:25px; 
+  display:block; 
+  fill: currentColor; 
+}
+
+/* Botón Whatsapp */
+.btn-whatsapp{
+  background: var(--btn-whatsapp-bg);
+  color: #fff;
+}
+.btn-whatsapp:hover{ transform: translateY(-3px); }
+
+/* Botón Instagram */
+.btn-ig{
+  background: var(--btn-ig-bg);
+  color: #fff;
+}
+.btn-ig:hover{ transform: translateY(-3px); }
+
+/* Botón Login (texto + icon) */
+.btn-login{
+  background: var(--btn-login-bg);
+  color: #fff;
+  padding: 0.45rem 0.9rem;
+  border-radius: 10px;
+}
+.btn-login:hover{ transform: translateY(-3px); }
+
+/* Botón Carrito (icon-only por defecto) */
+.btn-cart{
+  background: var(--btn-cart-bg);
+  color: var(--btn-icon-color);
+  position: relative;
+  width:44px;
+  height:44px;
+  padding:0;
+  border-radius:10px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+
+/* Contador del carrito */
+.btn-cart .cart-count{
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight:700;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow: 0 6px 14px rgba(224,72,127,0.12);
+}
+
+/* Focus visible accesible para todos los botones */
+.header-actions .btn:focus,
+.header-actions .icon-btn:focus,
+.btn-login:focus,
+.btn-cart:focus,
+.btn-whatsapp:focus,
+.btn-ig:focus {
+  outline: 3px solid rgba(224,72,127,0.18);
+  outline-offset: 3px;
+}
+
+/* Botón "Menú" (móvil) */
+.menu-button{
+  display:none;
+  background:transparent;
+  border:1px solid rgba(0,0,0,0.06);
+  padding:0.45rem 0.7rem;
+  border-radius:8px;
+  font-weight:700;
+  cursor:pointer;
+  color:#222;
+}
+
+/* Menú móvil */
+.mobile-menu{
+  display:none;
+  background:var(--bg);
+  border-top:1px solid rgba(0,0,0,0.04);
+}
+.mobile-menu ul{
+  list-style:none;
+  margin:0;
+  padding:0.5rem 1rem;
+  display:flex;
+  flex-direction:column;
+  gap:0.25rem;
+}
+.mobile-menu a{
+  display:block;
+  padding:0.6rem 0.75rem;
+  text-decoration:none;
+  color:#222;
+  border-radius:8px;
+}
+
+/* Visually hidden helper */
+.visually-hidden{
+  position:absolute !important;
+  height:1px; width:1px;
+  overflow:hidden;
+  clip:rect(1px,1px,1px,1px);
+  white-space:nowrap;
+}
+
+/* Responsive: colapsa nav en pantallas pequeñas */
+@media (max-width: 880px){
+  .main-nav{ display:none; }
+  .menu-button{ display:inline-flex; }
+  .header-inner{ padding:0.4rem 0.75rem; }
+  .brand-text{ font-size:0.95rem; }
+
+  /* Mobile menu controlado por atributo hidden (JS) */
+  .mobile-menu[hidden]{ display:none; }
+  .mobile-menu{ display:block; }
+}
+
+/* Asegurar que en desktop el mobile-menu no aparezca */
+@media (min-width: 881px){
+  .mobile-menu{ display:none !important; }
+}
+
+

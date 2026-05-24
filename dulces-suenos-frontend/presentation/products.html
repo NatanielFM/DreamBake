@@ -1,0 +1,133 @@
+<!-- products.html -->
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Productos — Dulce Sueños</title>
+  <meta name="description" content="Listado de productos. Agregá y gestioná productos desde el panel de administración." />
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles/main.css">
+  <link rel="stylesheet" href="styles/header.css">
+  <link rel="stylesheet" href="styles/products.css">
+</head>
+<body class="site">
+
+  <!-- Header (reutiliza header.css y header.js) -->
+  <header class="site-header" role="banner">
+    <div class="container header-inner">
+      <a class="brand" href="index.html" aria-label="Dulce Sueños Posadas">
+        <svg class="brand-icon" width="36" height="36" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="10" fill="#e0487f"/>
+          <path d="M7 12c1.5-2 4-2 5 0 1-2 3.5-2 5 0" stroke="#fff" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        </svg>
+        <span class="brand-text">Dulce Sueños</span>
+      </a>
+
+      <nav class="main-nav" role="navigation" aria-label="Navegación principal">
+        <ul class="nav-list">
+          <li><a href="index.html">Inicio</a></li>
+          <li><a href="products.html" aria-current="page">Productos</a></li>
+          <li><a href="about.html">Nosotros</a></li>
+          <li><a href="contact.html">Contacto</a></li>
+        </ul>
+      </nav>
+
+      <div class="header-actions">
+        <a class="btn-social btn-whatsapp" href="https://wa.me/549XXXXXXXXXX" target="_blank" rel="noopener" aria-label="Contactar por WhatsApp">
+          <img src="media/icons/whatsapp.png" alt="WhatsApp" width="20" height="20" loading="lazy">
+        </a>
+
+        <a class="btn-social btn-ig" href="https://www.instagram.com/dulcessuenos_posadas/" target="_blank" rel="noopener" aria-label="Instagram">
+          <img src="media/icons/instagram.png" alt="Instagram" width="20" height="20" loading="lazy">
+        </a>
+
+        <!-- Botón carrito -->
+        <button class="btn-social btn-cart" id="cart-button" aria-label="Ver carrito. 0 artículos" aria-haspopup="true" aria-expanded="false">
+          <!-- Icono carrito (SVG) -->
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <path d="M6 2a1 1 0 0 1 .993 .883l.007 .117v1.068l13.071 .935a1 1 0 0 1 .929 1.024l-.01 .114l-1 7a1 1 0 0 1 -.877 .853l-.113 .006h-12v2h10a3 3 0 1 1 -2.995 3.176l-.005 -.176l.005 -.176c.017 -.288 .074 -.564 .166 -.824h-5.342a3 3 0 1 1 -5.824 1.176l-.005 -.176l.005 -.176a3.002 3.002 0 0 1 1.995 -2.654v-12.17h-1a1 1 0 0 1 -.993 -.883l-.007 -.117a1 1 0 0 1 .883 -.993l.117 -.007h2zm0 16a1 1 0 1 0 0 2a1 1 0 0 0 0 -2zm11 0a1 1 0 1 0 0 2a1 1 0 0 0 0 -2z" />
+          </svg>
+          <span class="cart-count" id="cart-count" aria-hidden="true">0</span>
+        </button>
+
+        <!-- Botón login -->
+        <a class="btn-social btn-login" id="login-button" href="./login.html" role="button" aria-controls="login-modal" aria-haspopup="dialog">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-4.418 0-8 2.239-8 5v1h16v-1c0-2.761-3.582-5-8-5z"></path></svg>
+        </a>
+      </div>
+    </div>
+
+    <div id="mobileMenu" class="mobile-menu" hidden>
+      <ul>
+        <li><a href="index.html">Inicio</a></li>
+        <li><a href="products.html">Productos</a></li>
+        <li><a href="about.html">Nosotros</a></li>
+        <li><a href="contact.html">Contacto</a></li>
+      </ul>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main id="main" style="padding-top: var(--header-height);">
+    <section class="products-hero" aria-labelledby="products-title">
+      <div class="container">
+        <h1 id="products-title" class="page-title">Productos</h1>
+        <p class="page-lead">Listado de productos. Agregá nuevos productos desde el panel de administración.</p>
+
+        <!-- Controles: búsqueda y filtro (preparados) -->
+        <div class="products-controls" role="region" aria-label="Controles de productos">
+          <input id="search" class="search-input" type="search" placeholder="Buscar producto..." aria-label="Buscar producto">
+          <select id="categoryFilter" class="select-filter" aria-label="Filtrar por categoría">
+            <option value="">Todas las categorías</option>
+          </select>
+        </div>
+
+        <!-- Grid de productos -->
+        <div id="productsGrid" class="products-grid" aria-live="polite" aria-busy="false">
+          <!-- Productos renderizados por products.js -->
+        </div>
+
+        <!-- Estado vacío -->
+        <div id="emptyState" class="empty-state visually-hidden" role="status" aria-live="polite">
+          <h2>No hay productos aún</h2>
+          <p>Parece que todavía no agregaste productos. Podés hacerlo desde el panel de administración.</p>
+          <a class="btn btn-primary" href="admin.html">Ir al panel de administración</a>
+        </div>
+
+        <!-- Paginación placeholder -->
+        <div id="pagination" class="pagination" aria-hidden="true"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal de detalle (accesible) -->
+  <div id="productModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="modalTitle">
+    <div class="modal-backdrop" data-dismiss="modal"></div>
+    <div class="modal-panel" role="document">
+      <button class="modal-close" aria-label="Cerrar" data-dismiss="modal">✕</button>
+      <div class="modal-body">
+        <h3 id="modalTitle">Producto</h3>
+        <div id="modalContent"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div>© <span id="year"></span> Dulce Sueños</div>
+    </div>
+  </footer>
+
+  <script src="scripts/header.js" defer></script>
+  <script src="scripts/products.js" defer></script>
+</body>
+</html>
