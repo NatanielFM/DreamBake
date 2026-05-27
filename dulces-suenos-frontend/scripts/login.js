@@ -1,8 +1,3 @@
-// scripts/login.js
-// Lógica para la página de login: validación, envío simulado, toggles y handlers de UI.
-// Incluye: toggle contraseña, envío del formulario, handlers para Google/Facebook,
-// control del menú móvil y contador del carrito. Adaptá las rutas de OAuth y API según tu backend.
-
 document.addEventListener('DOMContentLoaded', () => {
   /* ---------- Selectores principales ---------- */
   const form = document.getElementById('login-form');
@@ -92,34 +87,26 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     try {
-      // Reemplazá este bloque por la llamada real a tu backend:
-      // const res = await fetch(form.action, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   credentials: 'include', // si usás cookies
-      //   body: JSON.stringify(payload)
-      // });
-      // const data = await res.json();
-      // if (!res.ok) throw new Error(data?.message || 'Error de autenticación');
+      // 🔹 Ahora apuntamos a la API intermedia en 8081
+      const res = await fetch('http://localhost:8081/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
 
-      // Simulación de respuesta (quitar en producción)
-      await new Promise(r => setTimeout(r, 900));
-      const fakeSuccess = true;
+      const data = await res.json();
 
-      if (fakeSuccess) {
-        setStatus('¡Bienvenido! Redirigiendo...', 'info');
-        // Redirigir al dashboard o home según tu flujo
-        setTimeout(() => { window.location.href = '/'; }, 800);
-      } else {
-        throw new Error('Credenciales inválidas');
+      if (!res.ok) {
+        throw new Error(data?.message || 'Error de autenticación');
       }
+
+      setStatus('¡Bienvenido! Redirigiendo...', 'info');
+      setTimeout(() => { window.location.href = '/'; }, 800);
     } catch (err) {
       console.error(err);
-      setStatus('Usuario o contraseña incorrectos.', 'error');
+      setStatus(err.message || 'Usuario o contraseña incorrectos.', 'error');
       setSubmitting(false);
     } finally {
-      // Si usás redirección inmediata en éxito, este finally puede no ejecutarse antes de navegar
-      // ocultamos spinner si quedó visible
       if (spinner) spinner.classList.add('visually-hidden');
     }
   }
