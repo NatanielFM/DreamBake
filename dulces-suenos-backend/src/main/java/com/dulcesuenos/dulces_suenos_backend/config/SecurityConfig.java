@@ -9,13 +9,13 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable()) // Desactiva CSRF para pruebas con Postman
+            .csrf(csrf -> csrf.disable()) // 🔹 Desactiva CSRF
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/users/**").permitAll() // Permite acceso libre a /users/*
-                .anyRequest().authenticated()
+                .anyRequest().permitAll() // 🔹 Abre absolutamente todos los endpoints
             );
         return http.build();
     }
 }
+

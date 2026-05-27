@@ -21,10 +21,11 @@ public class UserController {
     // Registrar usuario
     @PostMapping("/register")
     public User register(@RequestBody User user) {
-        user.setEnabled(true);
-        user.setCreatedAt(LocalDateTime.now());
+        user.setEnabled(true); // siempre habilitado al registrarse
+        user.setCreatedAt(LocalDateTime.now()); // fecha actual
         return userRepository.save(user);
     }
+
 
     // Listar usuarios (para pruebas)
     @GetMapping
