@@ -1,4 +1,3 @@
-// UserController corregido
 package com.dulcesuenos.dulces_suenos_backend.presentation;
 
 import org.springframework.beans.factory.annotation.Autowired;

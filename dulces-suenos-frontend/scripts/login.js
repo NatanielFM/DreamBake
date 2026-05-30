@@ -1,3 +1,7 @@
+// login.js
+// Archivo listo para pegar. Maneja correctamente respuestas 4xx con body JSON,
+// muestra mensajes en el UI usando setStatus, y redirige a index.html al loguear.
+
 document.addEventListener('DOMContentLoaded', () => {
   /* ---------- Selectores principales ---------- */
   const form = document.getElementById('login-form');
@@ -66,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return '';
   }
 
-  /* ---------- Envío del formulario (placeholder/fetch) ---------- */
+  /* ---------- Envío del formulario (fetch robusto) ---------- */
   async function submitForm(ev) {
     ev.preventDefault();
     const err = validate();
@@ -87,27 +91,54 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     try {
-      // 🔹 Ahora apuntamos a la API intermedia en 8081
+      // Llamada a la API intermedia (AuthController)
       const res = await fetch('http://localhost:8081/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data?.message || 'Error de autenticación');
+      // Leemos el body de forma segura aunque el status sea 4xx/5xx
+      let data = null;
+      try {
+        // Primero intentamos leer como texto (por si el servidor devuelve texto plano)
+        const text = await res.text();
+        if (text && text.trim() !== '') {
+          try {
+            data = JSON.parse(text);
+          } catch (e) {
+            // Si no es JSON, lo envolvemos en un objeto con message
+            data = { message: text };
+          }
+        }
+      } catch (readErr) {
+        data = null;
       }
 
+      if (!res.ok) {
+        // Mostrar el mensaje que venga del backend o un fallback
+        const msg = data?.message || 'Correo o contraseña incorrecta';
+        setStatus(msg, 'error');
+        setSubmitting(false);
+        return;
+      }
+
+      // Login correcto
+      const successMsg = data?.message || 'Login exitoso';
       setStatus('¡Bienvenido! Redirigiendo...', 'info');
-      setTimeout(() => { window.location.href = '/'; }, 800);
-    } catch (err) {
-      console.error(err);
-      setStatus(err.message || 'Usuario o contraseña incorrectos.', 'error');
+
+      // Redireccionar explícitamente a index.html
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 700);
+
+    } catch (networkErr) {
+      console.error('Network error:', networkErr);
+      setStatus('Error de red. Intentá de nuevo.', 'error');
       setSubmitting(false);
     } finally {
-      if (spinner) spinner.classList.add('visually-hidden');
+      // Aseguramos que el spinner se oculte si quedó visible
+      setSubmitting(false);
     }
   }
 
@@ -135,7 +166,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
   // Inicializar contador del carrito (puede venir del localStorage o API)
-  // Ejemplo: leer de localStorage si lo usás
   const savedCount = Number(localStorage.getItem('cartCount') || 0);
   setCartCount(savedCount);
 
@@ -143,7 +173,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const headerLogin = document.getElementById('login-button');
   if (headerLogin && form) {
     headerLogin.addEventListener('click', (e) => {
-      // Si el header-login es un botón que debería llevar a la página actual, evitamos navegación
       const href = headerLogin.getAttribute('href');
       if (!href || href === '#' || href === '#login-form') {
         e.preventDefault();
@@ -156,7 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ---------- Limpieza: evitar referencias a elementos eliminados ---------- */
   // Este archivo ya no asume existencia de aside/imágenes o botones WA/IG en esta página.
-  // Si en algún momento agregás handlers para WA/IG, añadilos explícitamente aquí.
 
   /* ---------- Fin ---------- */
 });
