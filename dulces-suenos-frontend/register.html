@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Crear cuenta — Dulce Sueños</title>
+  <meta name="description" content="Registrate para comprar, ver tu historial y gestionar pedidos." />
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Global styles -->
+  <link rel="stylesheet" href="styles/main.css">
+  <link rel="stylesheet" href="styles/header.css">
+  <link rel="stylesheet" href="styles/footer.css">
+
+  <!-- Page styles -->
+  <link rel="stylesheet" href="styles/register.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header" role="banner">
+    <div class="container header-inner">
+      <a class="brand" href="index.html" aria-label="Dulce Sueños Posadas">
+        <svg class="brand-icon" width="36" height="36" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="10" fill="#e0487f"/>
+          <path d="M7 12c1.5-2 4-2 5 0 1-2 3.5-2 5 0" stroke="#fff" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        </svg>
+        <span class="brand-text">Dulce Sueños</span>
+      </a>
+
+      <nav class="main-nav" role="navigation" aria-label="Navegación principal">
+        <ul class="nav-list">
+          <li><a href="index.html">Inicio</a></li>
+          <li><a href="products.html">Productos</a></li>
+          <li><a href="about.html">Nosotros</a></li>
+          <li><a href="contact.html">Contacto</a></li>
+        </ul>
+      </nav>
+
+      <div class="header-actions">
+        <a class="btn-social btn-whatsapp" href="https://wa.me/549XXXXXXXXXX" target="_blank" rel="noopener" aria-label="Contactar por WhatsApp">
+          <img src="media/icons/whatsapp.png" alt="WhatsApp" width="20" height="20" loading="lazy">
+        </a>
+
+        <a class="btn-social btn-ig" href="https://www.instagram.com/dulcessuenos_posadas/" target="_blank" rel="noopener" aria-label="Instagram">
+          <img src="media/icons/instagram.png" alt="Instagram" width="20" height="20" loading="lazy">
+        </a>
+
+        <button class="btn-social btn-cart" id="cart-button" aria-label="Ver carrito. 0 artículos" aria-haspopup="true" aria-expanded="false">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M6 2a1 1 0 0 1 .993 .883l.007 .117v1.068l13.071 .935a1 1 0 0 1 .929 1.024l-.01 .114l-1 7a1 1 0 0 1 -.877 .853l-.113 .006h-12v2h10a3 3 0 1 1 -2.995 3.176l-.005 -.176l.005 -.176c.017 -.288 .074 -.564 .166 -.824h-5.342a3 3 0 1 1 -5.824 1.176l-.005 -.176l.005 -.176a3.002 3.002 0 0 1 1.995 -2.654v-12.17h-1a1 1 0 0 1 -.993 -.883l-.007 -.117a1 1 0 0 1 .883 -.993l.117 -.007h2zm0 16a1 1 0 1 0 0 2a1 1 0 0 0 0 -2zm11 0a1 1 0 1 0 0 2a1 1 0 0 0 0 -2z" />
+          </svg>
+          <span class="cart-count" id="cart-count" aria-hidden="true">0</span>
+        </button>
+
+        <button class="btn-social btn-login" id="login-button" title="Iniciar sesión" aria-controls="login-modal" aria-haspopup="dialog" aria-expanded="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-4.418 0-8 2.239-8 5v1h16v-1c0-2.761-3.582-5-8-5z"></path></svg>
+        </button>
+
+        <button id="menuButton" class="menu-button" aria-expanded="false" aria-controls="mobileMenu" aria-label="Abrir menú">Menú</button>
+      </div>
+    </div>
+
+    <div id="mobileMenu" class="mobile-menu" hidden>
+      <ul>
+        <li><a href="index.html">Inicio</a></li>
+        <li><a href="products.html">Productos</a></li>
+        <li><a href="about.html">Nosotros</a></li>
+        <li><a href="contact.html">Contacto</a></li>
+      </ul>
+    </div>
+  </header>
+
+  <!-- Main: separado del header con margen superior -->
+  <main id="main" class="page-main" style="padding-top: var(--header-height); margin-top: 28px;">
+    <section class="login-hero" aria-labelledby="register-title">
+      <div class="login-inner single-column">
+        <div class="login-card" role="region" aria-labelledby="register-title">
+          <!-- Título: rosado y en negrita -->
+          <h1 id="register-title" class="login-title">Crear cuenta</h1>
+
+          <div id="register-status" class="login-status" role="status" aria-live="polite"></div>
+
+          <form id="register-form" class="form" action="/api/auth/signup" method="post" novalidate>
+            <label for="fullName" class="form-label">Nombre completo</label>
+            <input id="fullName" name="fullName" type="text" autocomplete="name" class="form-input" placeholder="Tu nombre completo" required>
+
+            <label for="email" class="form-label">Correo electrónico</label>
+            <input id="email" name="email" type="email" inputmode="email" autocomplete="email" class="form-input" placeholder="tu@ejemplo.com" required>
+
+            <!-- Campo Celular -->
+            <label for="phone" class="form-label">Celular</label>
+            <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" class="form-input" placeholder="+54 9 11 1234 5678" required>
+
+            <label for="password" class="form-label">Contraseña</label>
+            <div class="password-wrap">
+              <input id="password" name="password" type="password" autocomplete="new-password" class="form-input" placeholder="Mínimo 6 caracteres" minlength="6" required>
+              <button type="button" class="btn-toggle-pass" id="toggle-password" aria-label="Mostrar contraseña">👁️</button>
+            </div>
+
+            <label for="confirmPassword" class="form-label">Confirmar contraseña</label>
+            <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" class="form-input" placeholder="Repite la contraseña" minlength="6" required>
+
+            <!-- Espacio extra entre confirmPassword y el botón -->
+            <div class="spacer"></div>
+
+            <button type="submit" class="btn btn-primary login-submit" id="register-submit">
+              <span class="btn-text">Crear cuenta</span>
+              <span class="btn-spinner visually-hidden" id="register-spinner" aria-hidden="true">⏳</span>
+            </button>
+
+            <!-- Texto de enlace: gris + enlace azul subrayado -->
+            <p class="signup-note">¿Ya tenés cuenta? <a href="/login.html" class="link-primary">Iniciar sesión</a></p>
+          </form>
+
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer separado del main -->
+  <footer class="site-footer" role="contentinfo" style="margin-top:28px;">
+    <div class="container">
+      © <strong>Dulce Sueños Posadas</strong>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="scripts/header.js" defer></script>
+  <script src="scripts/register.js" defer></script>
+
+</body>
+</html>

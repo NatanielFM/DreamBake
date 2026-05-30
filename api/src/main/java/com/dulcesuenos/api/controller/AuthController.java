@@ -1,10 +1,6 @@
 package com.dulcesuenos.api.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
@@ -16,72 +12,75 @@ import java.util.Map;
 public class AuthController {
 
     private final RestTemplate restTemplate = new RestTemplate();
-    private final ObjectMapper mapper = new ObjectMapper();
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> payload) {
         String backendUrl = "http://localhost:8080/users/login";
-        HttpEntity<Map<String, String>> request = new HttpEntity<>(payload);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Map<String, String>> request = new HttpEntity<>(payload, headers);
 
         try {
-            // Intentamos llamar al backend (caso 2xx)
-            ResponseEntity<String> response = restTemplate.postForEntity(backendUrl, request, String.class);
+            // Pedimos la respuesta como String (JSON crudo)
+            ResponseEntity<String> response = restTemplate.exchange(
+                backendUrl,
+                HttpMethod.POST,
+                request,
+                String.class
+            );
 
-            // Convertimos el body (String) a Map para devolver JSON consistente
-            Map<String, Object> body = Map.of("message", response.getBody());
-            try {
-                // Si el backend ya devolvió JSON, preferimos parsearlo a Map
-                Map parsed = mapper.readValue(response.getBody(), Map.class);
-                return ResponseEntity.status(response.getStatusCode()).body(parsed);
-            } catch (Exception ignore) {
-                return ResponseEntity.status(response.getStatusCode()).body(body);
+            String respBody = response.getBody();
+            if (respBody == null || respBody.isBlank()) {
+                respBody = "{}";
             }
+
+            return ResponseEntity.status(response.getStatusCode())
+                                 .contentType(MediaType.APPLICATION_JSON)
+                                 .body(respBody);
 
         } catch (HttpClientErrorException ex) {
-            // El backend devolvió 4xx/5xx: capturamos status y body (si existe) y lo reenviamos
+            // Reenviamos el status del backend; no incluimos mensajes
             String respBody = ex.getResponseBodyAsString();
-            Map<String, Object> body;
             if (respBody == null || respBody.isBlank()) {
-                body = Map.of("message", ex.getStatusText());
-            } else {
-                try {
-                    body = mapper.readValue(respBody, Map.class);
-                } catch (Exception parseEx) {
-                    body = Map.of("message", respBody);
-                }
+                respBody = "{}";
             }
-            return ResponseEntity.status(ex.getStatusCode()).body(body);
+            return ResponseEntity.status(ex.getStatusCode())
+                                 .contentType(MediaType.APPLICATION_JSON)
+                                 .body(respBody);
         } catch (Exception e) {
+            // Error interno de la API intermedia: devolvemos 500 con body vacío JSON
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                 .body(Map.of("message", "Error interno en la API intermedia"));
+                                 .contentType(MediaType.APPLICATION_JSON)
+                                 .body("{}");
         }
     }
 
-    // Mantener register si lo necesitás (opcional)
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Map<String, String> payload) {
         String backendUrl = "http://localhost:8080/users/register";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Map<String, String>> request = new HttpEntity<>(payload, headers);
+
         try {
-            ResponseEntity<String> response = restTemplate.postForEntity(backendUrl, payload, String.class);
-            // Intentamos parsear JSON devuelto por backend
-            try {
-                Map parsed = mapper.readValue(response.getBody(), Map.class);
-                return ResponseEntity.status(response.getStatusCode()).body(parsed);
-            } catch (Exception ignore) {
-                return ResponseEntity.status(response.getStatusCode()).body(Map.of("message", response.getBody()));
-            }
+            ResponseEntity<String> response = restTemplate.postForEntity(backendUrl, request, String.class);
+            String respBody = response.getBody();
+            if (respBody == null || respBody.isBlank()) respBody = "{}";
+            return ResponseEntity.status(response.getStatusCode())
+                                 .contentType(MediaType.APPLICATION_JSON)
+                                 .body(respBody);
         } catch (HttpClientErrorException ex) {
             String respBody = ex.getResponseBodyAsString();
-            Map<String, Object> body;
-            try {
-                body = mapper.readValue(respBody, Map.class);
-            } catch (Exception parseEx) {
-                body = Map.of("message", respBody == null ? "Error" : respBody);
-            }
-            return ResponseEntity.status(ex.getStatusCode()).body(body);
+            if (respBody == null || respBody.isBlank()) respBody = "{}";
+            return ResponseEntity.status(ex.getStatusCode())
+                                 .contentType(MediaType.APPLICATION_JSON)
+                                 .body(respBody);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                 .body(Map.of("message", "Error interno en la API intermedia"));
+                                 .contentType(MediaType.APPLICATION_JSON)
+                                 .body("{}");
         }
     }
 }
