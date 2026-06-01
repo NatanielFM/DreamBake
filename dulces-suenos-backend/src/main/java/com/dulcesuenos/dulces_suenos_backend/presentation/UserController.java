@@ -1,15 +1,14 @@
 package com.dulcesuenos.dulces_suenos_backend.presentation;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import com.dulcesuenos.dulces_suenos_backend.database.entity.User;
+import com.dulcesuenos.dulces_suenos_backend.presentation.dto.RegisterRequest;
+import com.dulcesuenos.dulces_suenos_backend.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import com.dulcesuenos.dulces_suenos_backend.database.entity.User;
-import com.dulcesuenos.dulces_suenos_backend.database.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import jakarta.validation.Valid;
 
-import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -17,50 +16,62 @@ import java.util.Optional;
 @RequestMapping("/users")
 public class UserController {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserService userService;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    public UserController(UserService userService, PasswordEncoder passwordEncoder) {
+        this.userService = userService;
+        this.passwordEncoder = passwordEncoder;
+    }
 
+    /**
+     * Registro: recibe RegisterRequest (name, email, phone, password).
+     * Devuelve 201 con el user (sin password) o 409 si el email ya existe.
+     */
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody User user) {
-        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
-            // Devuelve 409 si ya existe; sin mensaje textual
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
+        // Validación mínima (RegisterRequest ya tiene anotaciones de validación)
+        if (req.getEmail() == null || req.getPassword() == null || req.getName() == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
+        // Delegar la lógica al servicio
+        Optional<User> created = userService.register(req.getName(), req.getEmail(), req.getPhone(), req.getPassword());
+        if (created.isEmpty()) {
+            // Conflicto (email ya registrado o datos inválidos)
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setEnabled(true);
-        user.setCreatedAt(LocalDateTime.now());
-        User saved = userRepository.save(user);
+
+        User saved = created.get();
+        // Asegurarse de no devolver la contraseña
         saved.setPassword(null);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
-    @GetMapping
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
-    }
-
+    /**
+     * Login: recibe JSON con email y password.
+     * Devuelve 200 con user (sin password) o 401 sin body.
+     */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
         String password = payload.get("password");
 
-        Optional<User> userOpt = userRepository.findByEmail(email);
+        if (email == null || password == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
+        Optional<User> userOpt = userService.findByEmail(email);
         if (userOpt.isEmpty()) {
-            // 401 sin body
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         User user = userOpt.get();
         if (!passwordEncoder.matches(password, user.getPassword())) {
-            // 401 sin body
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         user.setPassword(null);
-        // Devuelve el usuario (sin password) en 200 OK; sin mensajes textuales
         return ResponseEntity.ok(user);
     }
 }
