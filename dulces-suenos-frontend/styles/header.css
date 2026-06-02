@@ -1,18 +1,17 @@
+/* styles/header.css (modificado según tus indicaciones) */
+
 /* Variables locales del header */
 :root{
-  /* --bg: #ff0000; */
   --accent: #e0487f;
   --muted: #666;
   --header-height: 64px;
   --container-max: 1100px;
 
-  /* Colores de botones (personalizables) */
   --btn-whatsapp-bg: #25D366;
   --btn-ig-bg: linear-gradient(45deg,#f58529,#dd2a7b);
   --btn-login-bg: linear-gradient(90deg,#ff7aa8,#d43b73);
-  --btn-cart-bg: #ffffff; /* por defecto blanco con icono en --accent */
+  --btn-cart-bg: #ffffff;
 
-  /* Icon color para botones con fondo claro */
   --btn-icon-color: var(--accent);
 }
 
@@ -132,14 +131,18 @@
 .btn-whatsapp{
   background: var(--btn-whatsapp-bg);
   color: #fff;
+  padding: 0;
 }
+.btn-whatsapp svg, .btn-whatsapp img { fill: #fff; color: #fff; width:20px; height:20px; }
 .btn-whatsapp:hover{ transform: translateY(-3px); }
 
 /* Botón Instagram */
 .btn-ig{
   background: var(--btn-ig-bg);
   color: #fff;
+  padding: 0;
 }
+.btn-ig svg, .btn-ig img { fill: #fff; color: #fff; width:20px; height:20px; }
 .btn-ig:hover{ transform: translateY(-3px); }
 
 /* Botón Login (texto + icon) */
@@ -148,6 +151,10 @@
   color: #fff;
   padding: 0.45rem 0.9rem;
   border-radius: 10px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:0.5rem;
 }
 .btn-login:hover{ transform: translateY(-3px); }
 
@@ -196,7 +203,7 @@
   outline-offset: 3px;
 }
 
-/* Botón "Menú" (móvil) */
+/* Botón "Menú" (móvil) - por defecto oculto en desktop */
 .menu-button{
   display:none;
   background:transparent;
@@ -206,12 +213,17 @@
   font-weight:700;
   cursor:pointer;
   color:#222;
+  align-items:center;
+  justify-content:center;
 }
+
+/* Asegurar que el SVG del botón herede color y tamaño */
+.menu-button svg { width:22px; height:16px; display:block; fill: currentColor; }
 
 /* Menú móvil */
 .mobile-menu{
   display:none;
-  background:var(--bg);
+  background:#fff;
   border-top:1px solid rgba(0,0,0,0.04);
 }
 .mobile-menu ul{
@@ -239,12 +251,104 @@
   white-space:nowrap;
 }
 
-/* Responsive: colapsa nav en pantallas pequeñas */
+/* Menú desplegable del login: fijado justo debajo del header */
+.user-menu {
+  position: fixed;
+  top: var(--header-height);
+  right: 16px;
+  min-width: 220px;
+  background: #fff;
+  border: 1px solid #eee;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  border-radius: 8px;
+  z-index: 1200;
+  padding: 8px;
+}
+.user-menu[hidden] { display: none; }
+
+/* Mini título "Hola, Nombre" */
+.user-menu .user-menu-title {
+  display: block;
+  padding: 8px 10px;
+  font-weight: 700;
+  color: #333;
+  border-bottom: 1px solid #f3f3f3;
+  margin-bottom: 6px;
+}
+
+/* Items: sin cambio de color fuerte al hover */
+.user-menu .user-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: #333;
+  font-size: 14px;
+  border-radius: 6px;
+}
+.user-menu .user-menu-item:hover,
+.user-menu .user-menu-item:focus {
+  background: rgba(0,0,0,0.02);
+}
+.user-menu .icon { width: 18px; height: 18px; fill: currentColor; flex: 0 0 18px; }
+
+/* Modal confirmación */
+.confirm-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10,10,10,0.45);
+  z-index: 2000;
+}
+.confirm-card {
+  width: 320px;
+  background: #fff;
+  border-radius: 10px;
+  padding: 18px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+  text-align: center;
+}
+.confirm-card h3 { margin: 0 0 8px; color: #222; }
+.confirm-card p { margin: 0 0 16px; color: #555; }
+.confirm-actions { display: flex; gap: 10px; justify-content: center; }
+.btn { padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
+.btn-danger { background: var(--accent); color: #fff; }
+.btn-secondary { background: #f1f1f1; color: #333; }
+
+/* Responsive: colapsa nav en pantallas pequeñas y ajusta tamaños de botones */
 @media (max-width: 880px){
+  /* ocultar la navegación de escritorio */
   .main-nav{ display:none; }
-  .menu-button{ display:inline-flex; }
+
+  /* mostrar el botón menú y colocarlo a la izquierda */
+  .menu-button{ 
+    display:inline-flex !important; 
+    order: 0; 
+    margin-right: 0.6rem; 
+    color: var(--accent);
+    background: transparent;
+    border: none;
+  }
+
+  /* ajustar orden de elementos: menuButton (0), brand (1), nav (2 hidden), header-actions (3) */
+  .brand { order: 1; }
+  .main-nav { order: 2; }
+  .header-actions { order: 3; }
+
   .header-inner{ padding:0.4rem 0.75rem; }
   .brand-text{ font-size:0.95rem; }
+
+  /* Ajustes de tamaño en móvil: icon buttons y login más coherentes */
+  .header-actions .icon-btn { width:40px; height:40px; }
+  .btn-login { min-width:40px; height:40px; padding:0; display:inline-flex; align-items:center; justify-content:center; }
+  .btn-login .login-icon { width:20px; height:20px; }
 
   /* Mobile menu controlado por atributo hidden (JS) */
   .mobile-menu[hidden]{ display:none; }
@@ -254,6 +358,6 @@
 /* Asegurar que en desktop el mobile-menu no aparezca */
 @media (min-width: 881px){
   .mobile-menu{ display:none !important; }
+  /* ocultar el botón menú en desktop */
+  .menu-button{ display:none !important; }
 }
-
-
