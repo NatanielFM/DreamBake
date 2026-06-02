@@ -105,9 +105,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       setStatus('Sesión iniciada correctamente', 'info');
 
-      // Redirigir a index o a la página que quieras
-      //setTimeout(() => { window.location.href = 'index.html'; }, 600);
-      setTimeout(() => 600);
+      // Redirigir a index o a la página que quiera
+      setTimeout(() => { window.location.href = 'index.html'; }, 600);
+      
 
     } catch (networkErr) {
       console.error('Network error:', networkErr);
