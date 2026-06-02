@@ -9,12 +9,14 @@ public class RegisterRequest {
     @NotBlank
     private String name;
 
-    @NotBlank @Email
+    @NotBlank
+    @Email
     private String email;
 
     private String phone;
 
-    @NotBlank @Size(min = 6)
+    @NotBlank
+    @Size(min = 6)
     private String password;
 
     public RegisterRequest() {}

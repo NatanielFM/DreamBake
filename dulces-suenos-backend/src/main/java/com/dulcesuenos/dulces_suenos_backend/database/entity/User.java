@@ -25,10 +25,8 @@ public class User {
 
     private LocalDateTime createdAt;
 
-    // Constructors
     public User() {}
 
-    // Getters y setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

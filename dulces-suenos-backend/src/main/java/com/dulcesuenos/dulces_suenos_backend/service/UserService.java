@@ -24,7 +24,7 @@ public class UserService {
             return Optional.empty();
         }
         if (userRepository.findByEmail(email).isPresent()) {
-            return Optional.empty(); // conflicto
+            return Optional.empty();
         }
         User u = new User();
         u.setName(name);
