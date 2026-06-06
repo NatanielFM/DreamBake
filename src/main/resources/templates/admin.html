@@ -1,68 +1,74 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security6">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Administración — Dulce Sueños</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles/main.css">
-
-  <link rel="stylesheet" href="styles/admin.css">
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+  <link rel="stylesheet" th:href="@{/css/admin.css}">
 </head>
 <body>
 
-  <!-- Header específico de administración -->
   <header class="site-header admin-header" role="banner">
     <div class="header-inner">
-      <div class="admin-left">Administración</div>
+      <div class="admin-left">Panel de Administración</div>
       <div class="admin-center">
-        <a href="index.html" class="btn btn-primary">Volver a la web</a>
+        <a th:href="@{/}" class="btn btn-primary">Volver a la web</a>
       </div>
-      <div class="admin-right">Hola, Nataniel</div>
+      <div class="admin-right">
+        Hola, <span th:if="${currentUser != null}" th:text="${currentUser.name.split(' ')[0]}">Admin</span>
+      </div>
     </div>
   </header>
 
-  <!-- Layout principal -->
   <div class="admin-layout">
-    <!-- Sidebar -->
     <aside class="sidebar">
       <nav>
-        <button class="tab-btn active" data-tab="resumen">Resumen</button>
-        <button class="tab-btn" data-tab="pedidos">Pedidos</button>
-        <button class="tab-btn" data-tab="inventario">Inventario</button>
-        <button class="tab-btn" data-tab="clientes">Clientes</button>
-        <!-- Logout al fondo -->
+        <div class="sidebar-top">
+          <button class="tab-btn active" data-tab="resumen">Resumen</button>
+          <button class="tab-btn" data-tab="pedidos">Pedidos</button>
+          <button class="tab-btn" data-tab="productos">Productos</button> <button class="tab-btn" data-tab="inventario">Inventario</button>
+          <button class="tab-btn" data-tab="clientes">Clientes</button>
+        </div>
+        
         <div class="sidebar-bottom">
-        <button id="logout-button" class="logout-btn" aria-label="Cerrar sesión">Cerrar sesión</button>
+          <form id="logoutForm" th:action="@{/logout}" method="post" style="width: 100%; margin: 0;">
+            <button type="button" id="logout-button" class="logout-btn" aria-label="Cerrar sesión">Cerrar sesión</button>
+          </form>
         </div>
       </nav>
     </aside>
 
-    <!-- Contenido -->
     <main class="dashboard">
       <section id="resumen" class="tab-content active">
-        <h2>Resumen</h2>
-        <p>Aquí se mostrarán métricas generales del negocio.</p>
+        <h2>Resumen y Reportes</h2>
+        <p>Aquí se mostrarán métricas generales del negocio y generación de PDFs.</p>
       </section>
 
       <section id="pedidos" class="tab-content">
-        <h2>Pedidos</h2>
-        <p>Listado y estado de pedidos.</p>
+        <h2>Gestión de Pedidos</h2>
+        <p>Listado y estado de pedidos (Web y WhatsApp).</p>
+      </section>
+
+      <section id="productos" class="tab-content">
+        <h2>Catálogo de Productos</h2>
+        <p>Crear, modificar y eliminar las tortas y dulces que se muestran en la web.</p>
       </section>
 
       <section id="inventario" class="tab-content">
         <h2>Inventario</h2>
-        <p>Gestión de stock y materias primas.</p>
+        <p>Gestión de stock e insumos para la producción.</p>
       </section>
 
       <section id="clientes" class="tab-content">
-        <h2>Clientes</h2>
-        <p>Información de clientes registrados.</p>
+        <h2>Directorio de Clientes</h2>
+        <p>Información de clientes registrados y agendados manualmente.</p>
       </section>
     </main>
   </div>
 
-  <script src="scripts/admin.js" defer></script>
+  <script th:src="@{/js/admin.js}" defer></script>
 </body>
 </html>

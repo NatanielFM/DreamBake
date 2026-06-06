@@ -1,363 +1,122 @@
-/* styles/header.css (modificado según tus indicaciones) */
-
-/* Variables locales del header */
-:root{
-  --accent: #e0487f;
-  --muted: #666;
+:root {
   --header-height: 64px;
-  --container-max: 1100px;
-
+  --accent: #e0487f;
+  --bg-header: rgba(255, 255, 255, 0.85);
   --btn-whatsapp-bg: #25D366;
   --btn-ig-bg: linear-gradient(45deg,#f58529,#dd2a7b);
-  --btn-login-bg: linear-gradient(90deg,#ff7aa8,#d43b73);
-  --btn-cart-bg: #ffffff;
-
-  --btn-icon-color: var(--accent);
 }
 
-/* Reset / base para header */
-.site-header{
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: var(--header-height);
-  background: rgba(255,255,255,0.55);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
-  z-index: 1000;
-  display: block;
+.site-header {
+  position: fixed; top: 0; left: 0; right: 0; height: var(--header-height);
+  background: var(--bg-header); backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05); z-index: 1000;
 }
 
-.header-inner{
-  height: var(--header-height);
-  min-height: var(--header-height);
-  max-width: var(--container-max);
-  margin: 0 auto;
-  display:flex;
-  align-items:center;
-  gap:1rem;
-  padding:0 1rem;
-  box-sizing:border-box;
+.header-inner {
+  max-width: 1100px; margin: 0 auto; height: 100%;
+  display: flex; align-items: center; padding: 0 1rem; gap: 1rem;
 }
 
-/* Brand */
-.brand{
-  display:flex;
-  align-items:center;
-  gap:0.6rem;
-  text-decoration:none;
-  color:inherit;
-}
-.brand-icon{ flex:0 0 auto; border-radius:6px; }
-.brand-text{ font-weight:700; color:var(--accent); font-size:1rem; }
+/* Identidad de marca */
+.brand { display: flex; align-items: center; gap: 0.5rem; text-decoration: none; }
+.brand-text { font-weight: 700; color: var(--accent); font-size: 1.1rem; }
 
-/* Nav centrado (desktop) */
-.main-nav{
-  flex:1 1 auto;
-  display:flex;
-  justify-content:center;
-}
-.nav-list{
-  list-style:none;
-  margin:0;
-  padding:0;
-  display:flex;
-  gap:1.25rem;
-  align-items:center;
-}
-.nav-list a{
-  text-decoration:none;
-  color:#222;
-  font-weight:600;
-  padding:0.35rem 0.45rem;
-  border-radius:6px;
-}
-.nav-list a:hover, .nav-list a:focus{
-  color:var(--accent);
-  outline:none;
-}
+/* Navegación Desktop */
+.main-nav { flex: 1; display: flex; justify-content: center; }
+.nav-list { list-style: none; display: flex; gap: 1.5rem; margin: 0; padding: 0; }
+.nav-list a { text-decoration: none; color: #222; font-weight: 600; transition: color 0.2s; }
+.nav-list a:hover { color: var(--accent); }
 
-/* Acciones a la derecha */
-.header-actions{
-  display:flex;
-  align-items:center;
-  gap:0.5rem;
-  flex:0 0 auto;
-  margin-left:auto;
+/* Acciones */
+.header-actions { display: flex; align-items: center; gap: 0.5rem; margin-left: auto; }
+
+/* --- BOTONES BASE --- */
+.btn-icon {
+  width: 40px; height: 40px; border-radius: 8px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; text-decoration: none; cursor: pointer; background: #fff;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.06); transition: transform 0.2s;
+}
+.btn-icon:hover { transform: translateY(-2px); }
+.btn-icon svg { fill: currentColor; }
+
+/* Colores específicos */
+.btn-whatsapp { background: var(--btn-whatsapp-bg); }
+.btn-ig { background: var(--btn-ig-bg); }
+.btn-cart { position: relative; color: var(--accent); }
+.btn-login { background: linear-gradient(90deg,#ff7aa8,#d43b73); color: #fff; }
+
+.btn-account {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  background: white; border: 1px solid #eee; padding: 0.4rem 0.8rem;
+  border-radius: 8px; cursor: pointer; font-weight: 600; color: #333;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.04);
 }
 
-/* Botones base reutilizables */
-.header-actions .btn {
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:0.5rem;
-  padding:0.45rem 0.6rem;
-  border-radius:10px;
-  text-decoration:none;
-  color: #fff;
-  font-weight:700;
-  font-size:0.95rem;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
-  transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+.cart-count {
+  position: absolute; top: -6px; right: -6px; background: var(--accent);
+  color: #fff; font-size: 0.75rem; font-weight: 700; min-width: 18px;
+  height: 18px; display: flex; align-items: center; justify-content: center;
+  border-radius: 9px; padding: 0 4px;
 }
 
-/* Icon-only buttons (cart, social icons) */
-.header-actions .icon-btn {
-  width:44px;
-  height:44px;
-  padding:0;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  border-radius:10px;
-  background: #fff;
-  color: var(--btn-icon-color);
-}
-
-/* SVG dentro de botones */
-.header-actions svg { 
-  width:25px; 
-  height:25px; 
-  display:block; 
-  fill: currentColor; 
-}
-
-/* Botón Whatsapp */
-.btn-whatsapp{
-  background: var(--btn-whatsapp-bg);
-  color: #fff;
-  padding: 0;
-}
-.btn-whatsapp svg, .btn-whatsapp img { fill: #fff; color: #fff; width:20px; height:20px; }
-.btn-whatsapp:hover{ transform: translateY(-3px); }
-
-/* Botón Instagram */
-.btn-ig{
-  background: var(--btn-ig-bg);
-  color: #fff;
-  padding: 0;
-}
-.btn-ig svg, .btn-ig img { fill: #fff; color: #fff; width:20px; height:20px; }
-.btn-ig:hover{ transform: translateY(-3px); }
-
-/* Botón Login (texto + icon) */
-.btn-login{
-  background: var(--btn-login-bg);
-  color: #fff;
-  padding: 0.45rem 0.9rem;
-  border-radius: 10px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:0.5rem;
-}
-.btn-login:hover{ transform: translateY(-3px); }
-
-/* Botón Carrito (icon-only por defecto) */
-.btn-cart{
-  background: var(--btn-cart-bg);
-  color: var(--btn-icon-color);
-  position: relative;
-  width:44px;
-  height:44px;
-  padding:0;
-  border-radius:10px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
-}
-
-/* Contador del carrito */
-.btn-cart .cart-count{
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: #fff;
-  font-size: 0.75rem;
-  font-weight:700;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  box-shadow: 0 6px 14px rgba(224,72,127,0.12);
-}
-
-/* Focus visible accesible para todos los botones */
-.header-actions .btn:focus,
-.header-actions .icon-btn:focus,
-.btn-login:focus,
-.btn-cart:focus,
-.btn-whatsapp:focus,
-.btn-ig:focus {
-  outline: 3px solid rgba(224,72,127,0.18);
-  outline-offset: 3px;
-}
-
-/* Botón "Menú" (móvil) - por defecto oculto en desktop */
-.menu-button{
-  display:none;
-  background:transparent;
-  border:1px solid rgba(0,0,0,0.06);
-  padding:0.45rem 0.7rem;
-  border-radius:8px;
-  font-weight:700;
-  cursor:pointer;
-  color:#222;
-  align-items:center;
-  justify-content:center;
-}
-
-/* Asegurar que el SVG del botón herede color y tamaño */
-.menu-button svg { width:22px; height:16px; display:block; fill: currentColor; }
-
-/* Menú móvil */
-.mobile-menu{
-  display:none;
-  background:#fff;
-  border-top:1px solid rgba(0,0,0,0.04);
-}
-.mobile-menu ul{
-  list-style:none;
-  margin:0;
-  padding:0.5rem 1rem;
-  display:flex;
-  flex-direction:column;
-  gap:0.25rem;
-}
-.mobile-menu a{
-  display:block;
-  padding:0.6rem 0.75rem;
-  text-decoration:none;
-  color:#222;
-  border-radius:8px;
-}
-
-/* Visually hidden helper */
-.visually-hidden{
-  position:absolute !important;
-  height:1px; width:1px;
-  overflow:hidden;
-  clip:rect(1px,1px,1px,1px);
-  white-space:nowrap;
-}
-
-/* Menú desplegable del login: fijado justo debajo del header */
+/* --- MENÚ DESPLEGABLE CUENTA --- */
+.user-wrapper { position: relative; }
 .user-menu {
-  position: fixed;
-  top: var(--header-height);
-  right: 16px;
-  min-width: 220px;
-  background: #fff;
-  border: 1px solid #eee;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-  border-radius: 8px;
-  z-index: 1200;
-  padding: 8px;
+  position: absolute; right: 0; top: 110%; background: #fff;
+  border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  min-width: 200px; z-index: 1200; padding: 0.5rem;
+  border: 1px solid #f0f0f0;
 }
 .user-menu[hidden] { display: none; }
+.user-menu hr { border: 0; border-top: 1px solid #eee; margin: 8px 0; }
+.user-menu-title { font-weight: 700; color: #222; padding: 8px; }
+.user-menu-item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 10px 8px; text-decoration: none; color: #444; border: none;
+  background: transparent; font-size: 14px; cursor: pointer;
+  border-radius: 6px; font-weight: 500; text-align: left;
+}
+.user-menu-item:hover { background: #f5f5f5; color: var(--accent); }
+.user-menu-item .icon { 
+  width: 18px; height: 18px; 
+  stroke: currentColor; 
+  fill: none; 
+  stroke-width: 2; 
+  stroke-linecap: round; 
+  stroke-linejoin: round;
+}
+form { margin: 0; } /* Para el form del logout */
 
-/* Mini título "Hola, Nombre" */
-.user-menu .user-menu-title {
-  display: block;
-  padding: 8px 10px;
-  font-weight: 700;
-  color: #333;
-  border-bottom: 1px solid #f3f3f3;
-  margin-bottom: 6px;
+/* --- RESPONSIVE MOBILE --- */
+@media (min-width: 881px) {
+  .menu-button { display: none; }
+  .mobile-menu { display: none !important; }
 }
 
-/* Items: sin cambio de color fuerte al hover */
-.user-menu .user-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 8px 10px;
-  background: transparent;
-  border: none;
-  text-align: left;
-  cursor: pointer;
-  color: #333;
-  font-size: 14px;
-  border-radius: 6px;
-}
-.user-menu .user-menu-item:hover,
-.user-menu .user-menu-item:focus {
-  background: rgba(0,0,0,0.02);
-}
-.user-menu .icon { width: 18px; height: 18px; fill: currentColor; flex: 0 0 18px; }
-
-/* Modal confirmación */
-.confirm-modal {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(10,10,10,0.45);
-  z-index: 2000;
-}
-.confirm-card {
-  width: 320px;
-  background: #fff;
-  border-radius: 10px;
-  padding: 18px;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.18);
-  text-align: center;
-}
-.confirm-card h3 { margin: 0 0 8px; color: #222; }
-.confirm-card p { margin: 0 0 16px; color: #555; }
-.confirm-actions { display: flex; gap: 10px; justify-content: center; }
-.btn { padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
-.btn-danger { background: var(--accent); color: #fff; }
-.btn-secondary { background: #f1f1f1; color: #333; }
-
-/* Responsive: colapsa nav en pantallas pequeñas y ajusta tamaños de botones */
-@media (max-width: 880px){
-  /* ocultar la navegación de escritorio */
-  .main-nav{ display:none; }
-
-  /* mostrar el botón menú y colocarlo a la izquierda */
-  .menu-button{ 
-    display:inline-flex !important; 
-    order: 0; 
-    margin-right: 0.6rem; 
-    color: var(--accent);
-    background: transparent;
-    border: none;
+@media (max-width: 880px) {
+  .main-nav { display: none; }
+  
+  .menu-button { 
+    display: inline-flex; border: none; background: transparent;
+    color: var(--accent); padding: 0.5rem; cursor: pointer; order: 0;
   }
+  
+  .brand { order: 1; margin-right: auto; }
+  .header-actions { order: 2; }
+  
+  .btn-account span { display: none; } /* Oculta texto "Mi cuenta", deja solo el icono */
+  .btn-account { padding: 0.4rem; }
 
-  /* ajustar orden de elementos: menuButton (0), brand (1), nav (2 hidden), header-actions (3) */
-  .brand { order: 1; }
-  .main-nav { order: 2; }
-  .header-actions { order: 3; }
-
-  .header-inner{ padding:0.4rem 0.75rem; }
-  .brand-text{ font-size:0.95rem; }
-
-  /* Ajustes de tamaño en móvil: icon buttons y login más coherentes */
-  .header-actions .icon-btn { width:40px; height:40px; }
-  .btn-login { min-width:40px; height:40px; padding:0; display:inline-flex; align-items:center; justify-content:center; }
-  .btn-login .login-icon { width:20px; height:20px; }
-
-  /* Mobile menu controlado por atributo hidden (JS) */
-  .mobile-menu[hidden]{ display:none; }
-  .mobile-menu{ display:block; }
-}
-
-/* Asegurar que en desktop el mobile-menu no aparezca */
-@media (min-width: 881px){
-  .mobile-menu{ display:none !important; }
-  /* ocultar el botón menú en desktop */
-  .menu-button{ display:none !important; }
+  /* Menú Mobile abierto */
+  .mobile-menu {
+    position: absolute; top: var(--header-height); left: 0; width: 100%;
+    background: #fff; border-top: 1px solid #eee;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.06); padding: 1rem;
+  }
+  .mobile-menu[hidden] { display: none; }
+  .mobile-menu ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+  .mobile-menu a { display: block; padding: 0.8rem; text-decoration: none; color: #222; font-weight: 600; border-radius: 6px; }
+  .mobile-menu a:hover { background: #f9f9f9; color: var(--accent); }
 }

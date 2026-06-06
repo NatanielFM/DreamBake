@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -17,17 +18,32 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/register", "/css/**", "/js/**").permitAll()
+                        .requestMatchers("/", "/register", "/css/**", "/js/**", "/img/**").permitAll()
+                        .requestMatchers("/admin/**").hasAuthority("ADMIN")
                         .anyRequest().authenticated())
                 .formLogin(form -> form
                         .loginPage("/login")
-                        .usernameParameter("username") // Esto hace match con <input name="username"> en login.html
-                        .passwordParameter("password") // Esto hace match con <input name="password"> en login.html
-                        .defaultSuccessUrl("/", true) // A dónde va tras loguearse
+                        .usernameParameter("username")
+                        .passwordParameter("password")
+                        .successHandler(authenticationSuccessHandler()) // Redirección inteligente
                         .permitAll())
                 .logout(logout -> logout.permitAll());
 
         return http.build();
+    }
+
+    @Bean
+    public AuthenticationSuccessHandler authenticationSuccessHandler() {
+        return (request, response, authentication) -> {
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ADMIN"));
+
+            if (isAdmin) {
+                response.sendRedirect("/admin");
+            } else {
+                response.sendRedirect("/");
+            }
+        };
     }
 
     @Bean

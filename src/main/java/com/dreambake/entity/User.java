@@ -44,4 +44,5 @@ public class User {
         createdAt = LocalDateTime.now();
         enabled = true; // Por defecto el usuario está habilitado
     }
+
 }

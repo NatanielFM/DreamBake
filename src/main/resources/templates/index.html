@@ -1,205 +1,155 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Dulce Sueños Posadas - Inicio</title>
 
-  <!-- Fuentes y estilos -->
-  <!-- Poppins -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-  
-  <link rel="stylesheet" href="css/hero.css">
-  <link rel="stylesheet" href="css/main.css">
-  <link rel="stylesheet" href="css/header.css">
-  <link rel="stylesheet" href="css/promo.css">
-  <link rel="stylesheet" href="css/about.css">
-  <link rel="stylesheet" href="css/footer.css">
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+  <link rel="stylesheet" th:href="@{/css/header.css}">
+  <link rel="stylesheet" th:href="@{/css/hero.css}">
+  <link rel="stylesheet" th:href="@{/css/promo.css}">
+  <link rel="stylesheet" th:href="@{/css/about.css}">
+  <link rel="stylesheet" th:href="@{/css/footer.css}">
 </head>
 
 <body>
-  <!-- Header por fragment-->
   <div th:replace="~{fragments/header :: header}"></div>
 
-  <!-- Contenido principal -->
   <main>
-    <!-- Video de fondo -->
     <section class="hero-hero">
-      <video class="hero-bg" autoplay muted loop playsinline preload="metadata" aria-hidden="true" tabindex="-1" poster="img/hero-poster.jpg">
-        <source src="img/hero-loop.mp4" type="video/mp4">
-        <source src="img/hero-loop.webm" type="video/webm">
+      <video class="hero-bg" autoplay muted loop playsinline preload="metadata" aria-hidden="true" tabindex="-1" th:poster="@{/img/hero-poster.jpg}">
+        <source th:src="@{/img/hero-loop.mp4}" type="video/mp4">
+        <source th:src="@{/img/hero-loop.webm}" type="video/webm">
       </video>
 
-      <!-- Contenido superpuesto al video-->
       <div class="hero-overlay" role="region" aria-label="Introducción">
-        <img class="hero-logo" src="img/logo.svg" alt="Logo de Dulce Sueños Posadas" />
+        <img class="hero-logo" th:src="@{/img/logo.svg}" alt="Logo de Dulce Sueños Posadas" />
         <p class="hero-sub">Porque soñar es lindo</p>
         <div class="hero-ctas">
-          <a class="btn btn-primary" href="contact.html">Hace tu torta</a>
-          <a class="btn btn-secondary" href="products.html">Ver menú</a>
+          <a class="btn btn-primary" th:href="@{/contact}">Hace tu torta</a>
+          <a class="btn btn-secondary" th:href="@{/products}">Ver menú</a>
         </div>
       </div>
     </section>
 
-    <!-- Frase destacada -->
     <section class="phrase-banner">
       <div class="phrase-overlay">
         <p class="phrase-text">"Un pedacito de amor en forma de torta."</p>
       </div>
     </section>
 
-    <!-- Sección de productos destacados -->
     <section class="products-section">
       <h2 class="products-title">Nuestros productos</h2>
       <div class="products-grid">
         <div class="product-card">
-          <div class="product-image"><img src="img/dulces.jpg" alt="Dulces"></div>
+          <div class="product-image"><img th:src="@{/img/dulces.jpg}" alt="Dulces"></div>
           <div class="product-label">Dulces</div>
         </div>
         <div class="product-card">
-          <div class="product-image"><img src="img/tortas.jpg" alt="Tortas"></div>
+          <div class="product-image"><img th:src="@{/img/tortas.jpg}" alt="Tortas"></div>
           <div class="product-label">Tortas</div>
         </div>
         <div class="product-card">
-          <div class="product-image"><img src="img/souvenirs.jpg" alt="Souvenirs"></div>
+          <div class="product-image"><img th:src="@{/img/souvenirs.jpg}" alt="Souvenirs"></div>
           <div class="product-label">Souvenirs</div>
         </div>
       </div>
     </section>
 
-    <!-- Sobre Nosotros -->
     <section class="about-section" aria-labelledby="about-title">
       <h2 id="about-title" class="about-title">Sobre Nosotros</h2>
       <div class="container about-inner">
         
         <div class="about-left">
-          
           <h3 class="about-subtitle">Vero y Maca</h3>
-
           <p class="about-text">
             Somos Vero y Maca, emprendedoras apasionadas por la pastelería artesanal.
             Nuestro objetivo es crear recuerdos dulces que acompañen a los momentos lindos de la vida.
             Trabajamos con ingredientes locales y recetas cuidadas para ofrecer productos frescos, personalizados y con sabor casero.
             Buscamos generar experiencias memorables: desde tortas a medida hasta cajas de postres para eventos, siempre con atención cercana y entrega confiable.
           </p>
-
-          <!-- CTA opcional: botón que lleva a "Conocé más" o al About page -->
           <p class="about-actions">
-            <a href="/contacto" class="btn btn-primary about-btn">Escribinos! ❤️</a>
+            <a th:href="@{/contact}" class="btn btn-primary about-btn">Escribinos! ❤️</a>
           </p>
         </div>
 
         <div class="about-right" aria-hidden="false">
           <div class="about-image-wrap" role="img" aria-label="Vero y Maca, fundadoras de Dulce Sueños">
-            <img src="img/about/veroymaca.jpg" alt="Vero y Maca, fundadoras de Dulce Sueños" class="about-image">
+            <img th:src="@{/img/about/veroymaca.jpg}" alt="Vero y Maca, fundadoras de Dulce Sueños" class="about-image">
           </div>
         </div>
       </div>
     </section>
 
-
-    <!-- Carrusel tipo rueda -->
     <section class="wheel-gallery">
       <h2 class="gallery-title">Galería</h2>
-
       <div class="wheel-carousel" id="wheelCarousel" tabindex="0" aria-roledescription="carousel">
         <div class="wheel-track-wrapper">
           <div class="wheel-track">
-            <!-- 10 items originales -->
             <div class="carousel-item">
-              <div class="product-image"><img src="img/carousel/gallery1.jpg" alt="Galería 1" loading="lazy"></div>
+              <div class="product-image"><img th:src="@{/img/carousel/gallery1.jpg}" alt="Galería 1" loading="lazy"></div>
               <div class="product-label">Galería 1</div>
             </div>
             <div class="carousel-item">
-              <div class="product-image"><img src="img/carousel/gallery2.jpg" alt="Galería 2" loading="lazy"></div>
+              <div class="product-image"><img th:src="@{/img/carousel/gallery2.jpg}" alt="Galería 2" loading="lazy"></div>
               <div class="product-label">Galería 2</div>
             </div>
             <div class="carousel-item">
-              <div class="product-image"><img src="img/carousel/gallery3.jpg" alt="Galería 3" loading="lazy"></div>
+              <div class="product-image"><img th:src="@{/img/carousel/gallery3.jpg}" alt="Galería 3" loading="lazy"></div>
               <div class="product-label">Galería 3</div>
             </div>
             <div class="carousel-item">
-              <div class="product-image"><img src="img/carousel/gallery4.jpg" alt="Galería 4" loading="lazy"></div>
+              <div class="product-image"><img th:src="@{/img/carousel/gallery4.jpg}" alt="Galería 4" loading="lazy"></div>
               <div class="product-label">Galería 4</div>
             </div>
             <div class="carousel-item">
-              <div class="product-image"><img src="img/carousel/gallery5.jpg" alt="Galería 5" loading="lazy"></div>
+              <div class="product-image"><img th:src="@{/img/carousel/gallery5.jpg}" alt="Galería 5" loading="lazy"></div>
               <div class="product-label">Galería 5</div>
             </div>
-            <div class="carousel-item">
-              <div class="product-image"><img src="img/carousel/gallery6.jpg" alt="Galería 6" loading="lazy"></div>
-              <div class="product-label">Galería 6</div>
             </div>
-            <div class="carousel-item">
-              <div class="product-image"><img src="img/carousel/gallery7.jpg" alt="Galería 7" loading="lazy"></div>
-              <div class="product-label">Galería 7</div>
-            </div>
-            <div class="carousel-item">
-              <div class="product-image"><img src="img/carousel/gallery8.jpg" alt="Galería 8" loading="lazy"></div>
-              <div class="product-label">Galería 8</div>
-            </div>
-            <div class="carousel-item">
-              <div class="product-image"><img src="img/carousel/gallery9.jpg" alt="Galería 9" loading="lazy"></div>
-              <div class="product-label">Galería 9</div>
-            </div>
-            <div class="carousel-item">
-              <div class="product-image"><img src="img/carousel/gallery10.jpg" alt="Galería 10" loading="lazy"></div>
-              <div class="product-label">Galería 10</div>
-            </div>
-          </div>
         </div>
       </div>
     </section>
 
-
-    <!-- Promo section: Promociones y novedades -->
     <section class="promo-section" aria-labelledby="promo-title">
       <div class="container promo-inner">
         <div class="promo-left">
           <h2 id="promo-title" class="promo-title">Promociones y novedades</h2>
           <p class="promo-lead">Suscribite al newsletter y recibí ofertas exclusivas, novedades y descuentos.</p>
 
-          <!-- Formulario: solo el campo email (sin botón) -->
-          <form class="promo-subscribe" action="#" method="post" novalidate>
+          <form class="promo-subscribe" th:action="@{/subscribe}" method="post" id="promo-form" novalidate>
             <label for="promo-email" class="visually-hidden">Tu email</label>
             <input id="promo-email" name="email" type="email" placeholder="Ingresá tu email" required>
           </form>
 
           <p class="promo-note">Sin spam. Podés darte de baja cuando quieras.</p>
-
-          <!-- Botón separado: se mostrará debajo de la nota en desktop; en móvil se comporta como bloque ancho -->
           <div class="promo-cta-wrap">
             <button type="submit" form="promo-form" class="promo-btn promo-btn-desktop">Suscribirse</button>
           </div>
         </div>
 
-
         <div class="promo-right" aria-hidden="false">
           <figure class="promo-card">
-            <img src="img/promo/promo-1.jpg" alt="Cliente frecuente" class="promo-image">
+            <img th:src="@{/img/promo/promo-1.jpg}" alt="Cliente frecuente" class="promo-image">
             <figcaption class="promo-label">Cliente frecuente</figcaption>
           </figure>
-
           <figure class="promo-card">
-            <img src="img/promo/promo-2.jpg" alt="Promo cumpleañero" class="promo-image">
+            <img th:src="@{/img/promo/promo-2.jpg}" alt="Promo cumpleañero" class="promo-image">
             <figcaption class="promo-label">Promo cumpleañero</figcaption>
           </figure>
         </div>
       </div>
     </section>
-
-
-    
-
   </main>
 
   <footer>
     © <strong>Dulce Sueños Posadas</strong>
   </footer>
 
-  <!-- Scripts -->
-  <script src="js/header.js"></script>
-  <script src="js/wheel-carousel.js"></script>
+  <script th:src="@{/js/header.js}"></script>
+  <script th:src="@{/js/wheel-carousel.js}"></script>
 </body>
 </html>
