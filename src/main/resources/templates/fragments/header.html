@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security6">
+<body>
+    <header th:fragment="header" class="site-header" role="banner">
+        <div class="container header-inner">
+            <button id="menuButton" class="menu-button" aria-expanded="false" aria-label="Abrir menú">
+                <svg width="22" height="16" viewBox="0 0 22 16"><rect y="0" width="22" height="2" rx="1" fill="currentColor"></rect><rect y="7" width="22" height="2" rx="1" fill="currentColor"></rect><rect y="14" width="22" height="2" rx="1" fill="currentColor"></rect></svg>
+            </button>
+
+            <a class="brand" th:href="@{/}">
+                <span class="brand-text">Dulce Sueños</span>
+            </a>
+
+            <nav class="main-nav">
+                <ul class="nav-list">
+                    <li><a th:href="@{/}">Inicio</a></li>
+                    <li><a th:href="@{/products}">Productos</a></li>
+                </ul>
+            </nav>
+
+            <div class="header-actions">
+                <a sec:authorize="isAnonymous()" th:href="@{/login}" class="btn-social">Login</a>
+                
+                <div sec:authorize="isAuthenticated()" class="user-wrapper">
+                    <button id="accountButton" class="btn-account">
+                        Mi Cuenta
+                    </button>
+                    <div id="userMenu" class="user-menu" hidden>
+                        <div class="user-menu-title">
+                            Hola, <span sec:authentication="name">Usuario</span>
+                        </div>
+                        <hr>
+                        <a th:href="@{/profile}">Mi perfil</a>
+                        <form th:action="@{/logout}" method="post">
+                            <button type="submit">Cerrar sesión</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="mobileMenu" class="mobile-menu" hidden>
+            <nav>
+                <ul>
+                    <li><a th:href="@{/}">Inicio</a></li>
+                    <li><a th:href="@{/products}">Productos</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+</body>
+</html>

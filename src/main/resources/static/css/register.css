@@ -1,0 +1,127 @@
+/* register.css - estilos específicos para register.html
+   Complementa main.css, header.css y footer.css */
+
+/* Título: color rosado y en negrita, con menor separación respecto al formulario */
+.login-title {
+  font-size: 1.6rem;
+  font-weight: 700;           /* negrita solo para el título */
+  color: var(--accent);       /* rosado definido en main.css */
+  margin: 0 0 8px 0;          /* reducir separación con el formulario */
+}
+
+/* Hacer los títulos de los campos más oscuros y sin negrita */
+.form-label {
+  display: block;
+  font-size: 0.95rem;
+  color: #222; /* más oscuro que var(--muted) */
+  margin: 12px 0 6px 0;
+  font-weight: 400; /* normal, no negrita */
+}
+
+/* Card / contenedor principal (coincide con login-card) */
+.login-card {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  padding: 28px;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+/* Separación clara entre header y contenido */
+.page-main { margin-top: 28px; }
+
+/* Form layout: reducir margen superior para acercar el formulario al título */
+.form { display: block; margin-top: 6px; }
+
+/* Inputs */
+.form-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: #fff;
+  box-sizing: border-box;
+  color: var(--text);
+}
+
+/* Añadir espacio extra entre confirmPassword y el botón */
+.spacer {
+  height: 18px; /* separación solicitada */
+}
+
+/* Password wrapper (toggle button) */
+.password-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.btn-toggle-pass {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  cursor: pointer;
+  
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 6px;
+  border-radius: 6px;
+}
+.btn-toggle-pass:focus { outline: 3px solid rgba(224,72,127,0.18); outline-offset: 3px; }
+
+/* Botones */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 0;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+/* Crear cuenta: rosado (como en login) */
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(224,72,127,0.12);
+}
+
+/* Enlace "Iniciar sesión" en azul y subrayado; texto previo gris */
+.signup-note {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+.signup-note .link-primary {
+  color: #2563eb;              /* azul */
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  margin-left: 6px;
+}
+
+/* Mensajes de estado */
+.login-status {
+  min-height: 1.2rem;
+  margin-bottom: 8px;
+  color: var(--muted);
+}
+
+/* Responsive */
+@media (max-width: 520px) {
+  .login-card { padding: 20px; }
+  .login-title { font-size: 1.4rem; margin-bottom: 6px; }
+  .spacer { height: 14px; }
+}
+
+/* Accesibilidad: foco visible */
+a:focus, button:focus, input:focus, [tabindex]:focus{
+  outline: 3px solid rgba(224,72,127,0.18);
+  outline-offset: 3px;
+}

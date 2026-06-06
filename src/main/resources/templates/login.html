@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Iniciar sesión — Dulce Sueños</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+  <link rel="stylesheet" th:href="@{/css/header.css}">
+  <link rel="stylesheet" th:href="@{/css/footer.css}">
+  <link rel="stylesheet" th:href="@{/css/login.css}">
+</head>
+<body>
+  
+  <!-- Header por fragment-->
+  <div th:replace="~{fragments/header :: header}"></div>
+
+  <main class="page-main" style="padding-top: var(--header-height);"> 
+    <section class="login-hero">
+      <div class="login-inner single-column">
+        <div class="login-card">
+          <h1 class="login-title">Iniciar sesión</h1>
+
+          <div th:if="${param.error}" style="color: red; text-align: center; margin-bottom: 10px;">
+            Usuario o contraseña incorrectos.
+          </div>
+
+          <form th:action="@{/login}" method="post" class="form">
+            
+            <label for="email" class="form-label">Correo electrónico</label>
+            <input id="email" name="username" type="email" class="form-input" placeholder="tu@ejemplo.com" required>
+
+            <label for="password" class="form-label">Contraseña</label>
+            <div class="password-wrap">
+              <input id="password" name="password" type="password" class="form-input" placeholder="Contraseña" required>
+              <button type="button" class="btn-toggle-pass" id="toggle-password" aria-label="Mostrar contraseña">👁️</button>
+            </div>
+
+            <div class="form-row">
+              <label class="checkbox">
+                <input type="checkbox" name="remember-me">
+                <span>Recordarme</span>
+              </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary login-submit">
+              <span class="btn-text">Entrar</span>
+            </button>
+          </form>
+
+          <p class="signup-note">¿No tenés cuenta? <a th:href="@{/register}">Registrate</a></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    © <strong>Dulce Sueños Posadas</strong>
+  </footer>
+
+  <script th:src="@{/js/login.js}" defer></script>
+</body>
+</html>
