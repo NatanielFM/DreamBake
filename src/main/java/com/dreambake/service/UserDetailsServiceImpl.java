@@ -17,15 +17,15 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        // Busca por el email que llega del formulario (que se mapeó al campo
-        // 'username')
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
 
         return org.springframework.security.core.userdetails.User
-                .withUsername(user.getEmail()) // El identificador principal sigue siendo el email
+                .withUsername(user.getEmail())
                 .password(user.getPassword())
-                .roles("USER")
+                // Usamos .authorities() en lugar de .roles() para usar nombres exactos
+                // Esto tomará el valor que tengas en el campo 'roles' de tu BD (ej: "ADMIN")
+                .authorities(user.getRoles())
                 .build();
     }
 }

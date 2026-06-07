@@ -29,45 +29,160 @@
         <div class="sidebar-top">
           <button class="tab-btn active" data-tab="resumen">Resumen</button>
           <button class="tab-btn" data-tab="pedidos">Pedidos</button>
-          <button class="tab-btn" data-tab="productos">Productos</button> <button class="tab-btn" data-tab="inventario">Inventario</button>
+          <button class="tab-btn" data-tab="productos">Productos</button>
+          <button class="tab-btn" data-tab="inventario">Inventario</button>
           <button class="tab-btn" data-tab="clientes">Clientes</button>
+          <button class="tab-btn" data-tab="galeria">Galería</button>
         </div>
-        
         <div class="sidebar-bottom">
           <form id="logoutForm" th:action="@{/logout}" method="post" style="width: 100%; margin: 0;">
-            <button type="button" id="logout-button" class="logout-btn" aria-label="Cerrar sesión">Cerrar sesión</button>
+            <button type="button" id="btn-logout-sidebar" class="logout-btn">Cerrar sesión</button>
           </form>
         </div>
       </nav>
     </aside>
 
     <main class="dashboard">
-      <section id="resumen" class="tab-content active">
-        <h2>Resumen y Reportes</h2>
-        <p>Aquí se mostrarán métricas generales del negocio y generación de PDFs.</p>
-      </section>
-
-      <section id="pedidos" class="tab-content">
-        <h2>Gestión de Pedidos</h2>
-        <p>Listado y estado de pedidos (Web y WhatsApp).</p>
-      </section>
+      <section id="resumen" class="tab-content active"><h2>Resumen</h2></section>
+      <section id="pedidos" class="tab-content"><h2>Pedidos</h2></section>
+      <section id="inventario" class="tab-content"><h2>Inventario</h2></section>
+      <section id="clientes" class="tab-content"><h2>Clientes</h2></section>
 
       <section id="productos" class="tab-content">
-        <h2>Catálogo de Productos</h2>
-        <p>Crear, modificar y eliminar las tortas y dulces que se muestran en la web.</p>
+        <div class="product-module-container">
+          
+          <div class="product-viewer-section">
+            <div id="empty-viewer" class="empty-viewer-state">
+              <button id="btn-add-new-product" class="btn btn-pink btn-large">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Agregar producto
+              </button>
+            </div>
+
+            <div id="active-viewer" class="active-viewer-state" style="display: none;">
+              <form id="product-form" class="product-form">
+                <input type="hidden" id="prod-id">
+                
+                <div class="form-image-col">
+                  <div class="image-preview" id="prod-image-preview">
+                    <span>Sin Imagen</span>
+                  </div>
+                  <div class="image-actions">
+                    <button type="button" id="btn-upload-img" class="btn btn-grey btn-uniform-small">Subir</button>
+                    <button type="button" id="btn-gallery-img" class="btn btn-pink btn-uniform-small">Galería</button>
+                  </div>
+                </div>
+
+                <div class="form-details-col">
+                  <div class="form-row">
+                    <input type="text" id="prod-name" placeholder="Nombre del producto" class="form-input large-input" required>
+                    <label class="toggle-switch">
+                      <input type="checkbox" id="prod-enabled" checked>
+                      <span class="slider"></span>
+                      Habilitado
+                    </label>
+                  </div>
+
+                  <div class="price-cat-row">
+                    <div class="input-group">
+                      <span>$</span>
+                      <input type="number" id="prod-price" placeholder="Precio" class="form-input price-input" required>
+                    </div>
+                    <select id="prod-category" class="form-input cat-input">
+                      <option value="config" class="config-option">⚙️ Configuración...</option>
+                    </select>
+                  </div>
+
+                  <textarea id="prod-desc" placeholder="Descripción del producto..." class="form-input textarea-input"></textarea>
+
+                  <div class="form-actions">
+                    <button type="button" id="btn-delete" class="btn btn-red btn-uniform" disabled>Eliminar</button>
+                    <button type="button" id="btn-discard" class="btn btn-grey btn-uniform">Descartar</button>
+                    <button type="submit" id="btn-save" class="btn btn-pink btn-uniform">Guardar</button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <div class="product-toolbar">
+            <input type="text" id="search-product" class="form-input search-large" placeholder="🔍 Buscar por nombre...">
+            <div class="filter-chips" id="filter-container">
+              <button class="chip active" data-filter="all">Todos</button>
+              <button class="chip" data-filter="Tortas">Tortas</button>
+              <button class="chip" data-filter="Dulces">Dulces</button>
+              <button class="chip" data-filter="Souvenir">Souvenir</button>
+            </div>
+          </div>
+
+          <div class="product-catalog-section">
+            <div class="product-grid" id="product-grid">
+              </div>
+            
+            <div class="pagination-container" id="pagination-controls">
+              </div>
+          </div>
+
+        </div>
       </section>
 
-      <section id="inventario" class="tab-content">
-        <h2>Inventario</h2>
-        <p>Gestión de stock e insumos para la producción.</p>
+      <section id="galeria" class="tab-content">
+        <h2>Galería de Imágenes</h2>
+        <div class="gallery-grid" id="main-gallery-grid">
+          <div class="gallery-item upload-item" id="btn-gallery-upload-new">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Subir Imagen</span>
+          </div>
+        </div>
       </section>
 
-      <section id="clientes" class="tab-content">
-        <h2>Directorio de Clientes</h2>
-        <p>Información de clientes registrados y agendados manualmente.</p>
-      </section>
     </main>
   </div>
+
+  <div id="modal-confirm" class="modal-overlay" hidden>
+    <div class="modal-card confirm-card">
+      <div class="modal-header">
+        <h3 id="confirm-title">Confirmar</h3>
+      </div>
+      <div class="modal-body text-center">
+        <p id="confirm-message" style="margin-bottom: 20px; font-size: 1.1rem; color: #444;"></p>
+        <div class="form-actions justify-center">
+          <button type="button" id="btn-confirm-cancel" class="btn btn-grey btn-uniform">Cancelar</button>
+          <button type="button" id="btn-confirm-ok" class="btn btn-uniform">Aceptar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-category" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Configurar Filtros</h3>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="add-cat-row">
+          <input type="text" id="new-cat-name" class="form-input" placeholder="Nuevo tipo...">
+          <button id="btn-add-cat" class="btn btn-pink">Crear</button>
+        </div>
+        <ul id="category-list" class="category-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-gallery-picker" class="modal-overlay" hidden>
+    <div class="modal-card modal-large">
+      <div class="modal-header">
+        <h3>Seleccionar de la Galería</h3>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="gallery-grid" id="picker-gallery-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="hidden-file-input" accept="image/*" hidden>
 
   <script th:src="@{/js/admin.js}" defer></script>
 </body>
