@@ -1,5 +1,15 @@
-// admin.js - Actualizado con Paginación, Filtros cruzados y Modales Custom
+// admin.js - Paginación Dinámica, Menú Colapsable, y Lógica de UI
 document.addEventListener('DOMContentLoaded', () => {
+
+  // ================= 0. TOGGLE DEL MENÚ LATERAL =================
+  const sidebarToggleBtn = document.getElementById('sidebar-toggle');
+  const adminLayout = document.querySelector('.admin-layout');
+  
+  if (sidebarToggleBtn && adminLayout) {
+    sidebarToggleBtn.addEventListener('click', () => {
+      adminLayout.classList.toggle('sidebar-collapsed');
+    });
+  }
 
   // ================= 1. NAVEGACIÓN Y TABS =================
   const buttons = document.querySelectorAll('.tab-btn');
@@ -11,10 +21,15 @@ document.addEventListener('DOMContentLoaded', () => {
       contents.forEach(c => c.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById(btn.dataset.tab).classList.add('active');
+      
+      // Si entramos a productos, recalcular grid por si cambió el tamaño
+      if (btn.dataset.tab === 'productos') {
+        calculateItemsPerPage();
+      }
     });
   });
 
-  // ================= 2. MODAL DE CONFIRMACIÓN UNIVERSAL =================
+  // ================= 2. MODAL DE CONFIRMACIÓN =================
   function showConfirmModal(title, message, okText, okBtnClass, onConfirm) {
     document.getElementById('confirm-title').innerText = title;
     document.getElementById('confirm-message').innerText = message;
@@ -25,7 +40,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('modal-confirm').hidden = false;
 
-    // Remover listeners previos clonando los botones (truco limpio de JS)
     const newBtnOk = btnOk.cloneNode(true);
     btnOk.replaceWith(newBtnOk);
     const btnCancel = document.getElementById('btn-confirm-cancel');
@@ -42,24 +56,31 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Cerrar modales con la [X]
   document.querySelectorAll('.close-modal').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.target.closest('.modal-overlay').hidden = true;
     });
   });
 
-  // Logout Custom
-  const logoutSidebar = document.getElementById('btn-logout-sidebar');
-  if (logoutSidebar) {
-    logoutSidebar.addEventListener('click', () => {
+  // ================= 3. LOGOUT DESDE EL HEADER =================
+  const logoutHeaderBtn = document.getElementById('btn-logout-header');
+  if (logoutHeaderBtn) {
+    logoutHeaderBtn.addEventListener('click', () => {
       showConfirmModal('Cerrar sesión', '¿Estás seguro que deseas salir del panel de administración?', 'Salir', 'btn-red', () => {
         document.getElementById('logoutForm').submit();
       });
     });
   }
 
-  // ================= 3. LÓGICA DEL VISOR DE PRODUCTOS =================
+  // Campanita de Notificaciones
+  const bellBtn = document.getElementById('btn-notifications');
+  if(bellBtn) {
+    bellBtn.addEventListener('click', () => {
+      alert("No hay notificaciones nuevas por ahora.");
+    });
+  }
+
+  // ================= 4. VISOR DE PRODUCTOS =================
   const emptyViewer = document.getElementById('empty-viewer');
   const activeViewer = document.getElementById('active-viewer');
   const btnAddProduct = document.getElementById('btn-add-new-product');
@@ -69,21 +90,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const prodSelectCategory = document.getElementById('prod-category');
   const prodIdInput = document.getElementById('prod-id');
 
-  // Abrir creador (Formulario Vacío)
   btnAddProduct.addEventListener('click', () => {
     productForm.reset();
     prodIdInput.value = '';
     document.getElementById('prod-image-preview').innerHTML = '<span>Sin Imagen</span>';
-    btnDelete.disabled = true; // No se puede eliminar algo nuevo
-    
-    // Cargar opciones de categoría
+    btnDelete.disabled = true; 
     populateCategories();
-
     emptyViewer.style.display = 'none';
     activeViewer.style.display = 'block';
   });
 
-  // Botón Descartar
   btnDiscard.addEventListener('click', () => {
     showConfirmModal('Descartar cambios', 'Se perderán los datos no guardados. ¿Deseas continuar?', 'Descartar', 'btn-grey', () => {
       activeViewer.style.display = 'none';
@@ -91,84 +107,115 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Botón Eliminar
   btnDelete.addEventListener('click', () => {
     showConfirmModal('Eliminar producto', 'Esta acción no se puede deshacer. ¿Eliminar este producto del sistema?', 'Eliminar', 'btn-red', () => {
-      alert("Lógica de borrado lista para conectar con Backend");
+      alert("Lógica de borrado lista para Backend");
       activeViewer.style.display = 'none';
       emptyViewer.style.display = 'flex';
     });
   });
 
-  // Manejo de Pop-up de Configuración de Tipos
   let lastSelectedCategory = "";
   prodSelectCategory.addEventListener('change', (e) => {
     if (e.target.value === 'config') {
       document.getElementById('modal-category').hidden = false;
-      e.target.value = lastSelectedCategory; // Revertir visualmente
+      e.target.value = lastSelectedCategory; 
     } else {
       lastSelectedCategory = e.target.value;
     }
   });
 
   function populateCategories() {
-    const cats = ['Sin tipo', 'Tortas', 'Dulces', 'Souvenir']; // Simulado
+    const cats = ['Sin tipo', 'Tortas', 'Dulces', 'Souvenir']; 
     prodSelectCategory.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
     prodSelectCategory.innerHTML += `<option value="config" class="config-option">⚙️ Configuración...</option>`;
     lastSelectedCategory = cats[0];
   }
 
-  // ================= 4. CATÁLOGO, BÚSQUEDA Y PAGINACIÓN =================
-  
-  // Array de prueba extendido para probar paginación
-  const dummyProducts = Array.from({length: 25}, (_, i) => ({
+  // ================= 5. CATÁLOGO Y PAGINACIÓN DINÁMICA =================
+  const dummyProducts = Array.from({length: 40}, (_, i) => ({
     id: i + 1, 
     name: `Producto de prueba ${i + 1}`, 
     price: 1500 * (i + 1), 
     cat: i % 2 === 0 ? 'Tortas' : (i % 3 === 0 ? 'Souvenir' : 'Dulces'), 
     img: `https://picsum.photos/seed/${i}/300/300`, 
-    enabled: i % 5 !== 0 // Algunos desactivados
+    enabled: i % 5 !== 0
   }));
 
   let currentCategoryFilter = 'all';
   let currentSearchQuery = '';
   let currentPage = 1;
-  const itemsPerPage = 10; // Número de productos por página
+  let itemsPerPage = 12; // Valor inicial que se recalculará dinámicamente
 
-  // Filtros interactivos
+  // --- LÓGICA DE RECALCULO DE COLUMNAS (MAGIA RESPONSIVE) ---
+  function calculateItemsPerPage() {
+    const grid = document.getElementById('product-grid');
+    if (!grid || grid.offsetParent === null) return; // Si no existe o está oculto, salir
+
+    const gridWidth = grid.clientWidth;
+    const minColWidth = 220; // Exactamente el minmax() de nuestro CSS
+    const gap = 24; // 1.5rem gap en CSS = 24px
+    
+    // Matemática: Columnas = (AnchoTotal + Gap) / (AnchoMínimo + Gap)
+    let cols = Math.floor((gridWidth + gap) / (minColWidth + gap));
+    if (cols < 1) cols = 1;
+
+    // Queremos 3 filas perfectas (ej: 4 cols = 12 items, 5 cols = 15 items)
+    let newItemsPerPage = cols * 3;
+    if (newItemsPerPage < 6) newItemsPerPage = 6; // Mínimo absoluto
+
+    // Si la cantidad de items por página cambia, recalculamos el catálogo
+    if (newItemsPerPage !== itemsPerPage) {
+      itemsPerPage = newItemsPerPage;
+      currentPage = 1; // Volvemos a página 1 para evitar bugs de index
+      updateCatalog();
+    }
+  }
+
+  // Observar cambios en el tamaño del dashboard (Se dispara al abrir/cerrar sidebar o resize ventana)
+  const dashboardEl = document.querySelector('.dashboard');
+  if (dashboardEl) {
+    const resizeObserver = new ResizeObserver(() => {
+      window.requestAnimationFrame(() => {
+        if (document.getElementById('productos').classList.contains('active')) {
+          calculateItemsPerPage();
+        }
+      });
+    });
+    resizeObserver.observe(dashboardEl);
+  }
+
+  // --- FIN LÓGICA RECALCULO ---
+
   document.querySelectorAll('.chip').forEach(chip => {
     chip.addEventListener('click', (e) => {
       document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
       e.target.classList.add('active');
       currentCategoryFilter = e.target.dataset.filter;
-      currentPage = 1; // Volver a pag 1 al filtrar
+      currentPage = 1; 
       updateCatalog();
     });
   });
 
-  // Buscador por nombre
   document.getElementById('search-product').addEventListener('input', (e) => {
     currentSearchQuery = e.target.value.toLowerCase();
-    currentPage = 1; // Volver a pag 1 al buscar
+    currentPage = 1; 
     updateCatalog();
   });
 
   function updateCatalog() {
-    // 1. Aplicar Filtros
     let filtered = dummyProducts.filter(p => {
       const matchCat = currentCategoryFilter === 'all' || p.cat === currentCategoryFilter;
       const matchSearch = p.name.toLowerCase().includes(currentSearchQuery);
       return matchCat && matchSearch;
     });
 
-    // 2. Paginación
     const totalPages = Math.ceil(filtered.length / itemsPerPage);
     if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
 
     const startIdx = (currentPage - 1) * itemsPerPage;
     const paginatedItems = filtered.slice(startIdx, startIdx + itemsPerPage);
 
-    // 3. Renderizar Grilla
     const grid = document.getElementById('product-grid');
     grid.innerHTML = '';
     
@@ -190,7 +237,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // 4. Renderizar Controles de Paginación
     renderPaginationControls(totalPages);
   }
 
@@ -198,9 +244,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('pagination-controls');
     container.innerHTML = '';
 
-    if (totalPages <= 1) return; // No mostrar si hay 1 sola página
+    if (totalPages <= 1) return;
 
-    // Botón Anterior
     const btnPrev = document.createElement('button');
     btnPrev.className = 'page-btn';
     btnPrev.innerText = '<';
@@ -208,7 +253,6 @@ document.addEventListener('DOMContentLoaded', () => {
     btnPrev.addEventListener('click', () => { currentPage--; updateCatalog(); });
     container.appendChild(btnPrev);
 
-    // Números
     for (let i = 1; i <= totalPages; i++) {
       const btnPage = document.createElement('button');
       btnPage.className = `page-btn ${i === currentPage ? 'active' : ''}`;
@@ -217,7 +261,6 @@ document.addEventListener('DOMContentLoaded', () => {
       container.appendChild(btnPage);
     }
 
-    // Botón Siguiente
     const btnNext = document.createElement('button');
     btnNext.className = 'page-btn';
     btnNext.innerText = '>';
@@ -232,23 +275,22 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('prod-price').value = p.price;
     document.getElementById('prod-enabled').checked = p.enabled;
     document.getElementById('prod-image-preview').innerHTML = `<img src="${p.img}">`;
-    btnDelete.disabled = false; // Habilitar borrado
+    btnDelete.disabled = false; 
 
-    populateCategories(); // Llenar opciones
+    populateCategories();
     prodSelectCategory.value = p.cat;
 
     emptyViewer.style.display = 'none';
     activeViewer.style.display = 'block';
     
-    // Auto-scroll suave hacia arriba para ver el form en mobile
     document.querySelector('.dashboard').scrollTo({ top: 0, behavior: 'smooth' });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // Inicializar todo
-  updateCatalog();
+  // Primera carga forzada para medir layout
+  setTimeout(calculateItemsPerPage, 100);
 
-  // ================= 5. INPUT FILE Y GALERÍA =================
+  // ================= 6. INPUT FILE Y GALERÍA =================
   const fileInput = document.getElementById('hidden-file-input');
   
   document.getElementById('btn-upload-img').addEventListener('click', () => fileInput.click());
