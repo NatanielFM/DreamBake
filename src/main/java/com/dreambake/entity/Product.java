@@ -3,7 +3,6 @@ package com.dreambake.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "products")
@@ -26,13 +25,12 @@ public class Product {
     @Column(nullable = false)
     private boolean enabled = true;
 
-    // Relación Muchos a Uno: Muchos productos pueden tener la misma categoría
     @ManyToOne
     @JoinColumn(name = "category_id")
     private Category category;
 
-    // Relación Muchos a Uno: Varios productos podrían usar la misma foto
-    @ManyToOne
-    @JoinColumn(name = "image_id")
-    private GalleryImage image;
+    // Temporalmente guardamos la URL de la imagen como String directo para
+    // simplificar esta fase
+    @Column(name = "image_url")
+    private String imageUrl;
 }

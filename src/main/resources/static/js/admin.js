@@ -1,15 +1,39 @@
-// admin.js - Paginación Dinámica, Menú Colapsable, y Lógica de UI
+// admin.js - Conectado 100% con Base de Datos MySQL (REST API)
 document.addEventListener('DOMContentLoaded', () => {
 
   // ================= 0. TOGGLE DEL MENÚ LATERAL =================
   const sidebarToggleBtn = document.getElementById('sidebar-toggle');
   const adminLayout = document.querySelector('.admin-layout');
+  const body = document.body;
   
-  if (sidebarToggleBtn && adminLayout) {
-    sidebarToggleBtn.addEventListener('click', () => {
-      adminLayout.classList.toggle('sidebar-collapsed');
+  if (sidebarToggleBtn) {
+    sidebarToggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      body.classList.toggle('sidebar-toggled');
+      if (document.getElementById('productos').classList.contains('active')) {
+        setTimeout(calculateItemsPerPage, 300);
+      }
     });
   }
+
+  const backdrop = document.getElementById('sidebar-backdrop');
+  if (backdrop) {
+    backdrop.addEventListener('click', () => {
+      body.classList.remove('sidebar-toggled');
+    });
+  }
+
+  let isMobile = window.innerWidth <= 880;
+  window.addEventListener('resize', () => {
+    const currentlyMobile = window.innerWidth <= 880;
+    if (isMobile !== currentlyMobile) {
+      body.classList.remove('sidebar-toggled');
+      isMobile = currentlyMobile;
+    }
+    if (document.getElementById('productos').classList.contains('active')) {
+      calculateItemsPerPage();
+    }
+  });
 
   // ================= 1. NAVEGACIÓN Y TABS =================
   const buttons = document.querySelectorAll('.tab-btn');
@@ -19,12 +43,15 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', () => {
       buttons.forEach(b => b.classList.remove('active'));
       contents.forEach(c => c.classList.remove('active'));
+      
       btn.classList.add('active');
       document.getElementById(btn.dataset.tab).classList.add('active');
       
-      // Si entramos a productos, recalcular grid por si cambió el tamaño
+      if (window.innerWidth <= 880) body.classList.remove('sidebar-toggled');
+      
       if (btn.dataset.tab === 'productos') {
-        calculateItemsPerPage();
+        renderCatalog(); 
+        setTimeout(calculateItemsPerPage, 50); 
       }
     });
   });
@@ -62,54 +89,143 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ================= 3. LOGOUT DESDE EL HEADER =================
+  // ================= 3. HEADER =================
   const logoutHeaderBtn = document.getElementById('btn-logout-header');
   if (logoutHeaderBtn) {
     logoutHeaderBtn.addEventListener('click', () => {
-      showConfirmModal('Cerrar sesión', '¿Estás seguro que deseas salir del panel de administración?', 'Salir', 'btn-red', () => {
+      showConfirmModal('Cerrar sesión', '¿Deseas salir del panel?', 'Salir', 'btn-red', () => {
         document.getElementById('logoutForm').submit();
       });
     });
   }
 
-  // Campanita de Notificaciones
-  const bellBtn = document.getElementById('btn-notifications');
-  if(bellBtn) {
-    bellBtn.addEventListener('click', () => {
-      alert("No hay notificaciones nuevas por ahora.");
-    });
-  }
+  // ================= 4. CONEXIÓN API REST: PRODUCTOS =================
+  let dbProducts = [];
+  let currentCategoryFilter = 'all';
+  let currentSearchQuery = '';
+  let currentPage = 1;
+  let itemsPerPage = 12; 
 
-  // ================= 4. VISOR DE PRODUCTOS =================
   const emptyViewer = document.getElementById('empty-viewer');
   const activeViewer = document.getElementById('active-viewer');
-  const btnAddProduct = document.getElementById('btn-add-new-product');
-  const btnDiscard = document.getElementById('btn-discard');
-  const btnDelete = document.getElementById('btn-delete');
   const productForm = document.getElementById('product-form');
   const prodSelectCategory = document.getElementById('prod-category');
-  const prodIdInput = document.getElementById('prod-id');
+  
+  // FETCH: Cargar Productos
+  async function loadProductsFromServer() {
+    try {
+      const res = await fetch('/api/products');
+      if (res.ok) {
+        dbProducts = await res.json();
+        renderCatalog(); // Pintar grilla actualizada
+      }
+    } catch (e) {
+      console.error("Error cargando productos", e);
+    }
+  }
 
-  btnAddProduct.addEventListener('click', () => {
+  // FETCH: Cargar Categorías
+  async function loadCategoriesFromServer() {
+    try {
+      const res = await fetch('/api/categories');
+      if (res.ok) {
+        const categories = await res.json();
+        
+        // Actualizar chips de filtros (Buscador)
+        const filterContainer = document.getElementById('filter-container');
+        filterContainer.innerHTML = `<button class="chip active" data-filter="all">Todos</button>`;
+        
+        // Actualizar Select (Formulario)
+        prodSelectCategory.innerHTML = '';
+
+        categories.forEach(c => {
+          // Chips
+          const chip = document.createElement('button');
+          chip.className = 'chip';
+          chip.dataset.filter = c.name;
+          chip.innerText = c.name;
+          filterContainer.appendChild(chip);
+
+          // Formulario
+          prodSelectCategory.innerHTML += `<option value="${c.name}">${c.name}</option>`;
+        });
+
+        prodSelectCategory.innerHTML += `<option value="config" class="config-option">⚙️ Configuración...</option>`;
+        
+        // Re-asignar eventos a chips nuevos
+        assignChipEvents();
+      }
+    } catch (e) {
+      console.error("Error cargando categorías", e);
+    }
+  }
+
+  // Creador de productos
+  document.getElementById('btn-add-new-product').addEventListener('click', () => {
     productForm.reset();
-    prodIdInput.value = '';
+    document.getElementById('prod-id').value = '';
     document.getElementById('prod-image-preview').innerHTML = '<span>Sin Imagen</span>';
-    btnDelete.disabled = true; 
-    populateCategories();
+    document.getElementById('btn-delete').disabled = true; 
     emptyViewer.style.display = 'none';
     activeViewer.style.display = 'block';
   });
 
-  btnDiscard.addEventListener('click', () => {
-    showConfirmModal('Descartar cambios', 'Se perderán los datos no guardados. ¿Deseas continuar?', 'Descartar', 'btn-grey', () => {
-      activeViewer.style.display = 'none';
-      emptyViewer.style.display = 'flex';
+  // Guardar (POST o PUT)
+  productForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('prod-id').value;
+    
+    // Objeto JS armado igual que ProductRequest en Java
+    const productData = {
+      name: document.getElementById('prod-name').value,
+      price: parseFloat(document.getElementById('prod-price').value),
+      enabled: document.getElementById('prod-enabled').checked,
+      description: document.getElementById('prod-desc').value,
+      categoryName: document.getElementById('prod-category').value,
+      imageUrl: document.querySelector('#prod-image-preview img')?.src || ''
+    };
+
+    const method = id ? 'PUT' : 'POST';
+    const url = id ? `/api/products/${id}` : '/api/products';
+
+    try {
+      const res = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productData)
+      });
+      if (res.ok) {
+        activeViewer.style.display = 'none';
+        emptyViewer.style.display = 'flex';
+        loadProductsFromServer(); // Recarga limpia desde MySQL
+      }
+    } catch (e) {
+      alert("Error al guardar en base de datos.");
+    }
+  });
+
+  // Eliminar (DELETE)
+  document.getElementById('btn-delete').addEventListener('click', () => {
+    showConfirmModal('Eliminar producto', 'Esta acción no se puede deshacer. ¿Eliminar este producto del sistema?', 'Eliminar', 'btn-red', async () => {
+      const id = document.getElementById('prod-id').value;
+      if (!id) return;
+
+      try {
+        const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          activeViewer.style.display = 'none';
+          emptyViewer.style.display = 'flex';
+          loadProductsFromServer();
+        }
+      } catch (e) {
+        alert("Error eliminando producto.");
+      }
     });
   });
 
-  btnDelete.addEventListener('click', () => {
-    showConfirmModal('Eliminar producto', 'Esta acción no se puede deshacer. ¿Eliminar este producto del sistema?', 'Eliminar', 'btn-red', () => {
-      alert("Lógica de borrado lista para Backend");
+  // Descartar
+  document.getElementById('btn-discard').addEventListener('click', () => {
+    showConfirmModal('Descartar cambios', 'Se perderán los datos no guardados. ¿Deseas continuar?', 'Descartar', 'btn-grey', () => {
       activeViewer.style.display = 'none';
       emptyViewer.style.display = 'flex';
     });
@@ -125,87 +241,78 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  function populateCategories() {
-    const cats = ['Sin tipo', 'Tortas', 'Dulces', 'Souvenir']; 
-    prodSelectCategory.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
-    prodSelectCategory.innerHTML += `<option value="config" class="config-option">⚙️ Configuración...</option>`;
-    lastSelectedCategory = cats[0];
-  }
+  // Crear categoría (POST)
+  document.getElementById('btn-add-cat').addEventListener('click', async () => {
+    const input = document.getElementById('new-cat-name');
+    if (!input.value.trim()) return;
 
-  // ================= 5. CATÁLOGO Y PAGINACIÓN DINÁMICA =================
-  const dummyProducts = Array.from({length: 40}, (_, i) => ({
-    id: i + 1, 
-    name: `Producto de prueba ${i + 1}`, 
-    price: 1500 * (i + 1), 
-    cat: i % 2 === 0 ? 'Tortas' : (i % 3 === 0 ? 'Souvenir' : 'Dulces'), 
-    img: `https://picsum.photos/seed/${i}/300/300`, 
-    enabled: i % 5 !== 0
-  }));
+    try {
+      const res = await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: input.value.trim() })
+      });
+      if (res.ok) {
+        input.value = '';
+        document.getElementById('modal-category').hidden = true;
+        loadCategoriesFromServer(); // Refresca filtros
+      }
+    } catch(e) {
+      alert("Error guardando categoría");
+    }
+  });
 
-  let currentCategoryFilter = 'all';
-  let currentSearchQuery = '';
-  let currentPage = 1;
-  let itemsPerPage = 12; // Valor inicial que se recalculará dinámicamente
-
-  // --- LÓGICA DE RECALCULO DE COLUMNAS (MAGIA RESPONSIVE) ---
+  // ================= 5. CATÁLOGO, BUSCADOR Y PAGINACIÓN =================
+  
   function calculateItemsPerPage() {
     const grid = document.getElementById('product-grid');
-    if (!grid || grid.offsetParent === null) return; // Si no existe o está oculto, salir
+    if (!grid) return;
 
-    const gridWidth = grid.clientWidth;
-    const minColWidth = 220; // Exactamente el minmax() de nuestro CSS
-    const gap = 24; // 1.5rem gap en CSS = 24px
+    let gridWidth = grid.clientWidth;
+    if (gridWidth <= 0) {
+      const sidebarW = (window.innerWidth > 880 && !body.classList.contains('sidebar-toggled')) ? 220 : 0;
+      gridWidth = window.innerWidth - sidebarW - 48; 
+    }
+    if (gridWidth <= 0) gridWidth = 400;
+
+    const minColWidth = 220; 
+    const gap = 24; 
     
-    // Matemática: Columnas = (AnchoTotal + Gap) / (AnchoMínimo + Gap)
     let cols = Math.floor((gridWidth + gap) / (minColWidth + gap));
     if (cols < 1) cols = 1;
 
-    // Queremos 3 filas perfectas (ej: 4 cols = 12 items, 5 cols = 15 items)
     let newItemsPerPage = cols * 3;
-    if (newItemsPerPage < 6) newItemsPerPage = 6; // Mínimo absoluto
+    if (newItemsPerPage < 6) newItemsPerPage = 6; 
 
-    // Si la cantidad de items por página cambia, recalculamos el catálogo
     if (newItemsPerPage !== itemsPerPage) {
       itemsPerPage = newItemsPerPage;
-      currentPage = 1; // Volvemos a página 1 para evitar bugs de index
-      updateCatalog();
+      currentPage = 1; 
+      renderCatalog();
     }
   }
 
-  // Observar cambios en el tamaño del dashboard (Se dispara al abrir/cerrar sidebar o resize ventana)
-  const dashboardEl = document.querySelector('.dashboard');
-  if (dashboardEl) {
-    const resizeObserver = new ResizeObserver(() => {
-      window.requestAnimationFrame(() => {
-        if (document.getElementById('productos').classList.contains('active')) {
-          calculateItemsPerPage();
-        }
+  function assignChipEvents() {
+    document.querySelectorAll('.chip').forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+        e.target.classList.add('active');
+        currentCategoryFilter = e.target.dataset.filter;
+        currentPage = 1; 
+        renderCatalog();
       });
     });
-    resizeObserver.observe(dashboardEl);
   }
-
-  // --- FIN LÓGICA RECALCULO ---
-
-  document.querySelectorAll('.chip').forEach(chip => {
-    chip.addEventListener('click', (e) => {
-      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-      e.target.classList.add('active');
-      currentCategoryFilter = e.target.dataset.filter;
-      currentPage = 1; 
-      updateCatalog();
-    });
-  });
 
   document.getElementById('search-product').addEventListener('input', (e) => {
     currentSearchQuery = e.target.value.toLowerCase();
     currentPage = 1; 
-    updateCatalog();
+    renderCatalog();
   });
 
-  function updateCatalog() {
-    let filtered = dummyProducts.filter(p => {
-      const matchCat = currentCategoryFilter === 'all' || p.cat === currentCategoryFilter;
+  function renderCatalog() {
+    // Filtro contra los datos que vinieron de la DB
+    let filtered = dbProducts.filter(p => {
+      const matchCat = currentCategoryFilter === 'all' || (p.category && p.category.name === currentCategoryFilter);
       const matchSearch = p.name.toLowerCase().includes(currentSearchQuery);
       return matchCat && matchSearch;
     });
@@ -220,19 +327,23 @@ document.addEventListener('DOMContentLoaded', () => {
     grid.innerHTML = '';
     
     if (paginatedItems.length === 0) {
-      grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; padding: 2rem; color: #666;">No se encontraron productos.</p>';
+      grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; padding: 2rem; color: #666;">No hay productos creados. ¡Agrega uno arriba!</p>';
     } else {
       paginatedItems.forEach(p => {
         const div = document.createElement('div');
         div.className = `product-card-admin ${!p.enabled ? 'disabled' : ''}`;
+        
+        // Manejamos si no tiene imagen asignada
+        const imgSrc = p.imageUrl && p.imageUrl.trim() !== '' ? p.imageUrl : 'https://via.placeholder.com/300?text=Sin+Foto';
+
         div.innerHTML = `
-          <img src="${p.img}" alt="${p.name}">
+          <img src="${imgSrc}" alt="${p.name}">
           <div class="card-overlay">
             <div class="card-name">${p.name}</div>
             <div class="card-price">$${p.price}</div>
           </div>
         `;
-        div.addEventListener('click', () => loadProductIntoViewer(p));
+        div.addEventListener('click', () => loadProductIntoViewer(p, imgSrc));
         grid.appendChild(div);
       });
     }
@@ -243,21 +354,20 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderPaginationControls(totalPages) {
     const container = document.getElementById('pagination-controls');
     container.innerHTML = '';
-
     if (totalPages <= 1) return;
 
     const btnPrev = document.createElement('button');
     btnPrev.className = 'page-btn';
     btnPrev.innerText = '<';
     btnPrev.disabled = currentPage === 1;
-    btnPrev.addEventListener('click', () => { currentPage--; updateCatalog(); });
+    btnPrev.addEventListener('click', () => { currentPage--; renderCatalog(); });
     container.appendChild(btnPrev);
 
     for (let i = 1; i <= totalPages; i++) {
       const btnPage = document.createElement('button');
       btnPage.className = `page-btn ${i === currentPage ? 'active' : ''}`;
       btnPage.innerText = i;
-      btnPage.addEventListener('click', () => { currentPage = i; updateCatalog(); });
+      btnPage.addEventListener('click', () => { currentPage = i; renderCatalog(); });
       container.appendChild(btnPage);
     }
 
@@ -265,20 +375,24 @@ document.addEventListener('DOMContentLoaded', () => {
     btnNext.className = 'page-btn';
     btnNext.innerText = '>';
     btnNext.disabled = currentPage === totalPages;
-    btnNext.addEventListener('click', () => { currentPage++; updateCatalog(); });
+    btnNext.addEventListener('click', () => { currentPage++; renderCatalog(); });
     container.appendChild(btnNext);
   }
 
-  function loadProductIntoViewer(p) {
-    prodIdInput.value = p.id;
+  function loadProductIntoViewer(p, imgSrc) {
+    document.getElementById('prod-id').value = p.id;
     document.getElementById('prod-name').value = p.name;
     document.getElementById('prod-price').value = p.price;
+    document.getElementById('prod-desc').value = p.description || '';
     document.getElementById('prod-enabled').checked = p.enabled;
-    document.getElementById('prod-image-preview').innerHTML = `<img src="${p.img}">`;
-    btnDelete.disabled = false; 
+    document.getElementById('prod-image-preview').innerHTML = `<img src="${imgSrc}">`;
+    document.getElementById('btn-delete').disabled = false; 
 
-    populateCategories();
-    prodSelectCategory.value = p.cat;
+    // Seleccionar categoría correspondiente
+    if (p.category) {
+        document.getElementById('prod-category').value = p.category.name;
+        lastSelectedCategory = p.category.name;
+    }
 
     emptyViewer.style.display = 'none';
     activeViewer.style.display = 'block';
@@ -287,17 +401,15 @@ document.addEventListener('DOMContentLoaded', () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // Primera carga forzada para medir layout
+  // ================= 6. INICIALIZACIÓN Y CARGA DESDE BACKEND =================
+  loadCategoriesFromServer();
+  loadProductsFromServer();
   setTimeout(calculateItemsPerPage, 100);
 
-  // ================= 6. INPUT FILE Y GALERÍA =================
+  // ================= 7. INPUT FILE (Subir imágenes temporal) =================
   const fileInput = document.getElementById('hidden-file-input');
   
   document.getElementById('btn-upload-img').addEventListener('click', () => fileInput.click());
-  document.getElementById('btn-gallery-upload-new').addEventListener('click', () => fileInput.click());
-  document.getElementById('btn-gallery-img').addEventListener('click', () => {
-    document.getElementById('modal-gallery-picker').hidden = false;
-  });
 
   fileInput.addEventListener('change', (e) => {
     if (e.target.files.length > 0) {

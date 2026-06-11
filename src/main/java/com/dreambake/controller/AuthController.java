@@ -13,6 +13,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 
+// Este controlador gestiona el ciclo de vida de la autenticación. Es el encargado de recibir los datos
+// del usuario cuando se registra, validar que la información sea correcta y, si todo está bien, guardarla
+// en el sistema, además de mostrar las páginas login y registro
+
 @Controller
 public class AuthController {
 
@@ -22,7 +26,7 @@ public class AuthController {
     // Muestra el formulario de registro
     @GetMapping("/register")
     public String showRegistrationForm(Model model) {
-        model.addAttribute("user", new User()); // Objeto vacío para el formulario
+        model.addAttribute("user", new User()); // Paso un objeto vacío para el formulario
         return "register"; // Busca register.html en /templates
     }
 

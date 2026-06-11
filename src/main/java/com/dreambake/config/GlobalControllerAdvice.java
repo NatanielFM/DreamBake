@@ -7,13 +7,17 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
-@ControllerAdvice
+// Asistente global que inyecta atuomáticamente la información del usuario logueado en todas
+// las páginas html, evitando repetir lógica de búsqueda en cada controlador
+// Se puede acceder al usuario actual mediante currentUser.name/currentUser.email
+
+@ControllerAdvice // Observador global, el sistema siempre sabe quién es el usuario logueado.
 public class GlobalControllerAdvice {
 
-    @Autowired
+    @Autowired // Necesito usar "UserRepository", encárgate de crearlo y entrégamelo
     private UserRepository userRepository;
 
-    @ModelAttribute("currentUser")
+    @ModelAttribute("currentUser") // Toma este dato y hazlo accesible para todo el frontend
     public User getCurrentUser(Authentication authentication) {
         if (authentication != null && authentication.isAuthenticated()) {
             // Buscamos al usuario por su email (username en Spring Security)

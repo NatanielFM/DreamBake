@@ -19,13 +19,14 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/register", "/css/**", "/js/**", "/img/**").permitAll()
-                        .requestMatchers("/admin/**").hasAuthority("ADMIN")
+                        // Permitimos a ADMIN y PASTELERO manejar productos y el panel
+                        .requestMatchers("/admin/**", "/api/**").hasAnyAuthority("ADMIN", "PASTELERO")
                         .anyRequest().authenticated())
                 .formLogin(form -> form
                         .loginPage("/login")
                         .usernameParameter("username")
                         .passwordParameter("password")
-                        .successHandler(authenticationSuccessHandler()) // Redirección inteligente
+                        .successHandler(authenticationSuccessHandler())
                         .permitAll())
                 .logout(logout -> logout.permitAll());
 
@@ -35,10 +36,10 @@ public class SecurityConfig {
     @Bean
     public AuthenticationSuccessHandler authenticationSuccessHandler() {
         return (request, response, authentication) -> {
-            boolean isAdmin = authentication.getAuthorities().stream()
-                    .anyMatch(a -> a.getAuthority().equals("ADMIN"));
+            boolean isAdminOrBaker = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ADMIN") || a.getAuthority().equals("PASTELERO"));
 
-            if (isAdmin) {
+            if (isAdminOrBaker) {
                 response.sendRedirect("/admin");
             } else {
                 response.sendRedirect("/");
