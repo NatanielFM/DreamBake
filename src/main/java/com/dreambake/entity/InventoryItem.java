@@ -7,8 +7,7 @@ import java.time.LocalDate;
 
 @Entity
 @Table(name = "inventory_items")
-@Getter
-@Setter
+@Getter @Setter
 public class InventoryItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,8 +23,18 @@ public class InventoryItem {
     private Double minimumStock;
 
     @Column(nullable = false)
-    private String unit; // Ej: "Kg", "Litros", "Unidades", "Gramos"
+    private String unit;
 
-    // Puede ser null para cosas que no vencen (ej: Cajas de cartón)
     private LocalDate expirationDate;
+
+    // Nuevo campo: Fecha en que se cargó
+    @Column(name = "date_added")
+    private LocalDate dateAdded;
+
+    @PrePersist
+    protected void onCreate() {
+        if (dateAdded == null) {
+            dateAdded = LocalDate.now();
+        }
+    }
 }

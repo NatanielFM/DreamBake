@@ -67,7 +67,17 @@
 
       <section id="inventario" class="tab-content">
         <div class="product-module-container">
-          <div class="product-toolbar" style="border-bottom: none;">
+          
+          <div style="background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px; display: flex; flex-direction: column; align-items: center; gap: 10px; border: 2px dashed var(--accent);">
+            <h3 style="margin: 0; color: var(--accent); font-size: 1.4rem;">Gestión Rápida de Inventario</h3>
+            <p style="margin: 0; color: #666; text-align: center; max-width: 500px;">¿Gastaste ingredientes en una receta o fuiste al supermercado? Haz clic aquí para actualizar tu stock al instante.</p>
+            <button type="button" id="btn-open-manage-inv" class="btn btn-pink btn-large" style="width: 100%; max-width: 400px; margin-top: 10px; box-shadow: 0 4px 15px rgba(224, 72, 127, 0.3);">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 9l2 2 4-4"></path></svg>
+              Gestionar Inventario
+            </button>
+          </div>
+
+          <div class="product-toolbar" style="border-bottom: none; padding-top: 0;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
               <div style="display: flex; gap: 10px; flex: 1;">
                 <input type="text" id="search-inventory" class="form-input search-large" placeholder="🔍 Buscar insumo..." style="max-width: 300px;">
@@ -78,15 +88,16 @@
                 </select>
               </div>
               <div style="display: flex; gap: 10px;">
-                <button type="button" id="btn-generate-order" class="btn btn-grey btn-uniform" style="width: auto; padding: 0 15px;">
+                <button type="button" id="btn-generate-order" class="btn btn-grey btn-uniform" style="width: auto; padding: 0 15px;" title="Se abrirá para guardar en PDF o imprimir">
                   📋 Generar Pedido de Compra
                 </button>
                 <button type="button" id="btn-add-inventory" class="btn btn-pink btn-uniform" style="width: auto; padding: 0 15px;">
-                  + Agregar Insumo
+                  + Lote / Insumo Manual
                 </button>
               </div>
             </div>
           </div>
+
           <div class="product-catalog-section" style="padding-top: 0;">
             <div class="table-responsive">
               <table class="admin-table">
@@ -95,8 +106,9 @@
                     <th>Insumo</th>
                     <th>Stock Actual</th>
                     <th>Stock Mínimo</th>
+                    <th>F. Ingreso</th>
                     <th>Vencimiento</th>
-                    <th style="text-align: right;">Acciones Rápidas</th>
+                    <th style="text-align: right;">Acciones</th>
                   </tr>
                 </thead>
                 <tbody id="inventory-tbody"></tbody>
@@ -105,6 +117,100 @@
           </div>
         </div>
       </section>
+
+      <div id="modal-inventory-form" class="modal-overlay" hidden>
+        <div class="modal-card confirm-card">
+          <div class="modal-header">
+            <h3 id="inv-modal-title">Agregar Insumo</h3>
+            <button class="close-modal">&times;</button>
+          </div>
+          <div class="modal-body">
+            <form id="inventory-form">
+              <input type="hidden" id="inv-id">
+              <div style="margin-bottom: 15px;">
+                <label class="form-label">Nombre del insumo</label>
+                <input type="text" id="inv-name" class="form-input" required>
+              </div>
+              <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <div style="flex: 1;">
+                  <label class="form-label">Stock Actual</label>
+                  <input type="number" id="inv-current" class="form-input" step="0.01" required>
+                </div>
+                <div style="flex: 1;">
+                  <label class="form-label">Unidad (ej: Kg)</label>
+                  <select id="inv-unit" class="form-input" required>
+                    <option value="Kg">Kg</option><option value="Gramos">Gramos</option>
+                    <option value="Litros">Litros</option><option value="Mililitros">Mililitros</option>
+                    <option value="Unidades">Unidades</option><option value="Cajas">Cajas</option>
+                  </select>
+                </div>
+              </div>
+              <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <div style="flex: 1;">
+                  <label class="form-label">Stock Mínimo (Alerta)</label>
+                  <input type="number" id="inv-min" class="form-input" step="0.01" required>
+                </div>
+                <div style="flex: 1;">
+                  <label class="form-label">Vencimiento (Opcional)</label>
+                  <input type="date" id="inv-exp" class="form-input">
+                </div>
+              </div>
+              <div class="form-actions justify-center">
+                <button type="button" class="btn btn-grey btn-uniform close-modal">Cancelar</button>
+                <button type="submit" class="btn btn-pink btn-uniform">Guardar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div id="modal-manage-inventory" class="modal-overlay" hidden>
+        <div class="modal-card">
+          <div class="modal-header">
+            <h3>Gestión de Stock</h3>
+            <button class="close-modal">&times;</button>
+          </div>
+          <div class="modal-body">
+            <form id="manage-inv-form">
+              <div style="margin-bottom: 15px;">
+                <label class="form-label">Seleccionar Lote / Insumo</label>
+                <select id="manage-item-id" class="form-input" required></select>
+              </div>
+              
+              <div style="display: flex; gap: 15px; margin-bottom: 15px; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee;">
+                <label style="flex:1; display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:600;">
+                  <input type="radio" name="manage_action" value="CONSUME" checked> ➖ Gasté
+                </label>
+                <label style="flex:1; display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:600;">
+                  <input type="radio" name="manage_action" value="ADD"> ➕ Repuse / Compré
+                </label>
+              </div>
+
+              <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <div style="flex: 1;">
+                  <label class="form-label">Cantidad a modificar</label>
+                  <input type="number" id="manage-amount" class="form-input" step="0.01" min="0.01" required>
+                </div>
+                <div style="width: 100px;">
+                  <label class="form-label">Unidad</label>
+                  <input type="text" id="manage-unit-display" class="form-input" disabled style="background:#eee;">
+                </div>
+              </div>
+
+              <div id="manage-exp-container" style="display: none; margin-bottom: 20px;">
+                <label class="form-label">Vencimiento de la nueva compra (Opcional)</label>
+                <input type="date" id="manage-exp" class="form-input">
+                <small style="color:#666; font-size:0.8rem; display:block; margin-top:5px;">Si la fecha es distinta al lote seleccionado, el sistema creará un lote nuevo de forma inteligente para no mezclar mercadería.</small>
+              </div>
+
+              <div class="form-actions justify-center">
+                <button type="button" class="btn btn-grey btn-uniform close-modal">Cancelar</button>
+                <button type="submit" class="btn btn-pink btn-uniform">Confirmar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
 
       <section id="productos" class="tab-content">
         <div class="product-module-container">
@@ -322,6 +428,7 @@
   </div>
 
   <input type="file" id="hidden-file-input" accept="image/*" hidden>
+  <div id="print-area" class="print-area"></div>
 
   <script th:src="@{/js/admin/main.js}" defer></script>
   <script th:src="@{/js/admin/gallery.js}" defer></script>

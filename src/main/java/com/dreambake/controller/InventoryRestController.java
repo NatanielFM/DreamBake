@@ -47,15 +47,45 @@ public class InventoryRestController {
         return ResponseEntity.notFound().build();
     }
 
-    // Endpoint especial para el "Consumo Rápido"
-    @PutMapping("/{id}/consume")
-    public ResponseEntity<?> consumeStock(@PathVariable Long id, @RequestBody ConsumeRequest request) {
+    // EL NUEVO CEREBRO DE LA GESTIÓN RÁPIDA
+    public record ManageRequest(String action, Double amount, LocalDate expirationDate) {
+    }
+
+    @PutMapping("/{id}/manage")
+    public ResponseEntity<?> manageStock(@PathVariable Long id, @RequestBody ManageRequest request) {
         return inventoryRepo.findById(id).map(item -> {
-            if (request.amount() < 0)
-                return ResponseEntity.badRequest().body("La cantidad no puede ser negativa");
-            double newStock = item.getCurrentStock() - request.amount();
-            item.setCurrentStock(newStock < 0 ? 0 : newStock); // Evita stock negativo
-            return ResponseEntity.ok(inventoryRepo.save(item));
+            if (request.amount() == null || request.amount() <= 0) {
+                return ResponseEntity.badRequest().body("La cantidad a modificar debe ser mayor a 0.");
+            }
+
+            if ("CONSUME".equalsIgnoreCase(request.action())) {
+                double newStock = item.getCurrentStock() - request.amount();
+                item.setCurrentStock(newStock < 0 ? 0 : newStock);
+                return ResponseEntity.ok(inventoryRepo.save(item));
+
+            } else if ("ADD".equalsIgnoreCase(request.action())) {
+                // Chequeamos si la fecha de vencimiento es distinta
+                boolean sameDate = (item.getExpirationDate() == null && request.expirationDate() == null) ||
+                        (item.getExpirationDate() != null && item.getExpirationDate().equals(request.expirationDate()));
+
+                if (sameDate) {
+                    // Si es el mismo vencimiento, sumamos al stock existente
+                    item.setCurrentStock(item.getCurrentStock() + request.amount());
+                    return ResponseEntity.ok(inventoryRepo.save(item));
+                } else {
+                    // Si el vencimiento es distinto, creamos un nuevo lote para no mezclar
+                    // mercadería
+                    InventoryItem newItem = new InventoryItem();
+                    newItem.setName(item.getName());
+                    newItem.setCurrentStock(request.amount());
+                    newItem.setMinimumStock(item.getMinimumStock());
+                    newItem.setUnit(item.getUnit());
+                    newItem.setExpirationDate(request.expirationDate());
+                    newItem.setDateAdded(LocalDate.now());
+                    return ResponseEntity.ok(inventoryRepo.save(newItem));
+                }
+            }
+            return ResponseEntity.badRequest().body("Acción inválida.");
         }).orElse(ResponseEntity.notFound().build());
     }
 
@@ -74,8 +104,5 @@ public class InventoryRestController {
             @NotNull(message = "Debes asignar un stock mínimo de alerta.") @PositiveOrZero(message = "El stock mínimo no puede ser negativo.") Double minimumStock,
             @NotBlank(message = "La unidad de medida es obligatoria.") String unit,
             LocalDate expirationDate) {
-    }
-
-    public record ConsumeRequest(Double amount) {
     }
 }
