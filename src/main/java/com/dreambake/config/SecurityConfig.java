@@ -18,8 +18,8 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/register", "/css/**", "/js/**", "/img/**").permitAll()
-                        // Permitimos a ADMIN y PASTELERO manejar productos y el panel
+                        // AGREGADO: /uploads/** permitido
+                        .requestMatchers("/", "/register", "/css/**", "/js/**", "/img/**", "/uploads/**").permitAll()
                         .requestMatchers("/admin/**", "/api/**").hasAnyAuthority("ADMIN", "PASTELERO")
                         .anyRequest().authenticated())
                 .formLogin(form -> form

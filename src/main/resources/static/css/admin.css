@@ -1,4 +1,4 @@
-/* admin.css - Sidebar Toggle Seguro y Limpio */
+/* admin.css - Módulo de Inventario Integrado */
 
 :root {
   --header-height: 64px;
@@ -6,6 +6,7 @@
   --accent-hover: #c93b6d;
   --danger: #dc3545;
   --danger-hover: #b02a37;
+  --warning: #f59e0b;
   --muted: #666;
   --sidebar-width: 220px;
   --bg-admin: #f4f6f8;
@@ -27,8 +28,8 @@ body { margin: 0; background: var(--bg-admin); font-family: 'Poppins', sans-seri
 .btn-bell { background: #fff; color: var(--accent); }
 .btn-logout { background: var(--danger); color: #fff; }
 
-/* ================= LAYOUT PRINCIPAL Y SIDEBAR ================= */
-.admin-layout { display: flex; min-height: 100vh; padding-top: var(--header-height); box-sizing: border-box; overflow-x: hidden; }
+/* ================= LAYOUT Y SIDEBAR ================= */
+.admin-layout { display: flex; min-height: 100vh; padding-top: var(--header-height); box-sizing: border-box; }
 
 .sidebar { 
   position: fixed; top: var(--header-height); left: 0; bottom: 0; width: var(--sidebar-width); 
@@ -44,7 +45,6 @@ body { margin: 0; background: var(--bg-admin); font-family: 'Poppins', sans-seri
 
 .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1050; }
 
-/* COMPORTAMIENTO DESKTOP (Sidebar Abierto por Defecto) */
 body.sidebar-toggled .sidebar { transform: translateX(-100%); }
 body.sidebar-toggled .dashboard { margin-left: 0; }
 
@@ -56,7 +56,7 @@ body.sidebar-toggled .dashboard { margin-left: 0; }
 /* Contenido */
 .tab-content { display: none; background: var(--card-bg); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 2rem; }
 .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
-#productos.tab-content { padding-bottom: 2rem; padding: 0; } 
+#productos.tab-content, #inventario.tab-content { padding-bottom: 2rem; padding: 0; } 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
 /* ================= SISTEMA DE BOTONES ================= */
@@ -71,6 +71,26 @@ body.sidebar-toggled .dashboard { margin-left: 0; }
 .btn-red:disabled { background: #f5c2c7; cursor: not-allowed; }
 .btn-grey { background: #e9ecef; color: #333; border: 1px solid #ced4da; }
 .btn-grey:hover { background: #dde0e3; }
+.btn-sm { padding: 4px 8px; font-size: 0.85rem; height: auto; width: auto; }
+
+/* ================= FORMULARIOS BASE ================= */
+.form-label { display: block; margin-bottom: 5px; font-size: 0.9rem; font-weight: 600; color: #555; }
+.form-input { padding: 0.6rem 0.8rem; border: 1px solid #ccc; border-radius: 8px; font-family: inherit; width: 100%; box-sizing: border-box; background: #fff; }
+.large-input { font-size: 1.2rem; font-weight: bold; color: var(--accent); border-color: transparent; border-bottom: 2px solid #eee; border-radius: 0; padding-left: 0; }
+.large-input:focus { outline: none; border-bottom-color: var(--accent); }
+.input-group { display: flex; align-items: center; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; background: #fff; height: 45px; width: 100%;}
+.input-group span { background: transparent; padding: 0 5px 0 12px; font-size: 1.2rem; color: #555; font-weight: 600; }
+.price-input { border: none; font-size: 1.2rem; height: 100%; padding-left: 5px; width: 100%;}
+.price-input:focus { outline: none; }
+
+/* ================= TABLA DE INVENTARIO ================= */
+.table-responsive { overflow-x: auto; }
+.admin-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.95rem; }
+.admin-table th { background: #f8f9fa; padding: 12px 15px; text-align: left; color: #444; border-bottom: 2px solid #dee2e6; white-space: nowrap; }
+.admin-table td { padding: 12px 15px; border-bottom: 1px solid #eee; vertical-align: middle; color: #333; }
+.admin-table tr:hover { background: #fafafa; }
+.text-danger { color: var(--danger); font-weight: bold; }
+.text-warning { color: var(--warning); font-weight: bold; }
 
 /* ================= VISOR DE PRODUCTOS ================= */
 .product-viewer-section { padding: 1.5rem; border-bottom: 1px solid #eee; background: #fafafa; border-radius: 12px 12px 0 0; }
@@ -82,22 +102,12 @@ body.sidebar-toggled .dashboard { margin-left: 0; }
 .image-actions { display: flex; gap: 8px; }
 .form-details-col { flex: 1; display: flex; flex-direction: column; gap: 1.2rem; width: 100%; }
 .form-row { display: flex; gap: 1rem; align-items: center; justify-content: space-between; }
-.form-input { padding: 0.6rem 0.8rem; border: 1px solid #ccc; border-radius: 8px; font-family: inherit; width: 100%; box-sizing: border-box; background: #fff; }
-.large-input { font-size: 1.2rem; font-weight: bold; color: var(--accent); border-color: transparent; border-bottom: 2px solid #eee; border-radius: 0; padding-left: 0; }
-.large-input:focus { outline: none; border-bottom-color: var(--accent); }
-
-/* Precio y Selector */
 .price-cat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: center; }
-.input-group { display: flex; align-items: center; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; background: #fff; height: 45px; }
-.input-group span { background: transparent; padding: 0 5px 0 12px; font-size: 1.2rem; color: #555; font-weight: 600; }
-.price-input { border: none; font-size: 1.2rem; height: 100%; padding-left: 5px; }
-.price-input:focus { outline: none; }
-.cat-input { font-size: 1.1rem; height: 45px; }
+.cat-input { font-size: 1.1rem; height: 45px; flex: 1; }
 .textarea-input { resize: vertical; min-height: 80px; }
 .form-actions { display: flex; justify-content: flex-end; gap: 15px; margin-top: auto; }
 .justify-center { justify-content: center; }
 
-/* Switch Toggle */
 .toggle-switch { display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; white-space: nowrap; }
 .toggle-switch input { display: none; }
 .slider { width: 44px; height: 24px; background: #ccc; border-radius: 24px; position: relative; transition: 0.3s; }
@@ -141,32 +151,35 @@ body.sidebar-toggled .dashboard { margin-left: 0; }
 /* ================= MODALES ================= */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
 .modal-overlay[hidden] { display: none; }
+#modal-confirm, #modal-alert { z-index: 2100; }
 .modal-card { background: #fff; width: 90%; max-width: 420px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
 .confirm-card { max-width: 380px; }
 .modal-large { max-width: 800px; height: 80vh; display: flex; flex-direction: column; }
 .modal-large .modal-body { flex: 1; overflow-y: auto; padding: 0; }
 .modal-header { padding: 1rem 1.5rem; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #fafafa; }
 .modal-header h3 { margin: 0; color: #333; font-size: 1.2rem; }
-.close-modal { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666; transition: color 0.2s; }
-.close-modal:hover { color: var(--danger); }
+.modal-header .close-modal { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666; transition: color 0.2s; padding: 0; }
+.modal-header .close-modal:hover { color: var(--danger); }
 .modal-body { padding: 1.5rem; }
 .text-center { text-align: center; }
 
+/* Categorías */
 .add-cat-row { display: flex; gap: 10px; margin-bottom: 1.5rem; }
-.category-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
-.category-list li { display: flex; justify-content: space-between; padding: 12px; background: #f9f9f9; border-radius: 8px; border: 1px solid #eee; align-items: center; font-weight: 600;}
-.btn-delete-cat { background: none; border: none; color: var(--danger); cursor: pointer; font-weight: bold; }
+.category-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto; }
+.category-list li { display: flex; justify-content: space-between; padding: 10px 15px; background: #f9f9f9; border-radius: 8px; border: 1px solid #eee; align-items: center; }
+.cat-name { font-weight: 600; color: #333; }
+.cat-actions { display: flex; gap: 6px; }
+.cat-action-btn { background: none; border: none; border-radius: 6px; padding: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #666; transition: 0.2s; }
+.cat-action-btn:hover:not(:disabled) { background: #e9ecef; color: var(--accent); }
+.cat-action-btn.btn-delete:hover:not(:disabled) { background: #ffe5e5; color: var(--danger); }
+.cat-action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
 /* ================= RESPONSIVE MOBILE ================= */
 @media (max-width: 880px) {
-  /* En mobile, Sidebar oculto a la izquierda por defecto */
   .sidebar { transform: translateX(-100%); box-shadow: none; z-index: 1300; }
   .dashboard { margin-left: 0; }
-  
-  /* Lógica invertida en mobile: toggled = abierto */
   body.sidebar-toggled .sidebar { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.2); }
   body.sidebar-toggled .sidebar-backdrop { display: block; }
-  
   .active-viewer-state .product-form { flex-direction: column; align-items: stretch; }
   .form-image-col { width: 100%; }
   .price-cat-row { grid-template-columns: 1fr; gap: 1rem; }

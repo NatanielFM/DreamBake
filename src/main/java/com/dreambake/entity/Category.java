@@ -3,7 +3,6 @@ package com.dreambake.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "categories")
@@ -18,5 +17,9 @@ public class Category {
     private String name;
 
     @Column(nullable = false)
-    private boolean isDeletable = true; // Para proteger "Sin tipo"
+    private boolean isDeletable = true;
+
+    // Columna para saber en qué posición va (1°, 2°, 3°...)
+    @Column(nullable = false, columnDefinition = "int default 0")
+    private Integer displayOrder = 0;
 }
