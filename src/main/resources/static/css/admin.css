@@ -1,4 +1,4 @@
-/* admin.css - Módulo de Inventario Integrado */
+/* admin.css - Diseño Final con Mejoras en Filtros y Tablas */
 
 :root {
   --header-height: 64px;
@@ -53,7 +53,6 @@ body.sidebar-toggled .dashboard { margin-left: 0; }
 .tab-btn:hover { background: #f0f2f5; color: var(--accent); }
 .tab-btn.active { background: var(--accent); color: #fff; }
 
-/* Contenido */
 .tab-content { display: none; background: var(--card-bg); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 2rem; }
 .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
 #productos.tab-content, #inventario.tab-content { padding-bottom: 2rem; padding: 0; } 
@@ -71,7 +70,7 @@ body.sidebar-toggled .dashboard { margin-left: 0; }
 .btn-red:disabled { background: #f5c2c7; cursor: not-allowed; }
 .btn-grey { background: #e9ecef; color: #333; border: 1px solid #ced4da; }
 .btn-grey:hover { background: #dde0e3; }
-.btn-sm { padding: 4px 8px; font-size: 0.85rem; height: auto; width: auto; }
+.btn-sm { padding: 6px 12px; font-size: 0.85rem; height: auto; width: auto; }
 
 /* ================= FORMULARIOS BASE ================= */
 .form-label { display: block; margin-bottom: 5px; font-size: 0.9rem; font-weight: 600; color: #555; }
@@ -91,6 +90,14 @@ body.sidebar-toggled .dashboard { margin-left: 0; }
 .admin-table tr:hover { background: #fafafa; }
 .text-danger { color: var(--danger); font-weight: bold; }
 .text-warning { color: var(--warning); font-weight: bold; }
+.tr-expired { background-color: #fff5f5; border-left: 4px solid var(--danger); }
+.tr-expired:hover { background-color: #ffeaea; }
+.tr-low-stock { background-color: #fffbf0; border-left: 4px solid var(--warning); }
+.tr-low-stock:hover { background-color: #fff7e0; }
+
+/* Icono Ordenamiento SVG */
+.sort-icon { display: inline-flex; align-items: center; margin-left: 6px; vertical-align: middle; }
+.sort-svg { transition: stroke 0.3s ease; }
 
 /* ================= VISOR DE PRODUCTOS ================= */
 .product-viewer-section { padding: 1.5rem; border-bottom: 1px solid #eee; background: #fafafa; border-radius: 12px 12px 0 0; }
@@ -152,15 +159,17 @@ body.sidebar-toggled .dashboard { margin-left: 0; }
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
 .modal-overlay[hidden] { display: none; }
 #modal-confirm, #modal-alert { z-index: 2100; }
-.modal-card { background: #fff; width: 90%; max-width: 420px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+
+.modal-card { background: #fff; width: 90%; max-width: 420px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-height: 90vh; display: flex; flex-direction: column; }
 .confirm-card { max-width: 380px; }
-.modal-large { max-width: 800px; height: 80vh; display: flex; flex-direction: column; }
-.modal-large .modal-body { flex: 1; overflow-y: auto; padding: 0; }
-.modal-header { padding: 1rem 1.5rem; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #fafafa; }
+.modal-large { max-width: 800px; height: 80vh; }
+.modal-large .modal-body { padding: 0; }
+
+.modal-header { padding: 1rem 1.5rem; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #fafafa; flex-shrink: 0; }
 .modal-header h3 { margin: 0; color: #333; font-size: 1.2rem; }
 .modal-header .close-modal { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666; transition: color 0.2s; padding: 0; }
 .modal-header .close-modal:hover { color: var(--danger); }
-.modal-body { padding: 1.5rem; }
+.modal-body { padding: 1.5rem; overflow-y: auto; }
 .text-center { text-align: center; }
 
 /* Categorías */
@@ -173,6 +182,15 @@ body.sidebar-toggled .dashboard { margin-left: 0; }
 .cat-action-btn:hover:not(:disabled) { background: #e9ecef; color: var(--accent); }
 .cat-action-btn.btn-delete:hover:not(:disabled) { background: #ffe5e5; color: var(--danger); }
 .cat-action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ================= ÁREA DE IMPRESIÓN ================= */
+.print-area { display: none; }
+@media print {
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
+  .print-area { display: block; position: absolute; left: 0; top: 0; width: 100%; }
+  @page { margin: 0; } 
+}
 
 /* ================= RESPONSIVE MOBILE ================= */
 @media (max-width: 880px) {
@@ -188,14 +206,8 @@ body.sidebar-toggled .dashboard { margin-left: 0; }
   .form-actions { justify-content: space-between; }
   .btn-uniform { flex: 1; width: auto; padding: 0.6rem 0.2rem; font-size: 0.85rem;}
   .user-greeting { display: none; }
-}
-
-/* ================= ÁREA DE IMPRESIÓN ================= */
-.print-area { display: none; }
-@media print {
-  body * { visibility: hidden; }
-  .print-area, .print-area * { visibility: visible; }
-  .print-area { display: block; position: absolute; left: 0; top: 0; width: 100%; }
-  /* Al poner margin 15mm, forzamos a que el navegador maneje los márgenes, pero gracias a nuestro JS, el título dirá lo que queremos y ocultará "about:blank" */
-  @page { margin: 15mm; } 
+  
+  /* FILTROS VERTICALES EN MOBILE PARA EVITAR DESBORDAMIENTO */
+  .filter-chips { flex-direction: column; width: 100%; }
+  .filter-chips .chip { width: 100%; text-align: center; justify-content: center; }
 }

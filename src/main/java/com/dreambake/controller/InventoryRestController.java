@@ -47,52 +47,11 @@ public class InventoryRestController {
         return ResponseEntity.notFound().build();
     }
 
-    // EL NUEVO CEREBRO DE LA GESTIÓN RÁPIDA
-    public record ManageRequest(String action, Double amount, LocalDate expirationDate) {
-    }
-
-    @PutMapping("/{id}/manage")
-    public ResponseEntity<?> manageStock(@PathVariable Long id, @RequestBody ManageRequest request) {
-        return inventoryRepo.findById(id).map(item -> {
-            if (request.amount() == null || request.amount() <= 0) {
-                return ResponseEntity.badRequest().body("La cantidad a modificar debe ser mayor a 0.");
-            }
-
-            if ("CONSUME".equalsIgnoreCase(request.action())) {
-                double newStock = item.getCurrentStock() - request.amount();
-                item.setCurrentStock(newStock < 0 ? 0 : newStock);
-                return ResponseEntity.ok(inventoryRepo.save(item));
-
-            } else if ("ADD".equalsIgnoreCase(request.action())) {
-                // Chequeamos si la fecha de vencimiento es distinta
-                boolean sameDate = (item.getExpirationDate() == null && request.expirationDate() == null) ||
-                        (item.getExpirationDate() != null && item.getExpirationDate().equals(request.expirationDate()));
-
-                if (sameDate) {
-                    // Si es el mismo vencimiento, sumamos al stock existente
-                    item.setCurrentStock(item.getCurrentStock() + request.amount());
-                    return ResponseEntity.ok(inventoryRepo.save(item));
-                } else {
-                    // Si el vencimiento es distinto, creamos un nuevo lote para no mezclar
-                    // mercadería
-                    InventoryItem newItem = new InventoryItem();
-                    newItem.setName(item.getName());
-                    newItem.setCurrentStock(request.amount());
-                    newItem.setMinimumStock(item.getMinimumStock());
-                    newItem.setUnit(item.getUnit());
-                    newItem.setExpirationDate(request.expirationDate());
-                    newItem.setDateAdded(LocalDate.now());
-                    return ResponseEntity.ok(inventoryRepo.save(newItem));
-                }
-            }
-            return ResponseEntity.badRequest().body("Acción inválida.");
-        }).orElse(ResponseEntity.notFound().build());
-    }
-
     private InventoryItem saveOrUpdate(InventoryItem item, InventoryRequest req) {
         item.setName(req.name());
         item.setCurrentStock(req.currentStock());
-        item.setMinimumStock(req.minimumStock());
+        // Si viene null, seteamos 0.0
+        item.setMinimumStock(req.minimumStock() != null ? req.minimumStock() : 0.0);
         item.setUnit(req.unit());
         item.setExpirationDate(req.expirationDate());
         return inventoryRepo.save(item);
@@ -101,7 +60,7 @@ public class InventoryRestController {
     public record InventoryRequest(
             @NotBlank(message = "El nombre del insumo es obligatorio.") String name,
             @NotNull(message = "Debes asignar el stock actual.") @PositiveOrZero(message = "El stock no puede ser negativo.") Double currentStock,
-            @NotNull(message = "Debes asignar un stock mínimo de alerta.") @PositiveOrZero(message = "El stock mínimo no puede ser negativo.") Double minimumStock,
+            @PositiveOrZero(message = "El stock mínimo no puede ser negativo.") Double minimumStock,
             @NotBlank(message = "La unidad de medida es obligatoria.") String unit,
             LocalDate expirationDate) {
     }

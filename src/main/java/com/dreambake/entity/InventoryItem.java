@@ -7,7 +7,8 @@ import java.time.LocalDate;
 
 @Entity
 @Table(name = "inventory_items")
-@Getter @Setter
+@Getter
+@Setter
 public class InventoryItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,22 +20,29 @@ public class InventoryItem {
     @Column(nullable = false)
     private Double currentStock;
 
-    @Column(nullable = false)
-    private Double minimumStock;
+    // Ya no es obligatorio en BD, por defecto 0.0
+    @Column(columnDefinition = "DOUBLE DEFAULT 0.0")
+    private Double minimumStock = 0.0;
 
     @Column(nullable = false)
     private String unit;
 
     private LocalDate expirationDate;
 
-    // Nuevo campo: Fecha en que se cargó
     @Column(name = "date_added")
     private LocalDate dateAdded;
 
+    // Se ejecuta al crear por primera vez
     @PrePersist
     protected void onCreate() {
         if (dateAdded == null) {
             dateAdded = LocalDate.now();
         }
+    }
+
+    // Se ejecuta cada vez que modificas/descuentas stock
+    @PreUpdate
+    protected void onUpdate() {
+        dateAdded = LocalDate.now();
     }
 }
