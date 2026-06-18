@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Armá tu Torta — DreamBake</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+  <link rel="stylesheet" th:href="@{/css/header.css}">
+  <link rel="stylesheet" th:href="@{/css/footer.css}">
+  <link rel="stylesheet" th:href="@{/css/public.css}">
+</head>
+
+<body>
+  
+  <div th:replace="~{fragments/header :: header}"></div>
+
+  <main style="padding-top: 100px; min-height: 85vh; padding-bottom: 50px;">
+    <section id="cake-builder" class="section-builder">
+      <div class="container-wizard">
+        
+        <div class="wizard-header">
+          <h2 style="font-size: 2.2rem; color: var(--accent); margin-bottom: 10px;">Armá tu Torta Ideal 🎂</h2>
+          <p style="color: #666; font-size: 1.1rem;">Sigue los pasos y personaliza tu pedido al instante.</p>
+          <div class="progress-bar">
+            <div class="step active" id="step-indicator-1">1. Tamaño y Cobertura</div>
+            <div class="step" id="step-indicator-2">2. Sabores</div>
+            <div class="step" id="step-indicator-3">3. Detalles</div>
+          </div>
+        </div>
+
+        <div class="wizard-body">
+          <div id="wizard-step-1" class="wizard-step active">
+            <h3>Elige el Tamaño</h3>
+            <div class="cards-grid" id="grid-sizes"></div>
+            
+            <h3 style="margin-top: 2rem;">Elige la Cobertura</h3>
+            <div class="cards-grid" id="grid-coverages">
+              <div class="select-card" data-val="Crema" onclick="selectCoverage('Crema')">☁️ Crema (Ligera y suave)</div>
+              <div class="select-card" data-val="Fondant" onclick="selectCoverage('Fondant')">🎨 Fondant (Ideal diseños 3D)</div>
+            </div>
+            
+            <button class="btn btn-pink btn-large wizard-next" onclick="goToStep(2)" id="btn-next-1" disabled>Siguiente Paso ➡️</button>
+          </div>
+
+          <div id="wizard-step-2" class="wizard-step">
+            <h3>Bizcochuelo <span id="sponge-info" class="badge">1 sabor</span></h3>
+            <div class="cards-grid" id="grid-sponges">
+              <div class="select-card sponge-card" data-val="Vainilla" onclick="toggleSponge('Vainilla')">Vainilla</div>
+              <div class="select-card sponge-card" data-val="Chocolate" onclick="toggleSponge('Chocolate')">Chocolate</div>
+              <div class="select-card sponge-card" data-val="Limón" onclick="toggleSponge('Limón')">Limón</div>
+              <div class="select-card sponge-card" data-val="Coco" onclick="toggleSponge('Coco')">Coco</div>
+            </div>
+            
+            <h3 style="margin-top: 2rem;">Rellenos <span id="fillings-info" class="badge">Elige hasta 2</span></h3>
+            <p style="font-size:0.9rem; color:#666;">Mostrando opciones aptas para cobertura de <strong id="lbl-cov"></strong>.</p>
+            <div class="cards-grid" id="grid-fillings"></div>
+            
+            <div style="display:flex; justify-content:space-between; margin-top: 25px;">
+              <button class="btn btn-grey btn-large" onclick="goToStep(1)">⬅️ Volver</button>
+              <button class="btn btn-pink btn-large wizard-next" onclick="goToStep(3)" id="btn-next-2" disabled>Siguiente Paso ➡️</button>
+            </div>
+          </div>
+
+          <div id="wizard-step-3" class="wizard-step">
+            <h3>Detalles Finales</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Temática (Ej: Bluey, Boca Jrs, Minimalista)</label>
+                <input type="text" id="cake-theme" class="public-input" placeholder="¿De qué trata?">
+              </div>
+              <div class="form-group">
+                <label>Nombre del agasajado (Opcional)</label>
+                <input type="text" id="cake-name" class="public-input" placeholder="Nombre en la torta">
+              </div>
+              <div class="form-group">
+                <label>Edad (Opcional)</label>
+                <input type="text" id="cake-age" class="public-input" placeholder="Número">
+              </div>
+              <div class="form-group">
+                <label>Frase (Opcional)</label>
+                <input type="text" id="cake-phrase" class="public-input" placeholder="Ej: Feliz Cumple Juan">
+              </div>
+            </div>
+            
+            <div style="display:flex; justify-content:space-between; margin-top: 25px;">
+              <button class="btn btn-grey btn-large" onclick="goToStep(2)">⬅️ Volver</button>
+              <button class="btn btn-pink btn-large" onclick="addCakeToCart()">🛒 Añadir al Carrito</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <button id="floating-cart-btn" class="floating-cart" style="display: none;">
+    🛒 Ver Pedido (<span id="cart-count">0</span>)
+  </button>
+
+  <div id="modal-checkout" class="public-modal-overlay" hidden>
+    <div class="public-modal-card">
+      <div class="public-modal-header">
+        <h3>Tu Pedido</h3>
+        <button class="public-close-modal" onclick="document.getElementById('modal-checkout').hidden = true">&times;</button>
+      </div>
+      
+      <div class="public-modal-body">
+        <div id="cart-items" style="margin-bottom: 20px;"></div>
+        <h3 style="text-align: right; color:var(--accent);">Total: $<span id="cart-total">0</span></h3>
+        
+        <hr style="margin: 20px 0; border:0; border-top:1px solid #eee;">
+        
+        <h4 style="margin-bottom: 15px;">Tus Datos para el Retiro</h4>
+        <form id="checkout-form">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Nombre Completo *</label>
+              <input type="text" id="chk-name" class="public-input" required th:value="${currentUser != null ? currentUser.name : ''}">
+            </div>
+            <div class="form-group">
+              <label>WhatsApp *</label>
+              <input type="text" id="chk-phone" class="public-input" required th:value="${currentUser != null ? currentUser.phone : ''}" placeholder="Ej: 3764123456">
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label>Email (Opcional)</label>
+              <input type="email" id="chk-email" class="public-input" th:value="${currentUser != null ? currentUser.email : ''}">
+            </div>
+            <div class="form-group">
+              <label>Fecha de retiro *</label>
+              <input type="date" id="chk-date" class="public-input" required>
+            </div>
+            <div class="form-group">
+              <label>Horario *</label>
+              <select id="chk-shift" class="public-input" required>
+                <option value="10:00 a 12:00">Mañana (10:00 a 12:00)</option>
+                <option value="19:00 a 20:00">Tarde (19:00 a 20:00)</option>
+              </select>
+            </div>
+          </div>
+          <p style="font-size:0.85rem; color:#666; margin-top:10px;">📍 Retiro por: Martín Fierro 5650. (No hacemos envíos).</p>
+          
+          <button type="submit" class="btn btn-pink btn-large" style="width: 100%; margin-top: 20px; display:flex; align-items:center; justify-content:center; gap:10px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+            Enviar Pedido a WhatsApp
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    © <strong>Dulce Sueños Posadas</strong>
+  </footer>
+
+  <script th:src="@{/js/header.js}"></script>
+  <script th:src="@{/js/public/store.js}"></script>
+</body>
+</html>

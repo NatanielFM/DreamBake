@@ -1,4 +1,4 @@
-/* admin.css - Diseño Final con Mejoras en Filtros y Tablas */
+/* admin.css - Diseño Final con Fix de Padding para Clientes */
 
 :root {
   --header-height: 64px;
@@ -55,7 +55,9 @@ body.sidebar-toggled .dashboard { margin-left: 0; }
 
 .tab-content { display: none; background: var(--card-bg); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 2rem; }
 .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
-#productos.tab-content, #inventario.tab-content { padding-bottom: 2rem; padding: 0; } 
+
+/* FIX: Agregamos #clientes.tab-content para que elimine el borde gigante y quede igual a inventario */
+#productos.tab-content, #inventario.tab-content, #clientes.tab-content { padding-bottom: 2rem; padding: 0; } 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
 /* ================= SISTEMA DE BOTONES ================= */
@@ -72,6 +74,16 @@ body.sidebar-toggled .dashboard { margin-left: 0; }
 .btn-grey:hover { background: #dde0e3; }
 .btn-sm { padding: 6px 12px; font-size: 0.85rem; height: auto; width: auto; }
 
+/* Botones Custom para Radio (Gasté / Repuse) */
+.radio-toggle-group { display: flex; gap: 15px; }
+.radio-toggle { flex: 1; }
+.radio-toggle input { display: none; }
+.radio-toggle .toggle-btn { 
+  padding: 12px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; 
+  gap: 8px; cursor: pointer; transition: 0.2s; background: #f0f2f5; color: #555; border: 2px solid transparent;
+}
+.radio-toggle input:checked + .toggle-btn { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 4px 10px rgba(224, 72, 127, 0.3); }
+
 /* ================= FORMULARIOS BASE ================= */
 .form-label { display: block; margin-bottom: 5px; font-size: 0.9rem; font-weight: 600; color: #555; }
 .form-input { padding: 0.6rem 0.8rem; border: 1px solid #ccc; border-radius: 8px; font-family: inherit; width: 100%; box-sizing: border-box; background: #fff; }
@@ -82,7 +94,7 @@ body.sidebar-toggled .dashboard { margin-left: 0; }
 .price-input { border: none; font-size: 1.2rem; height: 100%; padding-left: 5px; width: 100%;}
 .price-input:focus { outline: none; }
 
-/* ================= TABLA DE INVENTARIO ================= */
+/* ================= TABLA DE INVENTARIO / CLIENTES ================= */
 .table-responsive { overflow-x: auto; }
 .admin-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.95rem; }
 .admin-table th { background: #f8f9fa; padding: 12px 15px; text-align: left; color: #444; border-bottom: 2px solid #dee2e6; white-space: nowrap; }
@@ -98,6 +110,8 @@ body.sidebar-toggled .dashboard { margin-left: 0; }
 /* Icono Ordenamiento SVG */
 .sort-icon { display: inline-flex; align-items: center; margin-left: 6px; vertical-align: middle; }
 .sort-svg { transition: stroke 0.3s ease; }
+
+.tag-badge { background: #e9ecef; color: #555; padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 0.85rem; }
 
 /* ================= VISOR DE PRODUCTOS ================= */
 .product-viewer-section { padding: 1.5rem; border-bottom: 1px solid #eee; background: #fafafa; border-radius: 12px 12px 0 0; }
@@ -172,7 +186,7 @@ body.sidebar-toggled .dashboard { margin-left: 0; }
 .modal-body { padding: 1.5rem; overflow-y: auto; }
 .text-center { text-align: center; }
 
-/* Categorías */
+/* Categorías y Etiquetas */
 .add-cat-row { display: flex; gap: 10px; margin-bottom: 1.5rem; }
 .category-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto; }
 .category-list li { display: flex; justify-content: space-between; padding: 10px 15px; background: #f9f9f9; border-radius: 8px; border: 1px solid #eee; align-items: center; }
@@ -207,7 +221,6 @@ body.sidebar-toggled .dashboard { margin-left: 0; }
   .btn-uniform { flex: 1; width: auto; padding: 0.6rem 0.2rem; font-size: 0.85rem;}
   .user-greeting { display: none; }
   
-  /* FILTROS VERTICALES EN MOBILE PARA EVITAR DESBORDAMIENTO */
   .filter-chips { flex-direction: column; width: 100%; }
   .filter-chips .chip { width: 100%; text-align: center; justify-content: center; }
 }

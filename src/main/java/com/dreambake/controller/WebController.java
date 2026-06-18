@@ -1,16 +1,22 @@
 package com.dreambake.controller;
 
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
 public class WebController {
 
+    // Tu mapeo original del index (si ya lo tienes así, déjalo)
     @GetMapping("/")
-    public String home(Model model) {
-        model.addAttribute("titulo", "Pastelería DreamBake");
-        model.addAttribute("mensaje", "¡Bienvenidos a la pastelería! Prueba nuestro nuevo pastel.");
-        return "index"; // Busca index en src/main/resources/templates/index.html
+    public String index() {
+        return "index";
     }
+
+    // NUEVO MAPEO: El constructor de tortas
+    @GetMapping("/builder")
+    public String cakeBuilder() {
+        return "builder"; // Busca el archivo builder.html en src/main/resources/templates/
+    }
+
+    // ... (otros mapeos como /contact, /login, /admin, etc.)
 }

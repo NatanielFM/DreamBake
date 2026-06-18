@@ -18,9 +18,18 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // AGREGADO: /uploads/** permitido
-                        .requestMatchers("/", "/register", "/css/**", "/js/**", "/img/**", "/uploads/**").permitAll()
+                        // 1. AGREGADO: /builder permitido para que entren a la página
+                        .requestMatchers("/", "/products", "/builder", "/register", "/css/**", "/js/**", "/img/**",
+                                "/uploads/**")
+                        .permitAll()
+
+                        // 2. AGREGADO: Permitimos peticiones a la API de pedidos (para guardar el
+                        // carrito)
+                        .requestMatchers("/api/orders/**").permitAll()
+
+                        // 3. El resto de /api/ y /admin/ sigue restringido solo para personal
                         .requestMatchers("/admin/**", "/api/**").hasAnyAuthority("ADMIN", "PASTELERO")
+
                         .anyRequest().authenticated())
                 .formLogin(form -> form
                         .loginPage("/login")

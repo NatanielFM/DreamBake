@@ -63,7 +63,50 @@
       </section>
 
       <section id="pedidos" class="tab-content"><h2>Pedidos</h2></section>
-      <section id="clientes" class="tab-content"><h2>Clientes</h2></section>
+
+      <section id="clientes" class="tab-content">
+        <div class="product-module-container">
+
+          <div class="product-toolbar" style="border-bottom: none;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px;">
+              
+              <div style="display: flex; gap: 10px; flex: 1; flex-direction: column;">
+                <input type="text" id="search-client" class="form-input search-large" placeholder="🔍 Buscar nombre, teléfono..." style="max-width: 400px;">
+                <div class="filter-chips" id="client-filters">
+                  </div>
+              </div>
+
+              <div style="display: flex; gap: 10px; align-self: flex-start;">
+                <button type="button" id="btn-open-tags-modal" class="btn btn-grey btn-uniform" style="width: auto; padding: 0 15px;" title="Configurar Etiquetas">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg> 
+                  Etiquetas
+                </button>
+                <button type="button" id="btn-add-client" class="btn btn-pink btn-uniform" style="width: auto; padding: 0 15px;">
+                  + Nuevo Cliente
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="product-catalog-section" style="padding-top: 0;">
+            <div class="table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th id="th-sort-client-name" style="cursor: pointer; user-select: none;">Cliente</th>
+                    <th>Contacto</th>
+                    <th>Etiqueta</th>
+                    <th id="th-sort-client-date" style="cursor: pointer; user-select: none;">Registro</th>
+                    <th style="text-align: center;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="clients-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section id="inventario" class="tab-content">
         <div class="product-module-container">
@@ -301,10 +344,75 @@
     </div>
   </div>
 
+  <div id="modal-client-form" class="modal-overlay" hidden>
+    <div class="modal-card confirm-card">
+      <div class="modal-header">
+        <h3 id="client-modal-title">Agregar Cliente</h3>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="client-form">
+          <input type="hidden" id="client-id">
+          
+          <div style="margin-bottom: 15px;">
+            <label class="form-label">Nombre del Cliente</label>
+            <input type="text" id="client-name" class="form-input" required>
+          </div>
+          
+          <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <div style="flex: 1;">
+              <label class="form-label">Teléfono (Opcional)</label>
+              <input type="text" id="client-phone" class="form-input">
+            </div>
+            <div style="flex: 1;">
+              <label class="form-label">Email (Opcional)</label>
+              <input type="email" id="client-email" class="form-input">
+            </div>
+          </div>
+
+          <div style="margin-bottom: 15px;">
+            <label class="form-label">Dirección (Opcional)</label>
+            <input type="text" id="client-address" class="form-input">
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <label class="form-label">Etiqueta</label>
+            <select id="client-tag" class="form-input" required></select>
+          </div>
+
+          <div class="form-actions justify-center">
+            <button type="button" class="btn btn-grey btn-uniform close-modal">Cancelar</button>
+            <button type="submit" class="btn btn-pink btn-uniform">Guardar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-tags" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Etiquetas de Clientes</h3>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="padding-top: 10px;">
+        <button id="btn-show-add-tag" class="btn btn-pink" style="width: 100%; margin-bottom: 15px; padding: 10px;">+ Crear nueva etiqueta</button>
+        <div id="add-tag-container" class="add-cat-row" style="display: none;">
+          <input type="text" id="new-tag-name" class="form-input" placeholder="Nombre de la etiqueta...">
+          <button id="btn-add-tag" class="btn btn-pink btn-uniform" style="width: auto;">Guardar</button>
+        </div>
+        <ul id="tags-list" class="category-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  
+
   <input type="file" id="hidden-file-input" accept="image/*" hidden>
 
   <div id="print-area" class="print-area"></div>
 
+  <script th:src="@{/js/admin/clients.js}" defer></script>
   <script th:src="@{/js/admin/main.js}" defer></script>
   <script th:src="@{/js/admin/gallery.js}" defer></script>
   <script th:src="@{/js/admin/inventory.js}" defer></script>
