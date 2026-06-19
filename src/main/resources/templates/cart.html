@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tu Carrito — DreamBake</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+  <link rel="stylesheet" th:href="@{/css/header.css}">
+  <link rel="stylesheet" th:href="@{/css/footer.css}">
+  <link rel="stylesheet" th:href="@{/css/public.css}">
+</head>
+<body>
+  <div th:replace="~{fragments/header :: header}"></div>
+
+  <main style="padding-top: 100px; min-height: 85vh; padding-bottom: 50px;">
+    <div class="container-wizard">
+      <h2 style="font-size: 2.2rem; color: var(--accent); margin-bottom: 20px; text-align:center;">Finalizar Pedido 🛒</h2>
+      
+      <div class="cart-layout" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+        
+        <div class="cart-summary">
+          <h3>Resumen de Compra</h3>
+          <div id="full-cart-items" style="margin-top: 15px;"></div>
+          
+          <div style="margin-top: 15px; padding-top:15px; border-top: 2px dashed #eee;">
+            <div class="form-group">
+              <label>Cupón de Descuento (Opcional)</label>
+              <div style="display:flex; gap:10px;">
+                <input type="text" id="cart-coupon" class="public-input" placeholder="Ej: DREAM10">
+                <button type="button" class="btn btn-grey" onclick="showPublicAlert('Lo sentimos, este cupón no es válido o ya caducó.')">Aplicar</button>
+              </div>
+            </div>
+            <h2 style="text-align:right; color:var(--accent); margin-top:20px;">Total: $<span id="full-cart-total">0</span></h2>
+          </div>
+        </div>
+
+        <div class="cart-checkout">
+          <h3>Tus Datos</h3>
+          <form id="final-checkout-form">
+            <div class="form-group" style="margin-top: 15px;">
+              <label>1. Nombre Completo (Obligatorio)</label>
+              <input type="text" id="chk-name" class="public-input" required th:value="${currentUser != null ? currentUser.name : ''}">
+            </div>
+            
+            <div class="form-group" style="margin-top: 15px;">
+              <label>2. Teléfono WhatsApp (Obligatorio)</label>
+              <input type="text" id="chk-phone" class="public-input" required placeholder="Ej: 3764123456" th:value="${currentUser != null ? currentUser.phone : ''}">
+            </div>
+
+            <div class="form-group" style="margin-top: 15px;">
+              <label>3. Email (Opcional para promociones)</label>
+              <input type="email" id="chk-email" class="public-input" th:value="${currentUser != null ? currentUser.email : ''}">
+            </div>
+
+            <div class="form-group" style="margin-top: 15px;">
+              <label>4. Detalles del pedido (Opcional)</label>
+              <textarea id="chk-general-details" class="public-input" rows="3" placeholder="Aclaraciones generales para retirar, alergias, etc..."></textarea>
+            </div>
+
+            <hr style="margin: 20px 0; border:0; border-top:1px solid #eee;">
+
+            <h3>Logística y Pago</h3>
+            <div class="form-grid">
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label>¿Para cuándo quiero la torta? *</label>
+                <input type="date" id="chk-date" class="public-input" required>
+                <small style="color: #666; font-size: 0.8rem;">(Mínimo 3 días de anticipación)</small>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 15px;">
+              <label>Medio de Pago *</label>
+              <select id="chk-payment" class="public-input" required>
+                <option value="Transferencia">Transferencia Bancaria</option>
+                <option value="Efectivo">Efectivo en el local</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn btn-pink btn-large" style="width: 100%; margin-top: 25px; display:flex; align-items:center; justify-content:center; gap:10px;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+              Confirmar pedido por WhatsApp
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <div id="modal-alert-v1" class="public-modal-overlay" hidden style="z-index: 3000;">
+    <div class="public-modal-card" style="max-width: 400px; text-align: center; margin: auto;">
+      <div class="public-modal-header" style="justify-content: center; background: #fff; border-bottom: none; padding-bottom: 0;">
+        <h3 style="color: var(--accent);">Atención</h3>
+      </div>
+      <div class="public-modal-body" style="padding-top: 10px;">
+        <p id="alert-v1-msg" style="margin-bottom: 25px; color: #444; font-size: 1.05rem;"></p>
+        <button type="button" class="btn btn-pink" style="padding: 10px 30px; border-radius: 8px;" onclick="document.getElementById('modal-alert-v1').hidden = true">Entendido</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-success-v1" class="public-modal-overlay" hidden style="z-index: 3000;">
+    <div class="public-modal-card" style="max-width: 450px; text-align: center; margin: auto;">
+      <div class="public-modal-header" style="justify-content: center; background: #fff; border-bottom: none; padding-bottom: 0;">
+        <h3 style="color: #25D366;">¡Pedido Enviado! 🎉</h3>
+      </div>
+      <div class="public-modal-body" style="padding-top: 10px;">
+        <p style="margin-bottom: 25px; color: #444; font-size: 1.1rem;">Tu pedido ha sido registrado. Muchas gracias por confiar en DreamBake.</p>
+        <div style="display: flex; gap: 15px; justify-content: center;">
+          <button type="button" class="btn btn-grey" id="btn-keep-shopping" style="padding: 10px 20px; border-radius: 8px;">Seguir comprando</button>
+          <button type="button" class="btn btn-pink" id="btn-accept-success" style="padding: 10px 30px; border-radius: 8px;">Aceptar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    © <strong>Dulce Sueños Posadas</strong>
+  </footer>
+  
+  <script th:src="@{/js/header.js}"></script>
+  <script th:src="@{/js/public/store.js}"></script>
+</body>
+</html>
+

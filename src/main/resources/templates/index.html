@@ -13,6 +13,7 @@
   <link rel="stylesheet" th:href="@{/css/promo.css}">
   <link rel="stylesheet" th:href="@{/css/about.css}">
   <link rel="stylesheet" th:href="@{/css/footer.css}">
+  <link rel="stylesheet" th:href="@{/css/public.css}">
 </head>
 
 <body>
@@ -62,23 +63,20 @@
     <section class="about-section" aria-labelledby="about-title">
       <h2 id="about-title" class="about-title">Sobre Nosotros</h2>
       <div class="container about-inner">
-        
         <div class="about-left">
           <h3 class="about-subtitle">Vero y Maca</h3>
           <p class="about-text">
             Somos Vero y Maca, emprendedoras apasionadas por la pastelería artesanal.
             Nuestro objetivo es crear recuerdos dulces que acompañen a los momentos lindos de la vida.
             Trabajamos con ingredientes locales y recetas cuidadas para ofrecer productos frescos, personalizados y con sabor casero.
-            Buscamos generar experiencias memorables: desde tortas a medida hasta cajas de postres para eventos, siempre con atención cercana y entrega confiable.
           </p>
           <p class="about-actions">
             <a th:href="@{/contact}" class="btn btn-primary about-btn">Escribinos! ❤️</a>
           </p>
         </div>
-
         <div class="about-right" aria-hidden="false">
           <div class="about-image-wrap" role="img" aria-label="Vero y Maca, fundadoras de Dulce Sueños">
-            <img th:src="@{/img/about/veroymaca.jpg}" alt="Vero y Maca, fundadoras de Dulce Sueños" class="about-image">
+            <img th:src="@{/img/about/veroymaca.jpg}" alt="Vero y Maca" class="about-image">
           </div>
         </div>
       </div>
@@ -86,32 +84,8 @@
 
     <section class="wheel-gallery">
       <h2 class="gallery-title">Galería</h2>
-      <div class="wheel-carousel" id="wheelCarousel" tabindex="0" aria-roledescription="carousel">
-        <div class="wheel-track-wrapper">
-          <div class="wheel-track">
-            <div class="carousel-item">
-              <div class="product-image"><img th:src="@{/img/carousel/gallery1.jpg}" alt="Galería 1" loading="lazy"></div>
-              <div class="product-label">Galería 1</div>
-            </div>
-            <div class="carousel-item">
-              <div class="product-image"><img th:src="@{/img/carousel/gallery2.jpg}" alt="Galería 2" loading="lazy"></div>
-              <div class="product-label">Galería 2</div>
-            </div>
-            <div class="carousel-item">
-              <div class="product-image"><img th:src="@{/img/carousel/gallery3.jpg}" alt="Galería 3" loading="lazy"></div>
-              <div class="product-label">Galería 3</div>
-            </div>
-            <div class="carousel-item">
-              <div class="product-image"><img th:src="@{/img/carousel/gallery4.jpg}" alt="Galería 4" loading="lazy"></div>
-              <div class="product-label">Galería 4</div>
-            </div>
-            <div class="carousel-item">
-              <div class="product-image"><img th:src="@{/img/carousel/gallery5.jpg}" alt="Galería 5" loading="lazy"></div>
-              <div class="product-label">Galería 5</div>
-            </div>
-            </div>
-        </div>
-      </div>
+      <div class="wheel-carousel" id="wheelCarousel" tabindex="0">
+         </div>
     </section>
 
     <section class="promo-section" aria-labelledby="promo-title">
@@ -119,18 +93,15 @@
         <div class="promo-left">
           <h2 id="promo-title" class="promo-title">Promociones y novedades</h2>
           <p class="promo-lead">Suscribite al newsletter y recibí ofertas exclusivas, novedades y descuentos.</p>
-
           <form class="promo-subscribe" th:action="@{/subscribe}" method="post" id="promo-form" novalidate>
             <label for="promo-email" class="visually-hidden">Tu email</label>
             <input id="promo-email" name="email" type="email" placeholder="Ingresá tu email" required>
           </form>
-
           <p class="promo-note">Sin spam. Podés darte de baja cuando quieras.</p>
           <div class="promo-cta-wrap">
             <button type="submit" form="promo-form" class="promo-btn promo-btn-desktop">Suscribirse</button>
           </div>
         </div>
-
         <div class="promo-right" aria-hidden="false">
           <figure class="promo-card">
             <img th:src="@{/img/promo/promo-1.jpg}" alt="Cliente frecuente" class="promo-image">
@@ -151,5 +122,6 @@
 
   <script th:src="@{/js/header.js}"></script>
   <script th:src="@{/js/wheel-carousel.js}"></script>
+  <script th:src="@{/js/public/store.js}"></script>
 </body>
 </html>

@@ -6,17 +6,25 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class WebController {
 
-    // Tu mapeo original del index (si ya lo tienes así, déjalo)
     @GetMapping("/")
     public String index() {
         return "index";
     }
 
-    // NUEVO MAPEO: El constructor de tortas
     @GetMapping("/builder")
     public String cakeBuilder() {
-        return "builder"; // Busca el archivo builder.html en src/main/resources/templates/
+        return "builder";
     }
 
-    // ... (otros mapeos como /contact, /login, /admin, etc.)
+    // NUEVA RUTA PARA EL CARRITO
+    @GetMapping("/cart")
+    public String cartPage() {
+        return "cart";
+    }
+
+    // RUTA PARA PRODUCTOS PUBLICOS (Asegúrate de tenerla)
+    @GetMapping("/products")
+    public String productsPage() {
+        return "products";
+    }
 }

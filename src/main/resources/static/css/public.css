@@ -57,3 +57,4 @@
 .cart-item-row { display: flex; justify-content: space-between; padding: 15px; background: #f9f9f9; border-radius: 8px; margin-bottom: 10px; border: 1px solid #eee;}
 .cart-item-title { font-weight: 600; color: var(--accent); margin-bottom: 5px; }
 .cart-item-desc { font-size: 0.85rem; color: #666; line-height: 1.4;}
+@media(max-width: 768px){.cart-layout { grid-template-columns: 1fr !important; }}
