@@ -62,7 +62,145 @@
         <p>Métricas y reportes aparecerán aquí.</p>
       </section>
 
-      <section id="pedidos" class="tab-content"><h2>Pedidos</h2></section>
+      <section id="pedidos" class="tab-content">
+        <div class="product-module-container">
+          
+          <div class="calendar-wrapper">
+            <div class="calendar-header">
+              <button id="cal-prev">&lt;</button>
+              <h2 id="cal-month-year">...</h2>
+              <button id="cal-next">&gt;</button>
+            </div>
+            <div class="calendar-grid" id="calendar-grid"></div>
+          </div>
+
+          <div class="product-toolbar" style="padding-top: 0; border-bottom: none;">
+            <div class="order-tabs">
+              <button class="order-tab-btn active" data-tab="nuevos">
+                Nuevos Pedidos <span id="badge-new-orders" class="order-tab-badge" style="display:none;">0</span>
+              </button>
+              <button class="order-tab-btn" data-tab="agendados">Pedidos Agendados</button>
+              <button class="order-tab-btn" data-tab="completados">Pedidos Completados</button>
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: center; max-width: 500px;">
+              <input type="text" id="search-orders" class="form-input search-large" placeholder="🔍 Buscar por N° ref, teléfono o nombre...">
+            </div>
+          </div>
+
+          <div class="product-catalog-section" style="padding-top: 0;">
+            <div class="table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Ref #</th>
+                    <th>Cliente</th>
+                    <th>Contacto</th>
+                    <th id="th-sort-date" style="cursor:pointer;">Fecha de entrega ↕️</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                    <th style="text-align: center;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="orders-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+  <div id="modal-confirm-order" class="modal-overlay" hidden>
+    <div class="modal-card" style="max-width: 420px;">
+      <div class="modal-header" style="background: #fff; border-bottom: none;">
+        <h3 style="color: var(--accent);">Confirmar Pedido #<span id="co-id-label"></span></h3>
+        <button class="close-modal" onclick="document.getElementById('modal-confirm-order').hidden = true">&times;</button>
+      </div>
+      <div class="modal-body" style="padding-top: 5px;">
+        <p style="color: #666; font-size: 0.95rem; margin-bottom: 20px;">Verifica la fecha de entrega e ingresa el detalle del pago.</p>
+        
+        <div class="form-group mb-3">
+          <label>¿Para cuándo quiere la torta?</label>
+          <input type="date" id="co-date" class="form-input">
+        </div>
+
+        <div class="form-group mb-3" style="margin-top: 15px;">
+          <label>El cliente abonó:</label>
+          <select id="co-payment-type" class="form-input" onchange="toggleDepositInput()">
+            <option value="total">El Total del Pedido</option>
+            <option value="sena">Una Seña (Adelanto)</option>
+          </select>
+        </div>
+
+        <div class="form-group mb-3" id="co-deposit-group" style="display: none; margin-top: 15px;">
+          <label>Monto de la Seña Registrada ($)</label>
+          <input type="number" id="co-deposit" class="form-input" placeholder="Ej: 15000">
+        </div>
+
+        <button class="btn btn-pink btn-large" style="width: 100%; margin-top: 25px;" id="btn-submit-confirm">✅ Guardar y Agendar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-view-order" class="modal-overlay" hidden>
+    <div class="modal-card modal-large">
+      <div class="modal-header">
+        <h3 id="view-order-title" style="color: var(--accent); font-size: 1.4rem;">Pedido #X</h3>
+        <button class="close-modal" onclick="document.getElementById('modal-view-order').hidden = true">&times;</button>
+      </div>
+      <div class="modal-body" style="background: #fafafa; padding: 2rem;">
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+          <div class="order-details-box">
+            <h4 style="color: var(--accent); margin-top:0;">👤 Datos del Cliente</h4>
+            <p style="margin: 8px 0;"><strong>Nombre:</strong> <span id="vo-name"></span></p>
+            <p style="margin: 8px 0;"><strong>Teléfono:</strong> <span id="vo-phone"></span></p>
+            <p style="margin: 8px 0;"><strong>Email:</strong> <span id="vo-email"></span></p>
+          </div>
+          
+          <div class="order-details-box">
+            <h4 style="color: var(--accent); margin-top:0;">🚚 Logística y Finanzas</h4>
+            <div style="margin: 8px 0; display:flex; align-items:center; gap:10px;">
+              <strong>Fecha de Entrega:</strong> 
+              <input type="date" id="vo-date-input" class="form-input" style="padding: 4px; width: auto;">
+              <button class="btn btn-grey btn-sm" onclick="updateOrderDate()">Guardar</button>
+            </div>
+            <p style="margin: 8px 0;"><strong>Estado:</strong> <span id="vo-status-badge"></span></p>
+            <p style="margin: 8px 0; color: #25D366; font-weight: 600;">Seña Abonada: $<span id="vo-deposit"></span></p>
+          </div>
+        </div>
+        
+        <h4 style="color: var(--accent); margin-bottom: 10px; padding: 0 10px;">Artículos del Pedido</h4>
+        <div id="vo-items-container" class="order-details-box" style="padding: 10px 20px;"></div>
+        
+        <h2 style="text-align: right; margin-top: 20px; color: #333; padding: 0 15px;">Total: $<span id="vo-total"></span></h2>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-day-orders" class="modal-overlay" hidden>
+    <div class="modal-card modal-large">
+      <div class="modal-header">
+        <h3 id="day-orders-title" style="color: var(--accent);">Entregas para el xx/xx/xxxx</h3>
+        <button class="close-modal" onclick="document.getElementById('modal-day-orders').hidden = true">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Ref #</th>
+                <th>Cliente</th>
+                <th>Total</th>
+                <th>Estado</th>
+                <th style="text-align:center;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="day-orders-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 
       <section id="clientes" class="tab-content">
         <div class="product-module-container">
@@ -406,6 +544,60 @@
     </div>
   </div>
 
+  <div id="modal-view-order" class="modal-overlay" hidden>
+    <div class="modal-card modal-large">
+      <div class="modal-header">
+        <h3 id="view-order-title">Detalle del Pedido</h3>
+        <button class="close-modal" onclick="document.getElementById('modal-view-order').hidden = true">&times;</button>
+      </div>
+      <div class="modal-body" style="background: #fafafa;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+          <div style="background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #eee;">
+            <h4 style="color: var(--accent); margin-top:0;">Datos del Cliente</h4>
+            <p><strong>Nombre:</strong> <span id="vo-name"></span></p>
+            <p><strong>Teléfono:</strong> <span id="vo-phone"></span></p>
+            <p><strong>Email:</strong> <span id="vo-email"></span></p>
+          </div>
+          <div style="background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #eee;">
+            <h4 style="color: var(--accent); margin-top:0;">Logística y Pago</h4>
+            <p><strong>Fecha de Retiro:</strong> <span id="vo-date"></span></p>
+            <p><strong>Turno:</strong> <span id="vo-shift"></span></p>
+            <p><strong>Seña Registrada:</strong> $<span id="vo-deposit"></span></p>
+          </div>
+        </div>
+        
+        <h4 style="color: var(--accent);">Artículos del Pedido</h4>
+        <div id="vo-items-container" style="background: #fff; border-radius: 8px; border: 1px solid #eee; padding: 10px;"></div>
+        
+        <h3 style="text-align: right; margin-top: 20px; color: #333;">Total: $<span id="vo-total"></span></h3>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-day-orders" class="modal-overlay" hidden>
+    <div class="modal-card modal-large">
+      <div class="modal-header">
+        <h3 id="day-orders-title">Pedidos del Día</h3>
+        <button class="close-modal" onclick="document.getElementById('modal-day-orders').hidden = true">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Ref #</th>
+                <th>Cliente</th>
+                <th>Total</th>
+                <th>Estado</th>
+                <th style="text-align:center;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="day-orders-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
   
 
   <input type="file" id="hidden-file-input" accept="image/*" hidden>
@@ -417,6 +609,7 @@
   <script th:src="@{/js/admin/gallery.js}" defer></script>
   <script th:src="@{/js/admin/inventory.js}" defer></script>
   <script th:src="@{/js/admin/products.js}" defer></script>
+  <script th:src="@{/js/admin/orders.js}" defer></script>
 
 </body>
 </html>

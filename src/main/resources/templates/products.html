@@ -9,9 +9,9 @@
 
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="styles/main.css">
-  <link rel="stylesheet" href="styles/header.css">
-  <link rel="stylesheet" href="styles/products.css">
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+  <link rel="stylesheet" th:href="@{/css/header.css}">
+  <link rel="stylesheet" th:href="@{/css/products.css}">
 </head>
 <body class="site">
 
@@ -69,7 +69,7 @@
     </div>
   </footer>
 
-  <script src="scripts/header.js" defer></script>
-  <script src="scripts/products.js" defer></script>
+  <script th:src="@{/js/header.js}"></script>
+  <script th:src="@{/js/products.js}"></script>
 </body>
 </html>
