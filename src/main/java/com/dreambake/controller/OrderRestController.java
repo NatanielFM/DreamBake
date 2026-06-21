@@ -49,9 +49,8 @@ public class OrderRestController {
         return ResponseEntity.notFound().build();
     }
 
-    // ================= MAGIA DE NEGOCIO ACTUALIZADA =================
+    // ================= EDICIÓN Y CONFIRMACIÓN =================
 
-    // Añadimos LocalDate para poder cambiar la fecha al confirmar
     public record ConfirmRequest(Double deposit, LocalDate deliveryDate) {
     }
 
@@ -66,6 +65,7 @@ public class OrderRestController {
             }
             orderRepo.save(order);
 
+            // Auto-crear cliente
             if (order.getCustomerPhone() != null && !order.getCustomerPhone().trim().isEmpty()) {
                 Optional<Customer> existingCustomer = customerRepo.findByPhone(order.getCustomerPhone());
                 if (existingCustomer.isEmpty()) {
@@ -73,7 +73,6 @@ public class OrderRestController {
                     newCustomer.setName(order.getCustomerName());
                     newCustomer.setPhone(order.getCustomerPhone());
                     newCustomer.setEmail(order.getCustomerEmail());
-
                     CustomerTag tag = tagRepo.findByName("Sin etiqueta").orElse(null);
                     newCustomer.setTag(tag);
                     customerRepo.save(newCustomer);
@@ -83,14 +82,31 @@ public class OrderRestController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
-    // Para modificar SÓLO la fecha desde los detalles del pedido
-    public record DateUpdateRequest(LocalDate deliveryDate) {
-    }
-
-    @PutMapping("/{id}/date")
-    public ResponseEntity<?> updateOrderDate(@PathVariable Long id, @RequestBody DateUpdateRequest req) {
+    // EDICIÓN COMPLETA DEL PEDIDO (Desde el botón "Editar" del Modal)
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateOrderFull(@PathVariable Long id, @RequestBody Order updatedOrder) {
         return orderRepo.findById(id).map(order -> {
-            order.setDeliveryDate(req.deliveryDate());
+            order.setCustomerName(updatedOrder.getCustomerName());
+            order.setCustomerPhone(updatedOrder.getCustomerPhone());
+            order.setCustomerEmail(updatedOrder.getCustomerEmail());
+            order.setDeliveryDate(updatedOrder.getDeliveryDate());
+            order.setTotalPrice(updatedOrder.getTotalPrice());
+            order.setDeposit(updatedOrder.getDeposit());
+
+            // Si el estado viene en la petición, lo actualizamos (útil para pedidos
+            // manuales)
+            if (updatedOrder.getStatus() != null) {
+                order.setStatus(updatedOrder.getStatus());
+            }
+
+            // Limpiamos los ítems viejos y guardamos el nuevo texto "aplanado"
+            order.getItems().clear();
+            if (updatedOrder.getItems() != null) {
+                for (OrderItem item : updatedOrder.getItems()) {
+                    item.setOrder(order);
+                    order.getItems().add(item);
+                }
+            }
             return ResponseEntity.ok(orderRepo.save(order));
         }).orElse(ResponseEntity.notFound().build());
     }

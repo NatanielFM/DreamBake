@@ -1,19 +1,18 @@
-// /js/admin/orders.js - Módulo de Pedidos y Calendario
+// /js/admin/orders.js - Módulo de Pedidos, Edición y Calendario
 document.addEventListener('DOMContentLoaded', () => {
 
   let dbOrders = [];
-  let currentTab = 'nuevos'; // 'nuevos', 'agendados', 'completados'
+  let currentTab = 'nuevos'; 
   
   let currentDate = new Date();
   let currentMonth = currentDate.getMonth();
   let currentYear = currentDate.getFullYear();
 
-  // SVGs para Botones
+  // SVGs
   const iconCheck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
   const iconEye = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
   const iconX = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
   const iconTrash = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
-  const iconUndo = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>`; // Usaremos una flecha de volver
   const iconRevert = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>`;
 
   const months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
@@ -28,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderTable();
         updateBadges();
       }
-    } catch (e) { console.error("Error al cargar pedidos:", e); }
+    } catch (e) { console.error(e); }
   }
 
   function updateBadges() {
@@ -40,12 +39,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Helper para generar etiquetas estéticas
   function getStatusBadge(status) {
     switch(status) {
       case 'PENDING': return `<span class="status-badge status-pending">Pendiente</span>`;
       case 'CONFIRMED': return `<span class="status-badge status-agendado">Agendado</span>`;
-      case 'IN_PROGRESS': return `<span class="status-badge status-agendado">En Preparación</span>`; // Se asimila a Agendado
+      case 'IN_PROGRESS': return `<span class="status-badge status-agendado">En Preparación</span>`; 
       case 'COMPLETED': return `<span class="status-badge status-completado">Completado</span>`;
       default: return `<span class="status-badge status-cancelled">Cancelado</span>`;
     }
@@ -73,16 +71,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const today = new Date();
     for (let i = 1; i <= daysInMonth; i++) {
       const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-      
-      // Mostrar tanto Agendados (CONFIRMED) como Completados en el calendario
       const dayOrders = dbOrders.filter(o => o.deliveryDate === dateStr && (o.status === 'CONFIRMED' || o.status === 'COMPLETED'));
 
       let isTodayClass = (i === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear()) ? 'today' : '';
-      
-      let badgesHtml = '';
-      if (dayOrders.length > 0) {
-        badgesHtml = `<div class="order-badge" style="background:var(--accent);">${dayOrders.length} pedido(s)</div>`;
-      }
+      let badgesHtml = dayOrders.length > 0 ? `<div class="order-badge" style="background:var(--accent);">${dayOrders.length} pedido(s)</div>` : '';
 
       const dayCell = document.createElement('div');
       dayCell.className = `calendar-day ${isTodayClass}`;
@@ -95,6 +87,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('cal-prev')?.addEventListener('click', () => { currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(); });
   document.getElementById('cal-next')?.addEventListener('click', () => { currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; } renderCalendar(); });
+
+  // Función para mover el calendario automáticamente al mes de la fecha modificada
+  function jumpCalendarToDate(dateString) {
+    if(!dateString) return;
+    const parts = dateString.split('-');
+    currentYear = parseInt(parts[0]);
+    currentMonth = parseInt(parts[1]) - 1;
+    loadOrders();
+  }
 
   // ================= 3. TABLA DE PEDIDOS =================
   const tabs = document.querySelectorAll('.order-tab-btn');
@@ -147,13 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <button class="btn btn-grey btn-sm" title="Ver" onclick="actionView(${o.id})">${iconEye} Ver</button>
           <button class="btn btn-red btn-sm" title="Rechazar" onclick="actionReject(${o.id})">${iconX}</button>
         `;
-      } else if (currentTab === 'agendados') {
-        actionsHtml = `
-          <button class="btn btn-grey btn-sm" title="Ver" onclick="actionView(${o.id})">${iconEye} Ver</button>
-          <button class="btn btn-red btn-sm" title="Eliminar" onclick="actionDelete(${o.id})">${iconTrash}</button>
-        `;
       } else {
-        // En Completados solo ver y eliminar
         actionsHtml = `
           <button class="btn btn-grey btn-sm" title="Ver" onclick="actionView(${o.id})">${iconEye} Ver</button>
           <button class="btn btn-red btn-sm" title="Eliminar" onclick="actionDelete(${o.id})">${iconTrash}</button>
@@ -167,14 +162,35 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${day}/${month}/${year}</td>
         <td style="font-weight:bold;">$${o.totalPrice.toLocaleString('es-AR')}</td>
         <td>${getStatusBadge(o.status)}</td>
-        <td style="text-align:center; display:flex; gap:6px; justify-content:center;">${actionsHtml}</td>
+        <td><div class="action-buttons-container">${actionsHtml}</div></td>
       `;
       tbody.appendChild(tr);
     });
   }
 
-  // ================= 4. CONFIRMACIÓN Y ESTADOS =================
+  // ================= 4. CONFIRMACIÓN Y FECHAS ANTIGUAS =================
   let orderToConfirm = null;
+  let onDateConfirmedCallback = null;
+
+  function isPastDate(dateStr) {
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    return dateStr < todayStr;
+  }
+
+  function handleDateWarning(dateStr, callback) {
+    if (isPastDate(dateStr)) {
+      onDateConfirmedCallback = callback;
+      document.getElementById('modal-past-date').hidden = false;
+    } else {
+      callback();
+    }
+  }
+
+  document.getElementById('btn-confirm-past-date')?.addEventListener('click', () => {
+    document.getElementById('modal-past-date').hidden = true;
+    if(onDateConfirmedCallback) onDateConfirmedCallback();
+  });
 
   window.openConfirmModal = function(id) {
     orderToConfirm = dbOrders.find(o => o.id === id);
@@ -182,6 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('co-id-label').innerText = orderToConfirm.id;
     document.getElementById('co-date').value = orderToConfirm.deliveryDate;
+    document.getElementById('co-hidden-total').value = orderToConfirm.totalPrice;
     document.getElementById('co-payment-type').value = 'total';
     document.getElementById('co-deposit-group').style.display = 'none';
     document.getElementById('co-deposit').value = '';
@@ -194,40 +211,57 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('co-deposit-group').style.display = (type === 'sena') ? 'block' : 'none';
   };
 
-  document.getElementById('btn-submit-confirm')?.addEventListener('click', async () => {
+  document.getElementById('btn-submit-confirm')?.addEventListener('click', () => {
     if(!orderToConfirm) return;
 
     const newDate = document.getElementById('co-date').value;
     const isSena = document.getElementById('co-payment-type').value === 'sena';
-    let depositValue = isSena ? parseFloat(document.getElementById('co-deposit').value) : orderToConfirm.totalPrice;
+    const total = parseFloat(document.getElementById('co-hidden-total').value);
+    let depositValue = isSena ? parseFloat(document.getElementById('co-deposit').value) : total;
 
     if (isSena && (isNaN(depositValue) || depositValue <= 0)) {
       window.showErrorAlert("Por favor, ingresa un monto válido para la seña.");
       return;
     }
+    if (depositValue > total) {
+      window.showErrorAlert(`La seña ($${depositValue}) no puede ser mayor al total del pedido ($${total}).`);
+      return;
+    }
 
-    try {
-      const res = await fetch(`/api/orders/${orderToConfirm.id}/confirm`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deposit: depositValue, deliveryDate: newDate })
-      });
-      if (res.ok) {
-        document.getElementById('modal-confirm-order').hidden = true;
-        loadOrders();
-      }
-    } catch(e) { console.error(e); }
+    handleDateWarning(newDate, async () => {
+      try {
+        const res = await fetch(`/api/orders/${orderToConfirm.id}/confirm`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deposit: depositValue, deliveryDate: newDate })
+        });
+        if (res.ok) {
+          document.getElementById('modal-confirm-order').hidden = true;
+          jumpCalendarToDate(newDate); // Auto actualiza
+        }
+      } catch(e) { console.error(e); }
+    });
   });
 
-  window.actionReject = async function(id) {
-    if(!confirm("¿Seguro que deseas rechazar este pedido?")) return;
+  // ================= 5. RECHAZAR Y ELIMINAR =================
+  let orderToRejectId = null;
+
+  window.actionReject = function(id) {
+    orderToRejectId = id;
+    document.getElementById('modal-reject-order').hidden = false;
+  };
+
+  document.getElementById('btn-confirm-reject')?.addEventListener('click', async () => {
+    if(!orderToRejectId) return;
     try {
-      const res = await fetch(`/api/orders/${id}/status`, {
+      const res = await fetch(`/api/orders/${orderToRejectId}/status`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'CANCELLED' })
       });
-      if (res.ok) loadOrders();
+      if (res.ok) {
+        document.getElementById('modal-reject-order').hidden = true;
+        loadOrders();
+      }
     } catch(e) {}
-  };
+  });
 
   window.actionDelete = async function(id) {
     window.showConfirmModal("Eliminar Pedido", "¿Seguro que deseas eliminar este pedido permanentemente?", "Eliminar", "btn-red", async () => {
@@ -241,55 +275,139 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  // ================= 5. MODAL VER DETALLES Y EDITAR FECHA =================
-  let viewingOrderId = null;
+  // ================= 6. VER Y EDITAR PEDIDO =================
+  let viewingOrder = null;
+
+  // Función auxiliar que SOLO llena los datos (Separa los datos de la interfaz)
+  function fillViewModal(order) {
+    document.getElementById('view-order-title').innerText = `Pedido - N° Ref #${order.id}`;
+    document.getElementById('vo-name').value = order.customerName || '';
+    document.getElementById('vo-phone').value = order.customerPhone || '';
+    document.getElementById('vo-date-input').value = order.deliveryDate;
+    document.getElementById('vo-total').value = order.totalPrice;
+    document.getElementById('vo-deposit').value = order.deposit;
+
+    // Aplanar items a texto
+    let detailsText = "";
+    order.items.forEach(i => {
+      detailsText += `[${i.productType}] - ${i.details}\n\n`;
+    });
+    document.getElementById('vo-items-details').value = detailsText.trim();
+  }
+
+  // Función auxiliar que SOLO maneja lo visual (bloquear/desbloquear cajones)
+  function toggleReadOnlyUI(isReadOnly) {
+    document.querySelectorAll('#modal-view-order .form-input').forEach(input => {
+      if(isReadOnly) {
+        input.classList.add('readonly-mode');
+        input.setAttribute('readonly', 'true');
+      } else {
+        input.classList.remove('readonly-mode');
+        input.removeAttribute('readonly');
+      }
+    });
+    document.getElementById('btn-enable-edit').hidden = !isReadOnly;
+    document.getElementById('vo-save-container').hidden = isReadOnly;
+  }
 
   window.actionView = function(id) {
-    const order = dbOrders.find(o => o.id === id);
-    if(!order) return;
-    viewingOrderId = order.id;
+    viewingOrder = dbOrders.find(o => o.id === id);
+    if(!viewingOrder) return;
 
-    document.getElementById('view-order-title').innerText = `Pedido #${order.id}`;
-    document.getElementById('vo-name').innerText = order.customerName;
-    document.getElementById('vo-phone').innerText = order.customerPhone;
-    document.getElementById('vo-email').innerText = order.customerEmail || 'No provisto';
+    toggleReadOnlyUI(true); // 1. Bloqueamos la interfaz visualmente
+    fillViewModal(viewingOrder); // 2. Llenamos los datos sin bucles infinitos
     
-    document.getElementById('vo-date-input').value = order.deliveryDate;
-    document.getElementById('vo-status-badge').innerHTML = getStatusBadge(order.status);
-    document.getElementById('vo-deposit').innerText = order.deposit.toLocaleString('es-AR');
-    document.getElementById('vo-total').innerText = order.totalPrice.toLocaleString('es-AR');
-
-    const itemsContainer = document.getElementById('vo-items-container');
-    itemsContainer.innerHTML = '';
-    order.items.forEach(item => {
-      itemsContainer.innerHTML += `
-        <div style="padding: 10px; border-bottom: 1px dashed #eee;">
-          <div style="font-weight:600; color:var(--accent);">${item.productType} <span style="float:right; color:#333;">$${item.price.toLocaleString('es-AR')}</span></div>
-          <div style="font-size:0.85rem; color:#666; margin-top:5px;">${item.details}</div>
-        </div>
-      `;
-    });
-
     document.getElementById('modal-view-order').hidden = false;
   };
 
-  window.updateOrderDate = async function() {
-    if(!viewingOrderId) return;
-    const newDate = document.getElementById('vo-date-input').value;
-    if(!newDate) return;
-
-    try {
-      const res = await fetch(`/api/orders/${viewingOrderId}/date`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ deliveryDate: newDate })
-      });
-      if (res.ok) {
-        window.showSuccessAlert("Fecha actualizada correctamente.");
-        loadOrders();
-      }
-    } catch(e) { console.error(e); }
+  // Botón "Editar Pedido"
+  window.enableEditMode = function() {
+    toggleReadOnlyUI(false); 
   };
 
-  // ================= 6. MODAL DEL CALENDARIO (DÍA ESPECÍFICO) =================
+  // Botón "Cancelar" dentro de la edición
+  window.disableEditMode = function() {
+    toggleReadOnlyUI(true); 
+    if(viewingOrder) {
+      fillViewModal(viewingOrder); // Restaura los datos originales si escribió algo y canceló
+    }
+  };
+
+  window.saveEditedOrder = async function() {
+    if(!viewingOrder) return;
+
+    const newDate = document.getElementById('vo-date-input').value;
+    const newTotal = parseFloat(document.getElementById('vo-total').value);
+    const newDeposit = parseFloat(document.getElementById('vo-deposit').value);
+
+    if (newDeposit > newTotal) {
+      window.showPublicAlert("La seña no puede ser mayor al total del pedido.");
+      return;
+    }
+
+    const updatedOrder = {
+      customerName: document.getElementById('vo-name').value,
+      customerPhone: document.getElementById('vo-phone').value,
+      deliveryDate: newDate,
+      totalPrice: newTotal,
+      deposit: newDeposit,
+      items: [{ productType: "Detalles del Pedido", details: document.getElementById('vo-items-details').value, price: newTotal }]
+    };
+
+    handleDateWarning(newDate, async () => {
+      try {
+        const res = await fetch(`/api/orders/${viewingOrder.id}`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatedOrder)
+        });
+        if (res.ok) {
+          document.getElementById('modal-view-order').hidden = true;
+          jumpCalendarToDate(newDate); // Actualiza y salta al calendario correcto
+        }
+      } catch(e) { console.error(e); }
+    });
+  };
+
+  // ================= 7. CREAR PEDIDO MANUAL =================
+  window.openManualOrderModal = function() {
+    document.getElementById('form-manual-order').reset();
+    document.getElementById('modal-manual-order').hidden = false;
+  };
+
+  document.getElementById('form-manual-order')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const newDate = document.getElementById('mo-date').value;
+    const total = parseFloat(document.getElementById('mo-total').value);
+    const deposit = parseFloat(document.getElementById('mo-deposit').value);
+
+    if(deposit > total) {
+      window.showErrorAlert("La seña no puede ser mayor al total.");
+      return;
+    }
+
+    const orderData = {
+      customerName: document.getElementById('mo-name').value,
+      customerPhone: document.getElementById('mo-phone').value,
+      deliveryDate: newDate,
+      totalPrice: total,
+      deposit: deposit,
+      status: document.getElementById('mo-status').value,
+      items: [{ productType: "Pedido Manual", details: document.getElementById('mo-details').value, price: total }]
+    };
+
+    handleDateWarning(newDate, async () => {
+      try {
+        const res = await fetch('/api/orders', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderData)
+        });
+        if (res.ok) {
+          document.getElementById('modal-manual-order').hidden = true;
+          jumpCalendarToDate(newDate);
+        }
+      } catch(err) { console.error(err); }
+    });
+  });
+
+  // ================= 8. MODAL DEL CALENDARIO =================
   let currentDayModalDate = null;
 
   window.openDayOrders = function(dateStr, ordersArray) {
@@ -309,12 +427,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     ordersArray.forEach(o => {
       let actionsHtml = '';
-      
       if (o.status === 'CONFIRMED') {
         actionsHtml = `
           <button class="btn btn-grey btn-sm" title="Ver" onclick="actionView(${o.id})">${iconEye}</button>
           <button class="btn btn-red btn-sm" title="Eliminar" onclick="actionDelete(${o.id})">${iconTrash}</button>
-          <button class="btn btn-sm" style="background:#25D366; color:#fff;" title="Marcar como Completado" onclick="setOrderStatus(${o.id}, 'COMPLETED')">${iconCheck}</button>
+          <button class="btn btn-sm" style="background:#25D366; color:#fff;" title="Marcar Completado" onclick="setOrderStatus(${o.id}, 'COMPLETED')">${iconCheck}</button>
         `;
       } else if (o.status === 'COMPLETED') {
         actionsHtml = `
@@ -329,7 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td>${o.customerName} <br><small>${o.customerPhone}</small></td>
           <td style="font-weight:bold;">$${o.totalPrice.toLocaleString('es-AR')}</td>
           <td>${getStatusBadge(o.status)}</td>
-          <td style="text-align:center; display:flex; gap:6px; justify-content:center;">${actionsHtml}</td>
+          <td><div class="action-buttons-container">${actionsHtml}</div></td>
         </tr>
       `;
     });
@@ -342,7 +459,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       if (res.ok) {
         await loadOrders(); 
-        // Actualizamos el modal del día en caliente para que el usuario vea el cambio instantáneo
         const dayOrders = dbOrders.filter(o => o.deliveryDate === currentDayModalDate && (o.status === 'CONFIRMED' || o.status === 'COMPLETED'));
         renderDayModalTable(dayOrders);
       }

@@ -274,3 +274,24 @@ body.sidebar-toggled .dashboard { margin-left: 0; }
   .filter-chips { flex-direction: column; width: 100%; }
   .filter-chips .chip { width: 100%; text-align: center; justify-content: center; }
 }
+
+/* Fix para que los botones de acción no rompan el ancho de la tabla */
+.action-buttons-container {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    flex-wrap: wrap;
+    min-width: 120px;
+}
+
+/* Campos en modo lectura (sin bordes llamativos) */
+.form-input.readonly-mode {
+    background-color: #f9f9f9;
+    border-color: transparent;
+    color: #555;
+    cursor: default;
+}
+.form-input.readonly-mode:focus {
+    outline: none;
+    border-color: transparent;
+}
