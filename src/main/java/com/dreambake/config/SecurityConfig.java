@@ -18,7 +18,6 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // AGREGAMOS /products y /cart a las rutas permitidas
                         .requestMatchers("/", "/builder", "/products", "/cart", "/register", "/css/**", "/js/**",
                                 "/img/**", "/uploads/**")
                         .permitAll()

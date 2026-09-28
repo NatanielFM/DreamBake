@@ -1,75 +1,177 @@
-<!-- products.html -->
 <!doctype html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security6">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Productos — Dulce Sueños</title>
-  <meta name="description" content="Listado de productos. Agregá y gestioná productos desde el panel de administración." />
+  <meta name="description" content="Catálogo de productos de Dulce Sueños Posadas." />
 
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" th:href="@{/css/main.css}">
   <link rel="stylesheet" th:href="@{/css/header.css}">
+  <link rel="stylesheet" th:href="@{/css/public.css}">
   <link rel="stylesheet" th:href="@{/css/products.css}">
+  <link rel="stylesheet" th:href="@{/css/footer.css}">
 </head>
 <body class="site">
 
-  <!-- Header por script-->
-  <div id="header"></div>
+  <!-- 1. Header de Thymeleaf (Punto 2) -->
+  <div th:replace="~{fragments/header :: header}"></div>
 
   <!-- Main -->
-  <main id="main" style="padding-top: var(--header-height);">
-    <section class="products-hero" aria-labelledby="products-title">
+  <main id="main" style="padding-top: var(--header-height); min-height: 80vh;">
+    <section class="products-hero" aria-labelledby="products-title" style="padding: 2.5rem 1rem; max-width: 1200px; margin: 0 auto;">
       <div class="container">
-        <h1 id="products-title" class="page-title">Productos</h1>
-        <p class="page-lead">Listado de productos. Agregá nuevos productos desde el panel de administración.</p>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 1.5rem;">
+          <div>
+            <h1 id="products-title" class="page-title" style="color: var(--accent); font-size: 2.2rem; margin-bottom: 0.3rem;">Nuestros Productos</h1>
+            <p class="page-lead" style="color: #555;">Tentate con nuestras opciones listas para encargar o armá tu torta a medida.</p>
+          </div>
+          <a th:href="@{/builder}" class="btn btn-pink" style="text-decoration: none; padding: 12px 22px; border-radius: 10px; font-weight: 700; background: var(--accent); color: #fff;">
+            🎂 Ir al Creador de Tortas
+          </a>
+        </div>
 
-        <!-- Controles: búsqueda y filtro (preparados) -->
-        <div class="products-controls" role="region" aria-label="Controles de productos">
-          <input id="search" class="search-input" type="search" placeholder="Buscar producto..." aria-label="Buscar producto">
-          <select id="categoryFilter" class="select-filter" aria-label="Filtrar por categoría">
-            <option value="">Todas las categorías</option>
+        <!-- Controles: búsqueda y filtro por categoría -->
+        <div class="products-controls" role="region" aria-label="Controles de productos" style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 2rem;">
+          <input id="search" class="search-input" type="search" placeholder="🔍 Buscar producto por nombre..." aria-label="Buscar producto" style="flex: 1; min-width: 240px; padding: 12px 16px; border-radius: 10px; border: 1px solid #ddd; font-family: inherit;">
+          
+          <select id="categoryFilter" class="select-filter" aria-label="Filtrar por categoría" style="padding: 12px 16px; border-radius: 10px; border: 1px solid #ddd; font-family: inherit; min-width: 200px; background: #fff;">
+            <option value="all">Todas las categorías</option>
+            <option th:each="cat : ${categories}" 
+                    th:value="${cat.name}" 
+                    th:text="${cat.name}">Categoría</option>
           </select>
         </div>
 
-        <!-- Grid de productos -->
-        <div id="productsGrid" class="products-grid" aria-live="polite" aria-busy="false">
-          <!-- Productos renderizados por products.js -->
+        <!-- Grid de productos renderizado desde MySQL (Punto 5) -->
+        <div id="productsGrid" class="products-grid" th:if="${!#lists.isEmpty(products)}">
+          <div class="product-card catalog-item" 
+               th:each="prod : ${products}"
+               th:attr="data-name=${prod.name.toLowerCase()}, data-category=${prod.category != null ? prod.category.name : 'Sin Categoría'}"
+               style="display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; background: #fff; border-radius: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.08);">
+            
+            <div>
+              <div class="product-image" style="height: 240px; background: #f7f7f7; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                <img th:if="${prod.imageUrl != null and !prod.imageUrl.isEmpty()}" 
+                     th:src="${prod.imageUrl}" 
+                     th:alt="${prod.name}" 
+                     style="width: 100%; height: 100%; object-fit: cover;" loading="lazy">
+                <span th:if="${prod.imageUrl == null or prod.imageUrl.isEmpty()}" style="color: #aaa; font-weight: 600;">Sin imagen</span>
+              </div>
+
+              <div style="padding: 1.25rem;">
+                <span th:if="${prod.category != null}" 
+                      th:text="${prod.category.name}" 
+                      style="display: inline-block; background: rgba(224,72,127,0.12); color: var(--accent); font-size: 0.78rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; margin-bottom: 8px;">
+                  Categoría
+                </span>
+                <h3 th:text="${prod.name}" style="font-size: 1.25rem; color: #222; margin: 0 0 6px 0;">Nombre del Producto</h3>
+                <p th:text="${prod.description != null and !prod.description.isEmpty() ? prod.description : 'Elaborado artesanalmente con ingredientes de primera calidad.'}" 
+                   style="font-size: 0.9rem; color: #666; margin-bottom: 1rem; line-height: 1.4;">
+                  Descripción
+                </p>
+              </div>
+            </div>
+
+            <div style="padding: 0 1.25rem 1.25rem 1.25rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f2f2f2; padding-top: 12px;">
+              <span style="font-size: 1.3rem; font-weight: 800; color: var(--accent);">
+                $<span th:text="${#numbers.formatDecimal(prod.price, 0, 'POINT', 0, 'COMMA')}">0</span>
+              </span>
+              <button type="button" 
+                      class="btn btn-pink"
+                      th:attr="data-prod-name=${prod.name}, data-prod-desc=${prod.description != null ? prod.description : 'Catálogo general'}, data-prod-price=${prod.price}"
+                      onclick="addCatalogProductToCart(this)"
+                      style="background: var(--accent); color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                + Agregar al pedido
+              </button>
+            </div>
+
+          </div>
         </div>
 
-        <!-- Estado vacío -->
-        <div id="emptyState" class="empty-state visually-hidden" role="status" aria-live="polite">
-          <h2>No hay productos aún</h2>
-          <p>Parece que todavía no agregaste productos. Podés hacerlo desde el panel de administración.</p>
-          <a class="btn btn-primary" href="admin.html">Ir al panel de administración</a>
+        <!-- Estado vacío si no hay productos en la BD o al filtrar -->
+        <div id="emptyState" class="empty-state" th:style="${#lists.isEmpty(products) ? 'display:block; text-align:center; padding: 3rem;' : 'display:none; text-align:center; padding: 3rem;'}" role="status" aria-live="polite">
+          <h2 style="color: var(--accent); margin-bottom: 0.5rem;">No se encontraron productos</h2>
+          <p style="color: #666; margin-bottom: 1.5rem;">Probá buscando con otro término o explorá nuestro creador de tortas.</p>
+          <a sec:authorize="hasAuthority('ADMIN')" class="btn btn-pink" th:href="@{/admin}" style="background: var(--accent); color: #fff; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+            Ir al panel de administración
+          </a>
         </div>
 
-        <!-- Paginación placeholder -->
-        <div id="pagination" class="pagination" aria-hidden="true"></div>
       </div>
     </section>
   </main>
 
-  <!-- Modal de detalle (accesible) -->
-  <div id="productModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="modalTitle">
-    <div class="modal-backdrop" data-dismiss="modal"></div>
-    <div class="modal-panel" role="document">
-      <button class="modal-close" aria-label="Cerrar" data-dismiss="modal">✕</button>
-      <div class="modal-body">
-        <h3 id="modalTitle">Producto</h3>
-        <div id="modalContent"></div>
-      </div>
-    </div>
-  </div>
-
   <footer class="site-footer">
-    <div class="footer-inner">
-      <div>© <span id="year"></span> Dulce Sueños</div>
+    <div class="footer-inner" style="text-align: center; padding: 1.5rem;">
+      <div>© <strong>Dulce Sueños Posadas</strong></div>
     </div>
   </footer>
 
-  <script th:src="@{/js/header.js}"></script>
-  <script th:src="@{/js/products.js}"></script>
+  <script th:src="@{/js/header.js}" defer></script>
+  <script th:src="@{/js/public/store.js}" defer></script>
+
+  <!-- Lógica ligera de filtrado y conexión con el carrito de store.js -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const searchInput = document.getElementById('search');
+      const categoryFilter = document.getElementById('categoryFilter');
+      const items = document.querySelectorAll('.catalog-item');
+      const emptyState = document.getElementById('emptyState');
+
+      function filterProducts() {
+        const query = (searchInput?.value || '').toLowerCase().trim();
+        const cat = categoryFilter?.value || 'all';
+        let visibleCount = 0;
+
+        items.forEach(card => {
+          const name = card.getAttribute('data-name') || '';
+          const itemCat = card.getAttribute('data-category') || '';
+          const matchesSearch = name.includes(query);
+          const matchesCat = (cat === 'all') || (itemCat === cat);
+
+          if (matchesSearch && matchesCat) {
+            card.style.display = 'flex';
+            visibleCount++;
+          } else {
+            card.style.display = 'none';
+          }
+        });
+
+        if (emptyState) {
+          emptyState.style.display = visibleCount === 0 ? 'block' : 'none';
+        }
+      }
+
+      searchInput?.addEventListener('input', filterProducts);
+      categoryFilter?.addEventListener('change', filterProducts);
+    });
+
+    function addCatalogProductToCart(btn) {
+      const name = btn.getAttribute('data-prod-name');
+      const desc = btn.getAttribute('data-prod-desc') || 'Producto del catálogo';
+      const price = parseFloat(btn.getAttribute('data-prod-price')) || 0;
+
+      let currentCart = [];
+      try {
+        currentCart = JSON.parse(localStorage.getItem('dreamBakeCart')) || [];
+      } catch (e) {
+        currentCart = [];
+      }
+
+      currentCart.push({
+        productType: name,
+        details: desc,
+        price: price
+      });
+
+      localStorage.setItem('dreamBakeCart', JSON.stringify(currentCart));
+
+      // Sincronizamos con store.js recargando el estado o abriendo el mini-carrito
+      window.location.reload();
+    }
+  </script>
 </body>
 </html>

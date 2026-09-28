@@ -1,24 +1,53 @@
-// /js/public/store.js - Lógica del E-commerce Global
-document.addEventListener('DOMContentLoaded', () => {
+// /js/public/store.js - Lógica del E-commerce Global y Creador Modular
+document.addEventListener('DOMContentLoaded', async () => {
 
   const currentPath = window.location.pathname;
   
   // 1. BLOQUEO DEL ADMIN: No ejecutar nada de esto si estamos en el panel
   if (currentPath.startsWith('/admin')) return;
 
-  const cakeSizes = [
-    { id: '10p', name: '10 porciones (14x12cm)', price: 44000, maxRellenos: 2, mixSponge: false },
-    { id: '15p', name: '15 porciones (14x15cm)', price: 60000, maxRellenos: 2, mixSponge: false },
-    { id: '20p', name: '20 porciones (16x15cm)', price: 82000, maxRellenos: 3, mixSponge: false },
-    { id: '30p', name: '30 porciones (18x15cm)', price: 125000, maxRellenos: 3, mixSponge: false },
-    { id: '30p2', name: '30 porciones (2 Pisos)', price: 135000, maxRellenos: 3, mixSponge: true },
-    { id: '50p2', name: '40-50 porciones (2 Pisos)', price: 176000, maxRellenos: 3, mixSponge: true }
+  // Respaldo inicial en caso de desconexión
+  let cakeSizes = [
+    { id: '1', name: '10 porciones (14x12cm)', price: 44000, maxRellenos: 2, mixSponge: false },
+    { id: '2', name: '15 porciones (14x15cm)', price: 60000, maxRellenos: 2, mixSponge: false },
+    { id: '3', name: '20 porciones (16x15cm)', price: 82000, maxRellenos: 3, mixSponge: false },
+    { id: '4', name: '30 porciones (18x15cm)', price: 125000, maxRellenos: 3, mixSponge: false },
+    { id: '5', name: '30 porciones (2 Pisos)', price: 135000, maxRellenos: 3, mixSponge: true },
+    { id: '6', name: '40-50 porciones (2 Pisos)', price: 176000, maxRellenos: 3, mixSponge: true }
   ];
 
-  const fillings = {
+  let spongesList = ['Vainilla', 'Chocolate', 'Limón', 'Coco'];
+
+  let fillings = {
     Crema: ['Dulce de leche', 'Chantilly', 'Crema oreo', 'Crema bonobon', 'Crema bariloche', 'Mousse de frutilla', 'Ganache blanco', 'Ganache frutos rojos'],
     Fondant: ['Dulce de leche', 'Crema Bariloche', 'Ganache blanco/negro', 'Ganache frutos rojos', 'Ganache dulce de leche', 'Ganache frutillas', 'Ganache chocooreo', 'Ganache pistacho', 'Ganache menta', 'Ganache maracuyá', 'Ganache banana']
   };
+
+  // Cargar configuración dinámica desde el servidor
+  try {
+    const res = await fetch('/api/cake-config/public');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.sizes && data.sizes.length > 0) {
+        cakeSizes = data.sizes.map(s => ({
+          id: String(s.id),
+          name: s.name,
+          price: s.price,
+          maxRellenos: s.maxRellenos,
+          mixSponge: s.mixSponge
+        }));
+      }
+      if (data.options && data.options.length > 0) {
+        const dbSponges = data.options.filter(o => o.category === 'Sponge').map(o => o.name);
+        if (dbSponges.length > 0) spongesList = dbSponges;
+
+        fillings.Crema = data.options.filter(o => o.category === 'Crema').map(o => o.name);
+        fillings.Fondant = data.options.filter(o => o.category === 'Fondant').map(o => o.name);
+      }
+    }
+  } catch (err) {
+    console.warn("Usando configuración local de respaldo.");
+  }
 
   let cakeData = { size: null, coverage: null, sponges: [], fillings: [] };
   
@@ -30,8 +59,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ================= 2. INYECCIÓN GLOBAL (BOTÓN FLOTANTE Y POPUP MINI-CARRITO) =================
   if (currentPath !== '/cart') {
-    
-    // Inyectar Botón Flotante (Si no existe)
     if (!document.getElementById('floating-cart-btn')) {
       document.body.insertAdjacentHTML('beforeend', `
         <button id="floating-cart-btn" class="floating-cart" style="display: none;" onclick="openMiniCart()">
@@ -40,7 +67,6 @@ document.addEventListener('DOMContentLoaded', () => {
       `);
     }
 
-    // Inyectar Modal del Mini-Carrito (Si no existe)
     if (!document.getElementById('modal-checkout-preview')) {
       document.body.insertAdjacentHTML('beforeend', `
         <div id="modal-checkout-preview" class="public-modal-overlay" hidden>
@@ -64,7 +90,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.openMiniCart = function() {
     const modal = document.getElementById('modal-checkout-preview');
-    // Si en builder.html ya tenías un modal llamado 'modal-checkout', usamos ese por compatibilidad
     const modalFallback = document.getElementById('modal-checkout'); 
     
     if(modal) modal.hidden = false;
@@ -80,11 +105,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if(modalFallback) modalFallback.hidden = true;
   };
 
-  // Interceptar también el botón del Navbar para que abra el Popup en lugar de redirigir
   const navbarCartBtn = document.querySelector('.btn-cart');
   if (navbarCartBtn && currentPath !== '/cart') {
     navbarCartBtn.addEventListener('click', (e) => {
-      e.preventDefault(); // Evitamos que nos lleve a /cart de una vez
+      e.preventDefault();
       openMiniCart();
     });
   }
@@ -93,18 +117,15 @@ document.addEventListener('DOMContentLoaded', () => {
   window.updateCartUI = function() {
     localStorage.setItem('dreamBakeCart', JSON.stringify(cart));
 
-    // Actualizar contadores del header
     document.querySelectorAll('.cart-count, #cart-count, .header-cart-count, #cart-count-float').forEach(el => {
       if(el) el.innerText = cart.length;
     });
     
-    // Mostrar/ocultar botón flotante
     const floatBtn = document.getElementById('floating-cart-btn');
     if(floatBtn) floatBtn.style.display = cart.length > 0 ? 'block' : 'none';
 
     let total = cart.reduce((acc, item) => acc + item.price, 0);
 
-    // Actualizar Mini-Carrito (Popup)
     const previewContainers = document.querySelectorAll('#cart-items-preview, #cart-items');
     previewContainers.forEach(container => {
       if(container) {
@@ -133,7 +154,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if(el) el.innerText = total.toLocaleString('es-AR');
     });
 
-    // Lógica Exclusiva para la página Completa /cart
     const fullContainer = document.getElementById('full-cart-items');
     if(fullContainer) {
       fullContainer.innerHTML = '';
@@ -185,8 +205,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.selectSize = function(id) {
     document.querySelectorAll('.size-card').forEach(c => c.classList.remove('selected'));
-    document.querySelector(`.size-card[data-id="${id}"]`).classList.add('selected');
-    const newSize = cakeSizes.find(s => s.id === id);
+    const card = document.querySelector(`.size-card[data-id="${id}"]`);
+    if(card) card.classList.add('selected');
+    
+    const newSize = cakeSizes.find(s => String(s.id) === String(id));
     if(cakeData.size && newSize.maxRellenos < cakeData.size.maxRellenos) cakeData.fillings = []; 
     if(cakeData.size && newSize.mixSponge === false) cakeData.sponges = []; 
     cakeData.size = newSize;
@@ -222,14 +244,25 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('fillings-info').innerText = `Elige hasta ${cakeData.size.maxRellenos}`;
     document.getElementById('lbl-cov').innerText = cakeData.coverage;
 
-    document.querySelectorAll('.sponge-card').forEach(c => {
-      c.classList.remove('selected');
-      if(cakeData.sponges.includes(c.dataset.val)) c.classList.add('selected');
-    });
+    // Renderizar Bizcochuelos dinámicamente (si existe #grid-sponges o reemplazando el contenedor actual)
+    let gridS = document.getElementById('grid-sponges');
+    if (!gridS) {
+      const existingSpongeCard = document.querySelector('.sponge-card');
+      if (existingSpongeCard) gridS = existingSpongeCard.parentElement;
+    }
+    if (gridS) {
+      let spongesHtml = '';
+      spongesList.forEach(s => {
+        const isSelected = cakeData.sponges.includes(s) ? 'selected' : '';
+        spongesHtml += `<div class="select-card sponge-card ${isSelected}" data-val="${s}" onclick="toggleSponge('${s}')">${s}</div>`;
+      });
+      gridS.innerHTML = spongesHtml;
+    }
 
+    // Renderizar Rellenos dinámicamente según cobertura
     const gridF = document.getElementById('grid-fillings');
     let fillsHtml = '';
-    fillings[cakeData.coverage].forEach(f => {
+    (fillings[cakeData.coverage] || []).forEach(f => {
       const isSelected = cakeData.fillings.includes(f) ? 'selected' : '';
       fillsHtml += `<div class="select-card fill-card ${isSelected}" data-val="${f}" onclick="toggleFilling('${f}')">${f}</div>`;
     });
@@ -287,7 +320,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-next-1').disabled = true;
     document.getElementById('cake-details').value = '';
     
-    // Al añadir, abrimos automáticamente el popup para feedback visual
     openMiniCart();
   }
 

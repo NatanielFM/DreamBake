@@ -42,12 +42,10 @@
           </div>
 
           <div id="wizard-step-2" class="wizard-step">
-            <h3>Bizcochuelo <span id="sponge-info" class="badge">1 sabor</span></h3>
-            <div class="cards-grid" id="grid-sponges">
-              <div class="select-card sponge-card" data-val="Vainilla" onclick="toggleSponge('Vainilla')">Vainilla</div>
-              <div class="select-card sponge-card" data-val="Chocolate" onclick="toggleSponge('Chocolate')">Chocolate</div>
-              <div class="select-card sponge-card" data-val="Limón" onclick="toggleSponge('Limón')">Limón</div>
-              <div class="select-card sponge-card" data-val="Coco" onclick="toggleSponge('Coco')">Coco</div>
+            <!-- Dentro de #wizard-step-2 en builder.html, asegúrate de que el bloque de Bizcochuelo tenga id="grid-sponges" -->
+            <h3>3. Sabor de Bizcochuelo (<span id="sponge-info">1 sabor</span>)</h3>
+            <div id="grid-sponges" class="options-grid">
+              <!-- Se llena dinámicamente desde store.js -->
             </div>
             
             <h3 style="margin-top: 2rem;">Rellenos <span id="fillings-info" class="badge">Elige hasta 2</span></h3>

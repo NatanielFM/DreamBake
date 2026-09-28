@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security6">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mi Cuenta — Dulce Sueños</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+  <link rel="stylesheet" th:href="@{/css/header.css}">
+  <link rel="stylesheet" th:href="@{/css/public.css}">
+  <link rel="stylesheet" th:href="@{/css/footer.css}">
+</head>
+<body class="site">
+
+  <div th:replace="~{fragments/header :: header}"></div>
+
+  <main id="main" style="padding-top: var(--header-height); min-height: 80vh;">
+    <section style="max-width: 850px; margin: 2.5rem auto; padding: 0 1rem;">
+      
+      <h1 style="color: var(--accent); font-size: 2rem; margin-bottom: 1.5rem;">Ajustes de Cuenta</h1>
+
+      <div th:if="${param.updated}" style="background: #d1fae5; color: #065f46; padding: 12px 16px; border-radius: 10px; margin-bottom: 1.5rem; font-weight: 600;">
+        ✅ Tus datos personales se actualizaron correctamente.
+      </div>
+      <div th:if="${param.passUpdated}" style="background: #d1fae5; color: #065f46; padding: 12px 16px; border-radius: 10px; margin-bottom: 1.5rem; font-weight: 600;">
+        ✅ Tu contraseña se actualizó correctamente.
+      </div>
+      <div th:if="${param.error != null and param.error[0] == 'current'}" style="background: #fee2e2; color: #991b1b; padding: 12px 16px; border-radius: 10px; margin-bottom: 1.5rem; font-weight: 600;">
+        ❌ La contraseña actual ingresada es incorrecta.
+      </div>
+      <div th:if="${param.error != null and param.error[0] == 'match'}" style="background: #fee2e2; color: #991b1b; padding: 12px 16px; border-radius: 10px; margin-bottom: 1.5rem; font-weight: 600;">
+        ❌ Las nuevas contraseñas no coinciden o tienen menos de 6 caracteres.
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+        
+        <!-- Tarjeta 1: Datos Personales -->
+        <div style="background: #fff; padding: 1.75rem; border-radius: 14px; box-shadow: 0 6px 20px rgba(0,0,0,0.06);">
+          <h2 style="margin-top: 0; font-size: 1.25rem; color: #222; margin-bottom: 1.25rem;">Datos Personales</h2>
+          
+          <form th:action="@{/profile/update}" method="post" th:if="${currentUser != null}">
+            <div style="margin-bottom: 1rem;">
+              <label style="display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; color: #444;">Email (No editable)</label>
+              <input type="email" th:value="${currentUser.email}" disabled style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f3f4f6; color: #6b7280; box-sizing: border-box;">
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+              <label for="name" style="display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; color: #444;">Nombre completo</label>
+              <input id="name" name="name" type="text" th:value="${currentUser.name}" required style="width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box;">
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+              <label for="phone" style="display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; color: #444;">Celular / WhatsApp</label>
+              <input id="phone" name="phone" type="tel" th:value="${currentUser.phone}" placeholder="+54 9 376..." style="width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box;">
+            </div>
+
+            <button type="submit" class="btn btn-pink" style="width: 100%; background: var(--accent); color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer;">
+              Guardar Datos
+            </button>
+          </form>
+        </div>
+
+        <!-- Tarjeta 2: Cambiar Contraseña -->
+        <div style="background: #fff; padding: 1.75rem; border-radius: 14px; box-shadow: 0 6px 20px rgba(0,0,0,0.06);">
+          <h2 style="margin-top: 0; font-size: 1.25rem; color: #222; margin-bottom: 1.25rem;">Cambiar Contraseña</h2>
+          
+          <form th:action="@{/profile/password}" method="post">
+            <div style="margin-bottom: 1rem;">
+              <label for="currentPassword" style="display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; color: #444;">Contraseña actual</label>
+              <input id="currentPassword" name="currentPassword" type="password" required style="width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box;">
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+              <label for="newPassword" style="display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; color: #444;">Nueva contraseña (mín. 6 caracteres)</label>
+              <input id="newPassword" name="newPassword" type="password" minlength="6" required style="width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box;">
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+              <label for="confirmPassword" style="display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; color: #444;">Confirmar nueva contraseña</label>
+              <input id="confirmPassword" name="confirmPassword" type="password" minlength="6" required style="width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box;">
+            </div>
+
+            <button type="submit" class="btn btn-pink" style="width: 100%; background: var(--accent); color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer;">
+              Actualizar Contraseña
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner" style="text-align: center; padding: 1.5rem;">
+      <div>© <strong>Dulce Sueños Posadas</strong></div>
+    </div>
+  </footer>
+
+  <script th:src="@{/js/header.js}" defer></script>
+  <script th:src="@{/js/public/store.js}" defer></script>
+</body>
+</html>
