@@ -489,3 +489,21 @@ body.sidebar-toggled .dashboard { margin-left: 0; }
     grid-template-columns: 1fr;
   }
 }
+
+.notification-dropdown {
+  position: absolute;
+  top: 55px;
+  right: 60px;
+  width: 320px;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  z-index: 3000;
+  display: flex;
+  flex-direction: column;
+}
+
+.notification-dropdown[hidden] {
+  display: none !important;
+}

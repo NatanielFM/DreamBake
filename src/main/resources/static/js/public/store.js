@@ -360,24 +360,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const cName = document.getElementById('chk-name').value;
       const cPhone = document.getElementById('chk-phone').value;
-      const cEmail = document.getElementById('chk-email').value;
-      const cDetails = document.getElementById('chk-general-details').value || '';
+      const cEmail = document.getElementById('chk-email') ? document.getElementById('chk-email').value : '';
+      const cDetails = document.getElementById('chk-general-details') ? document.getElementById('chk-general-details').value : '';
       const cDate = document.getElementById('chk-date').value;
       const cPay = document.getElementById('chk-payment').value;
       
       let total = cart.reduce((acc, item) => acc + item.price, 0);
+
+      // Aplanar los items en un texto limpio para guardarlo en itemsDetails
+      let itemsText = cart.map(item => `> *${item.productType}*\n${item.details}`).join('\n\n');
 
       const orderData = {
         customerName: cName,
         customerPhone: cPhone,
         customerEmail: cEmail,
         deliveryDate: cDate,
-        deliveryShift: "N/A", 
         totalPrice: total,
-        items: cart
+        deposit: 0,
+        status: 'PENDING',
+        itemsDetails: itemsText + (cDetails ? `\n\n> *Aclaraciones:* ${cDetails}` : '')
       };
 
       try {
+        // 1. Guardar primero en la base de datos de manera silenciosa
         const res = await fetch('/api/orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -387,21 +392,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (res.ok) {
           const savedOrder = await res.json();
           
+          // 2. Armar el mensaje con el ID asignado por MySQL
           let waMsg = `Hola! 👋 Confirmo mi pedido 🩷\n\n> N° Referencia: #${savedOrder.id}\n\n`;
-          
-          cart.forEach(item => {
-            waMsg += `> *${item.productType}*\n${item.details}\n\n`;
-          });
-
+          waMsg += itemsText + '\n\n';
           waMsg += `> *Para el:* ${cDate.split('-').reverse().join('/')}\n`;
           waMsg += `> *Pago:* ${cPay}\n`;
           if (cDetails.trim() !== '') waMsg += `> *Aclaraciones:* ${cDetails}\n\n`;
           
           waMsg += `El total es de $${total.toLocaleString('es-AR')}.`;
 
-          const businessPhone = "5491100000000"; 
+          const businessPhone = "5493764159312"; 
           const waUrl = `https://wa.me/${businessPhone}?text=${encodeURIComponent(waMsg)}`; 
           
+          // 3. Abrir WhatsApp solo tras confirmar el guardado exitoso
           window.open(waUrl, '_blank');
           
           const successModal = document.getElementById('modal-success-v1');
@@ -420,11 +423,19 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
 
         } else {
-          window.showPublicAlert("Ocurrió un error al guardar tu pedido. Por favor intenta de nuevo.");
+          if (typeof window.showPublicAlert === 'function') {
+            window.showPublicAlert("Ocurrió un error al guardar tu pedido. Por favor intenta de nuevo.");
+          } else {
+            alert("Ocurrió un error al guardar tu pedido. Por favor intenta de nuevo.");
+          }
         }
       } catch (error) {
-        window.showPublicAlert("Error de conexión al intentar generar el pedido.");
+        if (typeof window.showPublicAlert === 'function') {
+          window.showPublicAlert("Error de conexión al intentar generar el pedido.");
+        } else {
+          alert("Error de conexión al intentar generar el pedido.");
+        }
       }
     });
   }
-});
+}); // Fin del evento DOMContentLoaded
