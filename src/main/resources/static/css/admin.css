@@ -185,7 +185,7 @@ body.sidebar-toggled .dashboard { margin-left: 0; width: 100%; }
 /* ================= MODALES ================= */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
 .modal-overlay[hidden] { display: none; }
-#modal-confirm, #modal-alert { z-index: 2100; }
+#modal-confirm, #modal-alert { z-index: 9999 !important; }
 
 .modal-card { background: var(--card-bg); color: var(--text-main); width: 90%; max-width: 420px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-height: 90vh; display: flex; flex-direction: column; }
 .confirm-card { max-width: 380px; }
@@ -227,6 +227,7 @@ body.sidebar-toggled .dashboard { margin-left: 0; width: 100%; }
 .calendar-day.today .day-num { color: var(--accent); }
 
 .order-badge { background: var(--accent); color: white; font-size: 0.75rem; padding: 4px 6px; border-radius: 6px; text-align: center; margin-bottom: 4px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 2px 4px rgba(224, 72, 127, 0.3); }
+.order-badge.completed-badge { background: #e2e8f0; color: #64748b; text-decoration: line-through; box-shadow: none; opacity: 0.8; border: 1px solid #cbd5e1; }
 
 /* Chips de Pestañas (Tabs de Pedidos) */
 .order-tabs { display: flex; gap: 10px; margin-bottom: 1rem; border-bottom: 2px solid #eee; padding-bottom: 15px; }
@@ -261,12 +262,36 @@ body.sidebar-toggled .dashboard { margin-left: 0; width: 100%; }
 }
 
 /* ================= ÁREA DE IMPRESIÓN ================= */
-.print-area { display: none; }
+.print-area, .print-only { display: none; }
+
 @media print {
   body * { visibility: hidden; }
   .print-area, .print-area * { visibility: visible; }
   .print-area { display: block; position: absolute; left: 0; top: 0; width: 100%; }
-  @page { margin: 0; } 
+  
+  .admin-layout, .site-header, .sidebar, .modal-overlay { display: none !important; }
+  
+  .print-only, .print-only * { visibility: visible; }
+  .print-only { 
+    display: block !important;
+    position: absolute; 
+    left: 0; 
+    top: 0; 
+    width: 100%; 
+    padding: 20px;
+    background: #fff;
+    color: #000;
+    font-family: 'Helvetica', 'Arial', sans-serif;
+  }
+  
+  .receipt-container {
+    max-width: 800px;
+    margin: 0 auto;
+    border: 1px solid #ccc;
+    padding: 30px;
+  }
+  
+  @page { margin: 1cm; } 
 }
 
 /* ================= RESPONSIVE MOBILE ================= */

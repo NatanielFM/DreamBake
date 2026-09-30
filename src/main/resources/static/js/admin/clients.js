@@ -262,7 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
 
       li.querySelector('.btn-edit').addEventListener('click', async () => {
-        const newName = prompt("Escribe el nuevo nombre para esta etiqueta:", t.name);
+        const newName = await window.showCustomPrompt("Escribe el nuevo nombre para esta etiqueta:", t.name);
         if (newName && newName.trim() !== "" && newName !== t.name) {
           await fetch(`/api/tags/${t.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newName.trim() }) });
           loadTagsFromServer();

@@ -74,7 +74,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const dayOrders = dbOrders.filter(o => o.deliveryDate === dateStr && (o.status === 'CONFIRMED' || o.status === 'COMPLETED'));
 
       let isTodayClass = (i === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear()) ? 'today' : '';
-      let badgesHtml = dayOrders.length > 0 ? `<div class="order-badge" style="background:var(--accent);">${dayOrders.length} pedido(s)</div>` : '';
+      const confirmedCount = dayOrders.filter(o => o.status === 'CONFIRMED').length;
+      const completedCount = dayOrders.filter(o => o.status === 'COMPLETED').length;
+
+      let badgesHtml = '';
+      if (confirmedCount > 0) {
+        badgesHtml += `<div class="order-badge" style="background:var(--accent);">${confirmedCount} pedido(s)</div>`;
+      }
+      if (completedCount > 0) {
+        badgesHtml += `<div class="order-badge completed-badge">${completedCount} completado(s)</div>`;
+      }
 
       const dayCell = document.createElement('div');
       dayCell.className = `calendar-day ${isTodayClass}`;
@@ -147,6 +156,12 @@ document.addEventListener('DOMContentLoaded', () => {
           <button class="btn btn-pink btn-sm" title="Confirmar" onclick="openConfirmModal(${o.id})">${iconCheck} Confirmar</button>
           <button class="btn btn-grey btn-sm" title="Ver" onclick="actionView(${o.id})">${iconEye} Ver</button>
           <button class="btn btn-red btn-sm" title="Rechazar" onclick="actionReject(${o.id})">${iconX}</button>
+        `;
+      } else if (currentTab === 'agendados') {
+        actionsHtml = `
+          <button class="btn btn-pink btn-sm" title="Completado" onclick="actionToggleComplete(${o.id}, true)">${iconCheck} Completado</button>
+          <button class="btn btn-grey btn-sm" title="Ver" onclick="actionView(${o.id})">${iconEye} Ver</button>
+          <button class="btn btn-red btn-sm" title="Eliminar" onclick="actionDelete(${o.id})">${iconTrash}</button>
         `;
       } else {
         actionsHtml = `
@@ -308,7 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(!orderToRejectId) return;
     try {
       const res = await fetch(`/api/orders/${orderToRejectId}/status`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'CANCELLED' })
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'REJECTED' })
       });
       if (res.ok) {
         document.getElementById('modal-reject-order').hidden = true;
@@ -371,7 +386,71 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleReadOnlyUI(true); // 1. Bloqueamos la interfaz visualmente
     fillViewModal(viewingOrder); // 2. Llenamos los datos sin bucles infinitos
     
+    const printBtn = document.getElementById('btn-print-receipt');
+    const completeBtn = document.getElementById('btn-complete-view-order');
+    const cancelBtn = document.getElementById('btn-cancel-view-order');
+    
+    if (printBtn) {
+      if (viewingOrder.status === 'CONFIRMED' || viewingOrder.status === 'COMPLETED') {
+        printBtn.style.display = 'flex';
+      } else {
+        printBtn.style.display = 'none';
+      }
+    }
+
+    if (completeBtn && cancelBtn) {
+      if (viewingOrder.status === 'CONFIRMED') {
+        completeBtn.style.display = 'flex';
+        completeBtn.innerHTML = '✅ Completar';
+        cancelBtn.style.display = 'flex';
+      } else if (viewingOrder.status === 'COMPLETED') {
+        completeBtn.style.display = 'flex';
+        completeBtn.innerHTML = '⏪ Revertir a Agendado';
+        cancelBtn.style.display = 'flex';
+      } else {
+        completeBtn.style.display = 'none';
+        cancelBtn.style.display = 'none';
+      }
+    }
+
     document.getElementById('modal-view-order').hidden = false;
+  };
+
+  window.actionToggleComplete = async function(id, fromList) {
+    const order = dbOrders.find(o => o.id === id);
+    if (!order) return;
+    const newStatus = order.status === 'CONFIRMED' ? 'COMPLETED' : 'CONFIRMED';
+    const actionName = newStatus === 'COMPLETED' ? 'completar' : 'revertir';
+    window.showConfirmModal(`¿${actionName.charAt(0).toUpperCase() + actionName.slice(1)} Pedido?`, `¿Seguro que deseas ${actionName} el pedido #${order.id}?`, 'Aceptar', 'btn-pink', async () => {
+      try {
+        const res = await fetch(`/api/orders/${order.id}/status`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus })
+        });
+        if (res.ok) {
+          if (!fromList) document.getElementById('modal-view-order').hidden = true;
+          loadOrders();
+        }
+      } catch(e) {}
+    });
+  };
+
+  window.actionToggleCompleteViewingOrder = function() {
+    if (viewingOrder) actionToggleComplete(viewingOrder.id, false);
+  };
+
+  window.actionCancelViewingOrder = function() {
+    if (!viewingOrder) return;
+    window.showConfirmModal("Cancelar Pedido", `¿Seguro que deseas abortar el pedido #${viewingOrder.id}? Se marcará como CANCELADO.`, "Cancelar Pedido", "btn-red", async () => {
+      try {
+        const res = await fetch(`/api/orders/${viewingOrder.id}/status`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'CANCELLED' })
+        });
+        if (res.ok) {
+          document.getElementById('modal-view-order').hidden = true;
+          loadOrders();
+        }
+      } catch(e) {}
+    });
   };
 
   // Botón "Editar Pedido"
@@ -386,6 +465,82 @@ document.addEventListener('DOMContentLoaded', () => {
       fillViewModal(viewingOrder); // Restaura los datos originales si escribió algo y canceló
     }
   };
+
+  // Botón "Imprimir Recibo"
+  document.getElementById('btn-print-receipt')?.addEventListener('click', () => {
+    if (!viewingOrder) return;
+    
+    const printSection = document.getElementById('print-receipt-section');
+    if (!printSection) return;
+
+    const today = new Date();
+    const dateStr = today.toLocaleDateString('es-AR');
+    
+    // Calcular saldo pendiente
+    const pendingBalance = viewingOrder.totalPrice - viewingOrder.deposit;
+    
+    // Generar lista de items
+    let itemsHtml = '';
+    viewingOrder.items.forEach(i => {
+      itemsHtml += `
+        <div class="receipt-item" style="display: flex; justify-content: space-between; font-weight: bold; margin-top: 10px;">
+          <span>${i.productType}</span>
+          <span>$${i.price ? i.price.toLocaleString('es-AR') : '0'}</span>
+        </div>
+        <div class="receipt-item-details" style="font-size: 0.9em; color: #444; margin-bottom: 5px; white-space: pre-wrap;">${i.details}</div>
+      `;
+    });
+
+    const receiptHtml = `
+      <div class="receipt-container">
+        <h2 style="text-align: center; margin-bottom: 5px;">Recibo de Pedido - DreamBake</h2>
+        <p class="receipt-date" style="text-align: center; font-size: 0.9rem; color: #555;">Fecha: ${dateStr}</p>
+        <hr style="border-top: 2px dashed #000; margin: 15px 0;">
+        <div class="receipt-info">
+          <p><strong>Pedido N°:</strong> ${viewingOrder.id}</p>
+          <p><strong>Cliente:</strong> ${viewingOrder.customerName || 'Sin Nombre'}</p>
+          <p><strong>Teléfono:</strong> ${viewingOrder.customerPhone || 'N/A'}</p>
+          <p><strong>Entrega:</strong> ${viewingOrder.deliveryDate}</p>
+        </div>
+        <hr style="border-top: 2px dashed #000; margin: 15px 0;">
+        <div class="receipt-items">
+          <h3 style="margin-bottom: 10px;">Detalle de Artículos</h3>
+          ${itemsHtml}
+        </div>
+        <hr style="border-top: 2px dashed #000; margin: 15px 0;">
+        <div class="receipt-financials" style="text-align: right; font-size: 1.1em;">
+          <p><strong>Total:</strong> $${viewingOrder.totalPrice.toLocaleString('es-AR')}</p>
+          <p><strong>Seña:</strong> $${viewingOrder.deposit.toLocaleString('es-AR')}</p>
+          <p class="receipt-balance" style="font-size: 1.2em; margin-top: 10px;"><strong>Saldo Pendiente:</strong> $${pendingBalance.toLocaleString('es-AR')}</p>
+        </div>
+        <div style="text-align: center; margin-top: 40px; font-size: 0.9em; color: #666;">
+          <p>¡Gracias por elegir DreamBake!</p>
+        </div>
+      </div>
+    `;
+
+    printSection.innerHTML = receiptHtml;
+
+    // Ocultar main UI, mostrar print, imprimir y restaurar
+    const mainWrapper = document.querySelector('.admin-layout');
+    const header = document.querySelector('.site-header');
+    
+    if (mainWrapper) mainWrapper.style.display = 'none';
+    if (header) header.style.display = 'none';
+    document.getElementById('modal-view-order').hidden = true;
+    
+    printSection.hidden = false;
+    
+    setTimeout(() => {
+      window.print();
+      
+      // Restaurar
+      if (mainWrapper) mainWrapper.style.display = '';
+      if (header) header.style.display = '';
+      printSection.hidden = true;
+      document.getElementById('modal-view-order').hidden = false;
+    }, 100);
+  });
 
   window.saveEditedOrder = async function() {
     if(!viewingOrder) return;
@@ -405,6 +560,7 @@ document.addEventListener('DOMContentLoaded', () => {
       deliveryDate: newDate,
       totalPrice: newTotal,
       deposit: newDeposit,
+      status: viewingOrder.status,
       items: [{ productType: "Detalles del Pedido", details: document.getElementById('vo-items-details').value, price: newTotal }]
     };
 

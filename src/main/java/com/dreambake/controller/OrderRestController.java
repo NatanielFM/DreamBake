@@ -40,12 +40,44 @@ public class OrderRestController {
     @GetMapping
     public List<Order> getAllOrders() {
         List<Order> orders = orderRepo.findAll();
+        orders.removeIf(o -> o.getStatus() == OrderStatus.REJECTED);
         for (Order order : orders) {
             if (order.getStatus() == OrderStatus.PENDING) {
                 calculateStockStatus(order);
             }
         }
         return orders;
+    }
+
+    @GetMapping("/stats/monthly")
+    public ResponseEntity<Map<String, Object>> getMonthlyStats(@RequestParam(required = false) Integer year, @RequestParam(required = false) Integer month) {
+        int y = year != null ? year : LocalDate.now().getYear();
+        int m = month != null ? month : LocalDate.now().getMonthValue();
+        
+        LocalDate start = LocalDate.of(y, m, 1);
+        LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
+        
+        List<Order> orders = orderRepo.findAll().stream()
+            .filter(o -> (o.getStatus() == OrderStatus.CONFIRMED || o.getStatus() == OrderStatus.COMPLETED)
+                && o.getDeliveryDate() != null
+                && !o.getDeliveryDate().isBefore(start)
+                && !o.getDeliveryDate().isAfter(end))
+            .toList();
+
+        double total = orders.stream().mapToDouble(Order::getTotalPrice).sum();
+        long count = orders.size();
+
+        return ResponseEntity.ok(Map.of("revenue", total, "ordersCount", count));
+    }
+
+    @GetMapping("/stats/top-products")
+    public ResponseEntity<List<Map<String, Object>>> getTopProducts() {
+        List<Object[]> results = orderRepo.findTopProductsAggregation(List.of(OrderStatus.CONFIRMED, OrderStatus.COMPLETED));
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (Object[] row : results) {
+            list.add(Map.of("name", row[0], "count", row[1]));
+        }
+        return ResponseEntity.ok(list);
     }
 
     @PostMapping
@@ -130,7 +162,7 @@ public class OrderRestController {
 
             // Si el estado viene en la petición, lo actualizamos
             if (updatedOrder.getStatus() != null) {
-                if (updatedOrder.getStatus() == OrderStatus.CONFIRMED && order.getStatus() != OrderStatus.CONFIRMED) {
+                if (updatedOrder.getStatus() == OrderStatus.CONFIRMED && order.getStatus() == OrderStatus.PENDING) {
                     deductInventory(order);
                 }
                 order.setStatus(updatedOrder.getStatus());
@@ -157,7 +189,7 @@ public class OrderRestController {
     public ResponseEntity<?> updateStatus(@PathVariable Long id, @RequestBody StatusRequest req) {
         return orderRepo.findById(id).map(order -> {
             boolean force = req.force() != null ? req.force() : false;
-            if (req.status() == OrderStatus.CONFIRMED && order.getStatus() != OrderStatus.CONFIRMED) {
+            if (req.status() == OrderStatus.CONFIRMED && order.getStatus() == OrderStatus.PENDING) {
                 ResponseEntity<?> errorResponse = checkStockForConfirmation(order, force);
                 if (errorResponse != null) {
                     return errorResponse;

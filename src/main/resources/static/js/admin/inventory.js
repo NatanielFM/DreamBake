@@ -280,8 +280,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const btnTestDeduct = document.getElementById('btn-test-deduct');
   if(btnTestDeduct) {
-    btnTestDeduct.addEventListener('click', () => {
-      const orderId = prompt("Ingrese el ID del pedido para depurar deducción:");
+    btnTestDeduct.addEventListener('click', async () => {
+      const orderId = await window.showCustomPrompt("Ingrese el ID del pedido para depurar deducción:");
       if (!orderId) return;
       
       fetch(`/api/inventory/test-deduct/${orderId}`, { method: 'POST' })

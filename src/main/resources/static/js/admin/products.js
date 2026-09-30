@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
 
       li.querySelector('.btn-edit').addEventListener('click', async () => {
-        const newName = prompt("Escribe el nuevo nombre para este tipo:", c.name);
+        const newName = await window.showCustomPrompt("Escribe el nuevo nombre para este tipo:", c.name);
         if (newName && newName.trim() !== "" && newName !== c.name) {
           await fetch(`/api/categories/${c.id}`, {
             method: 'PUT',

@@ -18,17 +18,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function loadDashboardData() {
     try {
-      const [ordRes, invRes, cliRes, prodRes] = await Promise.all([
+      const [ordRes, invRes, cliRes, prodRes, monthlyRes, topProdRes] = await Promise.all([
         fetch('/api/orders').catch(() => ({ ok: false })),
         fetch('/api/inventory').catch(() => ({ ok: false })),
         fetch('/api/clients').catch(() => ({ ok: false })),
-        fetch('/api/products').catch(() => ({ ok: false }))
+        fetch('/api/products').catch(() => ({ ok: false })),
+        fetch('/api/orders/stats/monthly').catch(() => ({ ok: false })),
+        fetch('/api/orders/stats/top-products').catch(() => ({ ok: false }))
       ]);
 
       dashState.orders = ordRes.ok ? await ordRes.json() : [];
       dashState.inventory = invRes.ok ? await invRes.json() : [];
       dashState.clients = cliRes.ok ? await cliRes.json() : [];
       dashState.products = prodRes.ok ? await prodRes.json() : [];
+      dashState.monthlyStats = monthlyRes.ok ? await monthlyRes.json() : null;
+      dashState.topProductsStats = topProdRes.ok ? await topProdRes.json() : [];
 
       populateYearSelector();
       computeAndRender();
@@ -134,10 +138,6 @@ document.addEventListener('DOMContentLoaded', () => {
           if (orderMonth !== null && orderMonth >= 0 && orderMonth < 12) {
             monthlyRev[orderMonth] += price;
             monthlyOrd[orderMonth] += 1;
-            if (orderMonth === currentMonth && orderYear === now.getFullYear()) {
-              monthRevenue += price;
-              ordersMonthCount++;
-            }
           }
         }
 
@@ -151,9 +151,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const parsed = parseOrderItems(o);
         cakesSoldCount += parsed.cakesCount;
-        Object.entries(parsed.itemsMap).forEach(([prodName, qty]) => {
-          productRanking[prodName] = (productRanking[prodName] || 0) + qty;
-        });
 
         if (dateObj && !isNaN(dateObj)) {
           const dayIdx = (dateObj.getDay() + 6) % 7; // 0=Lun ... 6=Dom
@@ -187,6 +184,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     upcomingDeliveries.sort((a, b) => a.deliveryDate.localeCompare(b.deliveryDate));
+
+    if (dashState.monthlyStats) {
+      monthRevenue = dashState.monthlyStats.revenue || 0;
+      ordersMonthCount = dashState.monthlyStats.ordersCount || 0;
+    }
+
+    if (dashState.topProductsStats) {
+      dashState.topProductsStats.forEach(p => {
+        productRanking[p.name] = p.count;
+      });
+    }
 
     const avgTicket = ordersYearCount > 0 ? Math.round(totalRevenue / ordersYearCount) : 0;
 

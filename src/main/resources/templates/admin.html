@@ -177,7 +177,7 @@
         <div class="charts-grid-secondary">
           <div class="chart-box">
             <div class="chart-box-header">
-              <h3>Top Productos y Tortas Más Solicitados</h3>
+              <h3>Top productos</h3>
             </div>
             <div class="chart-canvas-wrap">
               <canvas id="chart-top-products"></canvas>
@@ -683,9 +683,15 @@
     <div class="modal-card modal-large">
       <div class="modal-header">
         <h3 id="view-order-title" style="color: var(--accent); font-size: 1.4rem;">Pedido - N° Ref #X</h3>
-        <div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button class="btn btn-red btn-sm" id="btn-cancel-view-order" style="display: none;" onclick="actionCancelViewingOrder()">🚫 Cancelar Pedido</button>
+          <button class="btn btn-pink btn-sm" id="btn-complete-view-order" style="display: none;" onclick="actionToggleCompleteViewingOrder()"></button>
+          <button class="btn btn-grey btn-sm" id="btn-print-receipt" style="display: none; align-items: center; gap: 4px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+            Imprimir Recibo
+          </button>
           <button class="btn btn-grey btn-sm" id="btn-enable-edit" onclick="enableEditMode()">✏️ Editar Pedido</button>
-          <button class="close-modal" onclick="document.getElementById('modal-view-order').hidden = true" style="margin-left: 10px;">&times;</button>
+          <button class="close-modal" onclick="document.getElementById('modal-view-order').hidden = true">&times;</button>
         </div>
       </div>
       <div class="modal-body" style="background: #fafafa; padding: 2rem;">
@@ -731,6 +737,22 @@
             <thead><tr><th>N° - Ref #</th><th>Cliente</th><th>Total</th><th>Estado</th><th style="text-align:center;">Acciones</th></tr></thead>
             <tbody id="day-orders-tbody"></tbody>
           </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-custom-prompt" class="modal-overlay" hidden style="z-index: 3000;">
+    <div class="modal-card confirm-card" style="max-width: 400px; text-align: center;">
+      <div class="modal-header">
+        <h3 id="custom-prompt-title" style="color: var(--accent);"></h3>
+      </div>
+      <div class="modal-body text-center" style="padding-top: 10px;">
+        <p id="custom-prompt-message" style="margin-bottom: 15px; font-size: 1.1rem; color: #444;"></p>
+        <input type="text" id="custom-prompt-input" class="form-input" style="width: 100%; margin-bottom: 20px; text-align: center;">
+        <div style="display: flex; gap: 10px; justify-content: center;">
+          <button class="btn btn-grey btn-uniform" id="btn-custom-prompt-cancel">Cancelar</button>
+          <button class="btn btn-pink btn-uniform" id="btn-custom-prompt-confirm">Aceptar</button>
         </div>
       </div>
     </div>
@@ -1054,6 +1076,9 @@
       }
     });
   </script>
+
+  <!-- Print Order Receipt Section -->
+  <div id="print-receipt-section" class="print-only" hidden></div>
   
 </body>
 </html>

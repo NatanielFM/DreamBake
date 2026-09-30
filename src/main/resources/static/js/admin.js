@@ -58,7 +58,30 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ================= 2. MODALES Y ALERTA V1 =================
-  function showConfirmModal(title, message, okText, okBtnClass, onConfirm) {
+  window.showCustomPrompt = function(message, defaultValue = '', type = 'text') {
+    return new Promise((resolve) => {
+      document.getElementById('custom-prompt-title').innerText = 'Ingreso de datos';
+      document.getElementById('custom-prompt-message').innerText = message;
+      const input = document.getElementById('custom-prompt-input');
+      input.type = type;
+      input.value = defaultValue;
+      document.getElementById('modal-custom-prompt').hidden = false;
+      input.focus();
+
+      const btnConfirm = document.getElementById('btn-custom-prompt-confirm');
+      const btnCancel = document.getElementById('btn-custom-prompt-cancel');
+
+      const newBtnConfirm = btnConfirm.cloneNode(true);
+      const newBtnCancel = btnCancel.cloneNode(true);
+      btnConfirm.replaceWith(newBtnConfirm);
+      btnCancel.replaceWith(newBtnCancel);
+
+      newBtnConfirm.addEventListener('click', () => { document.getElementById('modal-custom-prompt').hidden = true; resolve(document.getElementById('custom-prompt-input').value); });
+      newBtnCancel.addEventListener('click', () => { document.getElementById('modal-custom-prompt').hidden = true; resolve(null); });
+    });
+  };
+
+  window.showConfirmModal = function(title, message, okText, okBtnClass, onConfirm) {
     document.getElementById('confirm-title').innerText = title;
     document.getElementById('confirm-message').innerText = message;
     
@@ -243,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Evento Editar
       li.querySelector('.btn-edit').addEventListener('click', async () => {
-        const newName = prompt("Escribe el nuevo nombre para este tipo:", c.name);
+        const newName = await window.showCustomPrompt("Escribe el nuevo nombre para este tipo:", c.name);
         if (newName && newName.trim() !== "" && newName !== c.name) {
           await fetch(`/api/categories/${c.id}`, {
             method: 'PUT',
