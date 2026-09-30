@@ -10,4 +10,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // Método personalizado para buscar por email (útil para el Login)
     Optional<User> findByEmail(String email);
+
+    // Buscar usuarios por rol
+    java.util.List<User> findByRoles(String roles);
 }

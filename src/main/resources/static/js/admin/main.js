@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const logoutHeaderBtn = document.getElementById('btn-logout-header');
   if (logoutHeaderBtn) {
     logoutHeaderBtn.addEventListener('click', () => {
-      showConfirmModal('Cerrar sesión', '¿Deseas salir del panel?', 'Salir', 'btn-red', () => {
+      showConfirmModal('Cerrar sesión', '¿Estás seguro que deseas salir?', 'Salir', 'btn-red', () => {
         document.getElementById('logoutForm').submit();
       });
     });

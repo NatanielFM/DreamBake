@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tbody.innerHTML = '';
     
     if (dbRecipes.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No hay recetas registradas.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="2" style="text-align:center;">No hay recetas registradas.</td></tr>';
       return;
     }
 
@@ -41,12 +41,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td style="font-weight: bold;">${r.name}</td>
-        <td>${r.details || '-'}</td>
-        <td class="action-buttons-container">
+        <td class="action-buttons-container" style="justify-content: center; display: flex; gap: 8px;">
+          <button class="btn btn-grey btn-sm btn-view">Ver receta</button>
           <button class="btn btn-grey btn-sm btn-edit">Editar</button>
           <button class="btn btn-red btn-sm btn-delete">Eliminar</button>
         </td>
       `;
+      tr.querySelector('.btn-view').addEventListener('click', () => viewRecipe(r));
       tr.querySelector('.btn-edit').addEventListener('click', () => openRecipeModal(r));
       tr.querySelector('.btn-delete').addEventListener('click', () => deleteRecipe(r.id, r.name));
       tbody.appendChild(tr);
@@ -99,6 +100,28 @@ document.addEventListener('DOMContentLoaded', () => {
       createItemRow();
     }
     modalForm.hidden = false;
+  }
+
+  window.viewRecipe = function(r) {
+    document.getElementById('view-recipe-title').innerText = r.name;
+    document.getElementById('view-recipe-details').innerText = r.details || 'Sin detalles adicionales.';
+    
+    const list = document.getElementById('view-recipe-ingredients');
+    list.innerHTML = '';
+    if (r.items && r.items.length > 0) {
+      r.items.forEach(item => {
+        const inv = dbInventory.find(i => i.id === item.inventoryItem.id);
+        const name = inv ? inv.name : 'Insumo desconocido';
+        const unit = inv ? inv.unit : '';
+        const li = document.createElement('li');
+        li.innerText = `${item.quantityRequired} ${unit} de ${name}`;
+        list.appendChild(li);
+      });
+    } else {
+      list.innerHTML = '<li>Sin ingredientes registrados.</li>';
+    }
+    
+    document.getElementById('modal-view-recipe').hidden = false;
   }
 
   if (btnAddRecipe) {

@@ -68,6 +68,7 @@
           <button class="tab-btn" data-tab="clientes">Clientes</button>
           <button class="tab-btn" data-tab="galeria">Galería</button>
           <button class="tab-btn" data-tab="armador">Armador de Tortas</button>
+          <button class="tab-btn" data-tab="equipo">Equipo</button>
         </div>
       </nav>
     </aside>
@@ -421,7 +422,6 @@
                 <thead>
                   <tr>
                     <th>Nombre de la Receta</th>
-                    <th>Detalles</th>
                     <th style="text-align: center;">Acciones</th>
                   </tr>
                 </thead>
@@ -584,6 +584,35 @@
                   </tr>
                 </thead>
                 <tbody id="cake-options-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== SECCIÓN EQUIPO ==================== -->
+      <section id="equipo" class="tab-content">
+        <div class="product-module-container">
+          <div class="product-toolbar" style="border-bottom: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+              <h2 style="margin: 0; font-size: 1.25rem; color: #222;">Gestión de Equipo</h2>
+              <button type="button" id="btn-add-team-member" class="btn btn-pink btn-uniform" style="width: auto; padding: 0 15px;">
+                + Nuevo Pastelero
+              </button>
+            </div>
+          </div>
+          <div class="product-catalog-section" style="padding-top: 0;">
+            <div class="table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Email</th>
+                    <th>Teléfono</th>
+                    <th style="text-align: center;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="team-tbody"></tbody>
               </table>
             </div>
           </div>
@@ -779,6 +808,25 @@
         <div class="form-actions justify-center">
           <button type="button" id="btn-confirm-cancel" class="btn btn-grey btn-uniform">Cancelar</button>
           <button type="button" id="btn-confirm-ok" class="btn btn-uniform">Aceptar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-view-recipe" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="view-recipe-title">Detalles de la Receta</h3>
+        <button class="close-modal" onclick="document.getElementById('modal-view-recipe').hidden=true">&times;</button>
+      </div>
+      <div class="modal-body" style="padding-top: 10px;">
+        <p style="font-weight: bold; margin-bottom: 5px;">Detalles:</p>
+        <p id="view-recipe-details" style="margin-bottom: 15px; color: #555; white-space: pre-wrap;"></p>
+        <p style="font-weight: bold; margin-bottom: 5px;">Ingredientes:</p>
+        <ul id="view-recipe-ingredients" style="list-style-type: disc; margin-left: 20px; color: #555;">
+        </ul>
+        <div class="form-actions justify-center" style="margin-top: 20px;">
+          <button type="button" class="btn btn-uniform" onclick="document.getElementById('modal-view-recipe').hidden=true">Cerrar</button>
         </div>
       </div>
     </div>
@@ -1054,6 +1102,41 @@
     </div>
   </div>
 
+  <div id="modal-team" class="modal-overlay" hidden>
+    <div class="modal-card confirm-card">
+      <div class="modal-header">
+        <h3 id="modal-team-title">Nuevo Pastelero</h3>
+        <button type="button" class="close-modal" onclick="document.getElementById('modal-team').hidden=true">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-team">
+          <input type="hidden" id="team-id">
+          <div style="margin-bottom: 15px;">
+            <label class="form-label">Nombre</label>
+            <input type="text" id="team-name" class="form-input" required>
+          </div>
+          <div style="margin-bottom: 15px;">
+            <label class="form-label">Email</label>
+            <input type="email" id="team-email" class="form-input" required>
+          </div>
+          <div style="margin-bottom: 15px;">
+            <label class="form-label">Teléfono</label>
+            <input type="text" id="team-phone" class="form-input">
+          </div>
+          <div style="margin-bottom: 20px;">
+            <label class="form-label">Contraseña</label>
+            <input type="password" id="team-password" class="form-input" placeholder="Mínimo 6 caracteres">
+            <small style="color: #666; font-size: 0.8rem;">Dejar en blanco para no modificar si estás editando.</small>
+          </div>
+          <div class="form-actions justify-center">
+            <button type="button" class="btn btn-grey btn-uniform" onclick="document.getElementById('modal-team').hidden=true">Cancelar</button>
+            <button type="submit" class="btn btn-pink btn-uniform">Guardar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <input type="file" id="hidden-file-input" accept="image/*" hidden>
 
   <div id="print-area" class="print-area"></div>
@@ -1068,6 +1151,7 @@
   <script th:src="@{/js/admin/cake-config.js}" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script th:src="@{/js/admin/dashboard.js}" defer></script>
+  <script th:src="@{/js/admin/team.js}" defer></script>
   <script th:src="@{/js/admin/notifications-simple.js}" defer></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {

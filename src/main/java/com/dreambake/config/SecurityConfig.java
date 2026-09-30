@@ -22,7 +22,9 @@ public class SecurityConfig {
                                 "/img/**", "/uploads/**")
                         .permitAll()
                         .requestMatchers("/api/orders/**").permitAll()
-                        .requestMatchers("/admin/**", "/api/**").hasAnyAuthority("ADMIN", "PASTELERO")
+                        .requestMatchers("/admin/**").hasAuthority("ADMIN")
+                        .requestMatchers("/baker/**").hasAuthority("PASTELERO")
+                        .requestMatchers("/api/**").hasAnyAuthority("ADMIN", "PASTELERO")
                         .anyRequest().authenticated())
                 .formLogin(form -> form
                         .loginPage("/login")
@@ -38,11 +40,15 @@ public class SecurityConfig {
     @Bean
     public AuthenticationSuccessHandler authenticationSuccessHandler() {
         return (request, response, authentication) -> {
-            boolean isAdminOrBaker = authentication.getAuthorities().stream()
-                    .anyMatch(a -> a.getAuthority().equals("ADMIN") || a.getAuthority().equals("PASTELERO"));
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ADMIN"));
+            boolean isBaker = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("PASTELERO"));
 
-            if (isAdminOrBaker) {
+            if (isAdmin) {
                 response.sendRedirect("/admin");
+            } else if (isBaker) {
+                response.sendRedirect("/baker");
             } else {
                 response.sendRedirect("/");
             }

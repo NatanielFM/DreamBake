@@ -34,7 +34,7 @@ public class User {
 
     private String phone;
     private String roles; // Ejemplo: "ROLE_USER,ROLE_ADMIN"
-    private boolean enabled;
+    private Boolean enabled = true;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
