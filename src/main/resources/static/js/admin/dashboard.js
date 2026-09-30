@@ -194,10 +194,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const criticalInventory = [];
     dashState.inventory.forEach(item => {
       const current = Number(item.currentStock ?? item.stock ?? 0);
-      const min = Number(item.minStock ?? 0);
+      const min = Number(item.minimumStock ?? 0);
       const expStr = item.expirationDate ? String(item.expirationDate).split('T')[0] : null;
 
-      let isLow = min > 0 && current <= min;
+      let isLow = current <= min;
       let isExpiring = false;
       let daysToExp = null;
 

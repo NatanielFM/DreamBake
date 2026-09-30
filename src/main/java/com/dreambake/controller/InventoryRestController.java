@@ -57,6 +57,66 @@ public class InventoryRestController {
         return inventoryRepo.save(item);
     }
 
+    @Autowired
+    private com.dreambake.repository.OrderRepository orderRepo;
+
+    @Autowired
+    private com.dreambake.repository.ProductRepository productRepo;
+
+    @PostMapping("/test-deduct/{orderId}")
+    public ResponseEntity<String> testDeductInventory(@PathVariable Long orderId) {
+        System.out.println("--- TEST DEDUCTION START ---");
+        System.out.println("Order ID: " + orderId);
+        
+        com.dreambake.entity.Order order = orderRepo.findById(orderId).orElse(null);
+        if (order == null) {
+            return ResponseEntity.badRequest().body("Failed: Order not found");
+        }
+        
+        if (order.getItems() == null || order.getItems().isEmpty()) {
+            return ResponseEntity.ok("Deduction complete: No items in order");
+        }
+        
+        java.util.Map<Long, Double> requiredStock = new java.util.HashMap<>();
+        for (com.dreambake.entity.OrderItem item : order.getItems()) {
+            if (item.getProductType() != null) {
+                productRepo.findByNameIgnoreCase(item.getProductType()).ifPresent(product -> {
+                    if (product.getRecipe() != null && product.getRecipe().getItems() != null) {
+                        for (com.dreambake.entity.RecipeItem recipeItem : product.getRecipe().getItems()) {
+                            if (recipeItem.getInventoryItem() != null && recipeItem.getInventoryItem().getId() != null) {
+                                Long invId = recipeItem.getInventoryItem().getId();
+                                requiredStock.put(invId, requiredStock.getOrDefault(invId, 0.0) + recipeItem.getQuantityRequired());
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        for (java.util.Map.Entry<Long, Double> entry : requiredStock.entrySet()) {
+            InventoryItem invItem = inventoryRepo.findById(entry.getKey()).orElse(null);
+            if (invItem != null) {
+                double current = invItem.getCurrentStock() != null ? invItem.getCurrentStock() : 0.0;
+                double required = entry.getValue();
+                
+                System.out.println("Ingredient: " + invItem.getName());
+                System.out.println("Stock Before: " + current);
+                System.out.println("Amount to Deduct: " + required);
+                
+                double newStock = current - required;
+                if (newStock < 0) {
+                    newStock = 0.0;
+                }
+                
+                System.out.println("Stock After: " + newStock);
+                invItem.setCurrentStock(newStock);
+                inventoryRepo.save(invItem);
+            }
+        }
+        
+        return ResponseEntity.ok("Deduction complete");
+    }
+
     public record InventoryRequest(
             @NotBlank(message = "El nombre del insumo es obligatorio.") String name,
             @NotNull(message = "Debes asignar el stock actual.") @PositiveOrZero(message = "El stock no puede ser negativo.") Double currentStock,

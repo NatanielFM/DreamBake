@@ -263,6 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (res.ok) {
           document.getElementById('modal-inventory-form').hidden = true;
           loadInventoryFromServer();
+          document.dispatchEvent(new CustomEvent('inventoryUpdated'));
         } else if (res.status === 400) {
           window.showErrorAlert(await res.json());
         }
@@ -274,6 +275,28 @@ document.addEventListener('DOMContentLoaded', () => {
     window.showConfirmModal('Eliminar Insumo', `¿Seguro que deseas eliminar "${item.name}" del inventario?`, 'Eliminar', 'btn-red', async () => {
       await fetch(`/api/inventory/${item.id}`, { method: 'DELETE' });
       loadInventoryFromServer();
+    });
+  }
+
+  const btnTestDeduct = document.getElementById('btn-test-deduct');
+  if(btnTestDeduct) {
+    btnTestDeduct.addEventListener('click', () => {
+      const orderId = prompt("Ingrese el ID del pedido para depurar deducción:");
+      if (!orderId) return;
+      
+      fetch(`/api/inventory/test-deduct/${orderId}`, { method: 'POST' })
+        .then(res => res.text().then(text => ({ ok: res.ok, text })))
+        .then(data => {
+          if (typeof window.showConfirmModal === 'function') {
+            window.showConfirmModal("Resultado de Depuración", data.text, "Aceptar", "btn-pink", () => {
+              loadInventoryFromServer();
+            });
+          } else {
+            alert(data.text);
+            loadInventoryFromServer();
+          }
+        })
+        .catch(e => console.error(e));
     });
   }
 

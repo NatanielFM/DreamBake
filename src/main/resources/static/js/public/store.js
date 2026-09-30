@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
                 <div style="font-weight:bold;">
                   $${item.price.toLocaleString('es-AR')}
-                  <button type="button" onclick="removeCart(${index})" style="background:none; border:none; color:red; cursor:pointer; margin-left:10px;" title="Eliminar">✖</button>
+                  <button type="button" onclick="removeCart(${index})" style="background:none; border:none; color:red; cursor:pointer; margin-left:10px;" title="Eliminar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
                 </div>
               </div>
             `;
@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               </div>
               <div style="font-weight:bold; white-space:nowrap;">
                 $${item.price.toLocaleString('es-AR')}
-                <button type="button" onclick="removeCart(${index})" style="background:none; border:none; color:red; cursor:pointer; margin-left:10px;" title="Eliminar">✖</button>
+                <button type="button" onclick="removeCart(${index})" style="background:none; border:none; color:red; cursor:pointer; margin-left:10px;" title="Eliminar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
               </div>
             </div>
           `;
@@ -378,7 +378,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         totalPrice: total,
         deposit: 0,
         status: 'PENDING',
-        itemsDetails: itemsText + (cDetails ? `\n\n> *Aclaraciones:* ${cDetails}` : '')
+        items: cart.map((item, index) => {
+          let extra = (index === 0 && cDetails) ? `\n\n> *Aclaraciones:* ${cDetails}` : '';
+          return {
+            productType: item.productType,
+            details: item.details + extra,
+            price: item.price
+          };
+        })
       };
 
       try {

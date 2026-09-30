@@ -60,6 +60,7 @@ public class ProductRestController {
         product.setDescription(request.description());
         product.setEnabled(request.enabled());
         product.setImageUrl(request.imageUrl());
+        product.setRecipe(request.recipe());
 
         Category category = categoryRepository.findByName(request.categoryName())
                 .orElseGet(() -> categoryRepository.findByName("Sin tipo").orElse(null));
@@ -71,7 +72,7 @@ public class ProductRestController {
     public record ProductRequest(
             @NotBlank(message = "El nombre del producto no puede estar vacío.") String name,
             @NotNull(message = "Debes asignar un precio.") @Positive(message = "El precio debe ser mayor a 0.") Double price,
-            String description, boolean enabled, String categoryName, String imageUrl) {
+            String description, boolean enabled, String categoryName, String imageUrl, com.dreambake.entity.Recipe recipe) {
     }
 
     // ================= CATEGORÍAS (TIPOS) =================

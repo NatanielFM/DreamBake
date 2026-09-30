@@ -196,6 +196,8 @@ document.addEventListener('DOMContentLoaded', () => {
           imageUrl = new URL(previewImg.src).pathname; 
       }
 
+      const recipeId = document.getElementById('prod-recipe').value;
+
       const productData = {
         name: document.getElementById('prod-name').value,
         price: parseFloat(document.getElementById('prod-price').value),
@@ -204,6 +206,12 @@ document.addEventListener('DOMContentLoaded', () => {
         categoryName: document.getElementById('prod-category').value,
         imageUrl: imageUrl
       };
+
+      if (recipeId) {
+        productData.recipe = { id: parseInt(recipeId) };
+      } else {
+        productData.recipe = null;
+      }
 
       const url = id ? `/api/products/${id}` : '/api/products';
       const method = id ? 'PUT' : 'POST';
@@ -393,6 +401,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('prod-category').value = p.category.name;
     }
 
+    if (p.recipe) {
+      document.getElementById('prod-recipe').value = p.recipe.id;
+    } else {
+      document.getElementById('prod-recipe').value = '';
+    }
+
     emptyViewer.style.display = 'none';
     activeViewer.style.display = 'block';
     
@@ -418,6 +432,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('productos').classList.contains('active')) {
       calculateItemsPerPage();
     }
+  });
+
+  document.addEventListener('recipesLoaded', (e) => {
+    const prodRecipeSelect = document.getElementById('prod-recipe');
+    if (!prodRecipeSelect) return;
+    
+    const currentVal = prodRecipeSelect.value;
+    
+    let html = '<option value="">Sin receta asignada</option>';
+    e.detail.forEach(r => {
+      html += `<option value="${r.id}">${r.name}</option>`;
+    });
+    prodRecipeSelect.innerHTML = html;
+    
+    if (currentVal) prodRecipeSelect.value = currentVal;
   });
 
   loadCategoriesFromServer();

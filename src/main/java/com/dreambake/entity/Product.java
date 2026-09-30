@@ -33,4 +33,8 @@ public class Product {
     // simplificar esta fase
     @Column(name = "image_url")
     private String imageUrl;
+
+    @ManyToOne
+    @JoinColumn(name = "recipe_id")
+    private Recipe recipe;
 }

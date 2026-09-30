@@ -155,13 +155,20 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
       }
 
+      let stockBadge = '';
+      if (o.status === 'PENDING' && o.stockStatus) {
+          if (o.stockStatus === 'Realizable') stockBadge = '<br><span class="status-badge status-completado" style="margin-top:4px; font-size:0.75rem;">Realizable</span>';
+          else if (o.stockStatus === 'Bajo stock') stockBadge = '<br><span class="status-badge status-pending" style="margin-top:4px; font-size:0.75rem;">Bajo Stock</span>';
+          else if (o.stockStatus === 'Sin inventario') stockBadge = '<br><span class="status-badge status-cancelled" style="margin-top:4px; font-size:0.75rem;">Sin Inventario</span>';
+      }
+
       tr.innerHTML = `
         <td style="font-weight:bold; color:var(--accent);">#${o.id}</td>
         <td style="font-weight:600;">${o.customerName || 'Sin Nombre'}</td>
         <td style="color:#666;">${o.customerPhone}</td>
         <td>${day}/${month}/${year}</td>
         <td style="font-weight:bold;">$${o.totalPrice.toLocaleString('es-AR')}</td>
-        <td>${getStatusBadge(o.status)}</td>
+        <td>${getStatusBadge(o.status)}${stockBadge}</td>
         <td><div class="action-buttons-container">${actionsHtml}</div></td>
       `;
       tbody.appendChild(tr);
@@ -196,6 +203,39 @@ document.addEventListener('DOMContentLoaded', () => {
     orderToConfirm = dbOrders.find(o => o.id === id);
     if(!orderToConfirm) return;
 
+    if (orderToConfirm.stockStatus === 'Sin inventario') {
+      window.showConfirmModal(
+        'Alerta de Stock',
+        'Este pedido requiere más insumos de los disponibles (Stock insuficiente). El inventario de los insumos faltantes quedará en 0. ¿Desea confirmar de todos modos?',
+        'Aceptar', 'btn-red',
+        async () => {
+          try {
+            const res = await fetch(`/api/orders/${orderToConfirm.id}/confirm`, {
+              method: 'PUT', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ deposit: 0.0, deliveryDate: orderToConfirm.deliveryDate, force: true })
+            });
+            if (res.ok) {
+              window.showConfirmModal('Éxito', 'El pedido fue confirmado y el inventario ajustado a 0.', 'Aceptar', 'btn-pink', () => {});
+              jumpCalendarToDate(orderToConfirm.deliveryDate);
+            }
+          } catch(e) { console.error(e); }
+        }
+      );
+      return;
+    }
+
+    if (orderToConfirm.stockStatus === 'Bajo stock') {
+      let msg = 'Este pedido dejará algunos insumos por debajo del stock mínimo. ¿Aceptar de todos modos?';
+      window.showConfirmModal('Alerta de Stock', msg, 'Aceptar', 'btn-red', () => {
+        proceedToConfirmModal();
+      });
+      return;
+    }
+    
+    proceedToConfirmModal();
+  };
+
+  function proceedToConfirmModal() {
     document.getElementById('co-id-label').innerText = orderToConfirm.id;
     document.getElementById('co-date').value = orderToConfirm.deliveryDate;
     document.getElementById('co-hidden-total').value = orderToConfirm.totalPrice;
@@ -204,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('co-deposit').value = '';
 
     document.getElementById('modal-confirm-order').hidden = false;
-  };
+  }
 
   window.toggleDepositInput = function() {
     const type = document.getElementById('co-payment-type').value;
@@ -232,11 +272,25 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const res = await fetch(`/api/orders/${orderToConfirm.id}/confirm`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ deposit: depositValue, deliveryDate: newDate })
+          body: JSON.stringify({ deposit: depositValue, deliveryDate: newDate, force: false })
         });
         if (res.ok) {
           document.getElementById('modal-confirm-order').hidden = true;
           jumpCalendarToDate(newDate); // Auto actualiza
+        } else if (res.status === 400) {
+          const errData = await res.json();
+          if (errData.error === 'INSUFFICIENT_STOCK') {
+            window.showConfirmModal('Alerta de Inventario', errData.message, 'Forzar', 'btn-red', async () => {
+              const forceRes = await fetch(`/api/orders/${orderToConfirm.id}/confirm`, {
+                method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ deposit: depositValue, deliveryDate: newDate, force: true })
+              });
+              if (forceRes.ok) {
+                document.getElementById('modal-confirm-order').hidden = true;
+                jumpCalendarToDate(newDate);
+              }
+            });
+          }
         }
       } catch(e) { console.error(e); }
     });
@@ -373,6 +427,33 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('modal-manual-order').hidden = false;
   };
 
+  document.getElementById('btn-test-order')?.addEventListener('click', async () => {
+    const testOrder = {
+      customerName: "TEST USER",
+      customerPhone: "123456",
+      deliveryDate: new Date().toISOString().split('T')[0],
+      totalPrice: 1000,
+      deposit: 0,
+      status: "PENDING",
+      items: [{ productType: "Papas fritas", details: "Test Mock Order", price: 1000 }]
+    };
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(testOrder)
+      });
+      if (res.ok) {
+        if (typeof window.showPublicAlert === 'function') {
+           window.showPublicAlert("Pedido de prueba generado con éxito");
+        } else if (typeof window.showConfirmModal === 'function') {
+           window.showConfirmModal('Éxito', 'Pedido de prueba generado con éxito', 'OK', 'btn-pink', () => {});
+        } else {
+           alert("Pedido de prueba generado");
+        }
+        loadOrders();
+      }
+    } catch (e) { console.error(e); }
+  });
+
   document.getElementById('form-manual-order')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const newDate = document.getElementById('mo-date').value;
@@ -452,15 +533,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  window.setOrderStatus = async function(id, newStatus) {
+  window.setOrderStatus = async function(id, newStatus, force = false) {
     try {
       const res = await fetch(`/api/orders/${id}/status`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus })
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus, force: force })
       });
       if (res.ok) {
         await loadOrders(); 
         const dayOrders = dbOrders.filter(o => o.deliveryDate === currentDayModalDate && (o.status === 'CONFIRMED' || o.status === 'COMPLETED'));
         renderDayModalTable(dayOrders);
+      } else if (res.status === 400) {
+        const errData = await res.json();
+        if (errData.error === 'INSUFFICIENT_STOCK') {
+          window.showConfirmModal('Alerta de Inventario', errData.message, 'Forzar', 'btn-red', () => {
+            setOrderStatus(id, newStatus, true);
+          });
+        }
       }
     } catch(e) { console.error(e); }
   };

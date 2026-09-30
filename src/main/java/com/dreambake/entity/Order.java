@@ -43,6 +43,9 @@ public class Order {
     @JsonManagedReference // Evita bucles infinitos al convertir a JSON
     private List<OrderItem> items = new ArrayList<>();
 
+    @Transient
+    private String stockStatus;
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
