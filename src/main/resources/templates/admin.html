@@ -260,10 +260,15 @@
         <div class="product-module-container">
           
           <div class="calendar-wrapper">
-            <div class="calendar-header">
-              <button id="cal-prev">&lt;</button>
-              <h2 id="cal-month-year">...</h2>
-              <button id="cal-next">&gt;</button>
+            <div class="calendar-header" style="display:flex; justify-content:space-between; align-items:center; padding-bottom:10px;">
+              <button id="cal-prev" class="btn btn-grey btn-sm" style="border-radius:50%; width:36px; height:36px; padding:0; display:flex; align-items:center; justify-content:center;">&lt;</button>
+              <div style="display:flex; gap:5px; align-items:center; background:#fafafa; border:1px solid #eee; border-radius:8px; padding:4px 10px;">
+                 <select id="cal-month-select" style="border:none; font-size:1.15rem; font-weight:700; color:var(--accent); background:transparent; outline:none; cursor:pointer;">
+                 </select>
+                 <select id="cal-year-select" style="border:none; font-size:1.15rem; font-weight:700; color:var(--accent); background:transparent; outline:none; cursor:pointer;">
+                 </select>
+              </div>
+              <button id="cal-next" class="btn btn-grey btn-sm" style="border-radius:50%; width:36px; height:36px; padding:0; display:flex; align-items:center; justify-content:center;">&gt;</button>
             </div>
             <div class="calendar-grid" id="calendar-grid"></div>
           </div>
@@ -612,8 +617,13 @@
             <div class="form-group"><label>Seña Abonada ($)</label><input type="number" id="mo-deposit" class="form-input" value="0" required></div>
           </div>
           <div class="form-group" style="margin-top: 15px;">
-            <label>Detalle del Pedido (Texto libre)</label>
-            <textarea id="mo-details" class="form-input" rows="4" placeholder="Ej: 1 Torta 20 porciones, 2 docenas de alfajores..." required></textarea>
+            <label style="display:flex; justify-content:space-between; align-items:center;">
+              <span>Ítems del Pedido</span>
+              <button type="button" class="btn btn-grey btn-sm" onclick="addManualOrderItem()">+ Añadir Ítem</button>
+            </label>
+            <div id="mo-items-container" style="margin-top: 10px; display:flex; flex-direction:column; gap:10px;">
+              <!-- Los ítems se agregarán dinámicamente aquí -->
+            </div>
           </div>
           <button type="submit" class="btn btn-pink btn-large" style="width: 100%; margin-top: 20px;">Guardar Pedido</button>
         </form>

@@ -50,12 +50,40 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ================= 2. CALENDARIO INTERACTIVO =================
+  function initCalendarDropdowns() {
+    const mSelect = document.getElementById('cal-month-select');
+    const ySelect = document.getElementById('cal-year-select');
+    if(!mSelect || !ySelect) return;
+    
+    mSelect.innerHTML = months.map((m, i) => `<option value="${i}">${m}</option>`).join('');
+    
+    const currentY = new Date().getFullYear();
+    let yearsHtml = '';
+    for(let y = currentY - 5; y <= currentY + 5; y++) {
+      yearsHtml += `<option value="${y}">${y}</option>`;
+    }
+    ySelect.innerHTML = yearsHtml;
+    
+    mSelect.addEventListener('change', (e) => {
+      currentMonth = parseInt(e.target.value);
+      renderCalendar();
+    });
+    
+    ySelect.addEventListener('change', (e) => {
+      currentYear = parseInt(e.target.value);
+      renderCalendar();
+    });
+  }
+
   function renderCalendar() {
-    const monthYearLabel = document.getElementById('cal-month-year');
     const grid = document.getElementById('calendar-grid');
     if (!grid) return;
 
-    monthYearLabel.innerText = `${months[currentMonth]} ${currentYear}`;
+    const mSelect = document.getElementById('cal-month-select');
+    const ySelect = document.getElementById('cal-year-select');
+    if(mSelect) mSelect.value = currentMonth;
+    if(ySelect) ySelect.value = currentYear;
+
     grid.innerHTML = '';
 
     const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -97,12 +125,24 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('cal-prev')?.addEventListener('click', () => { currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(); });
   document.getElementById('cal-next')?.addEventListener('click', () => { currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; } renderCalendar(); });
 
-  // Función para mover el calendario automáticamente al mes de la fecha modificada
+  // Función para mover el calendario automáticamente, evitando romper la vista si es fecha histórica
   function jumpCalendarToDate(dateString) {
     if(!dateString) return;
     const parts = dateString.split('-');
-    currentYear = parseInt(parts[0]);
-    currentMonth = parseInt(parts[1]) - 1;
+    const targetYear = parseInt(parts[0]);
+    const targetMonth = parseInt(parts[1]) - 1;
+    
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    
+    // Si la fecha ingresada es histórica (pasada), no obligamos a saltar el calendario.
+    if (dateString < todayStr) {
+        loadOrders();
+        return;
+    }
+
+    currentYear = targetYear;
+    currentMonth = targetMonth;
     loadOrders();
   }
 
@@ -578,9 +618,71 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // ================= 7. CREAR PEDIDO MANUAL =================
-  window.openManualOrderModal = function() {
+  let manualCatalogProducts = [];
+
+  window.openManualOrderModal = async function() {
     document.getElementById('form-manual-order').reset();
+    const container = document.getElementById('mo-items-container');
+    if (container) container.innerHTML = '';
+    
+    if (manualCatalogProducts.length === 0) {
+      try {
+        const res = await fetch('/api/products');
+        if (res.ok) manualCatalogProducts = await res.json();
+      } catch (e) { console.error(e); }
+    }
+    
+    if (typeof window.addManualOrderItem === 'function') {
+        window.addManualOrderItem();
+    }
+    
     document.getElementById('modal-manual-order').hidden = false;
+  };
+
+  window.addManualOrderItem = function() {
+    const container = document.getElementById('mo-items-container');
+    if (!container) return;
+    
+    let optionsHtml = '<option value="custom">Torta Personalizada / Otro</option>';
+    manualCatalogProducts.forEach(p => {
+        optionsHtml += `<option value="${p.id}" data-name="${p.name}">Catálogo: ${p.name}</option>`;
+    });
+
+    const itemHtml = `
+      <div class="manual-order-item" style="border: 1px solid #eee; padding: 10px; border-radius: 5px; background: #fafafa; display: flex; flex-direction: column; gap: 10px; position: relative;">
+        <button type="button" onclick="if(document.querySelectorAll('.manual-order-item').length > 1) this.parentElement.remove()" style="position:absolute; top:5px; right:5px; background:none; border:none; color:var(--danger); font-size:1.2rem; cursor:pointer;" title="Eliminar ítem">&times;</button>
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1;">
+            <label style="font-size:0.8rem; color:#666;">Selección</label>
+            <select class="form-input mo-item-type" onchange="toggleManualItemType(this)" style="padding: 6px;">
+              ${optionsHtml}
+            </select>
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:0.8rem; color:#666;">Nombre del Producto</label>
+            <input type="text" class="form-input mo-item-name" placeholder="Ej: Torta Personalizada" value="Torta Personalizada" style="padding: 6px;">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:0.8rem; color:#666;">Detalles y Especificaciones</label>
+          <textarea class="form-input mo-item-details" rows="2" placeholder="Ej: 20 porciones, relleno de mousse..." required style="padding: 6px;"></textarea>
+        </div>
+      </div>
+    `;
+    container.insertAdjacentHTML('beforeend', itemHtml);
+  };
+
+  window.toggleManualItemType = function(select) {
+    const row = select.closest('.manual-order-item');
+    const nameInput = row.querySelector('.mo-item-name');
+    if (select.value === 'custom') {
+      nameInput.value = 'Torta Personalizada';
+      nameInput.readOnly = false;
+    } else {
+      const option = select.options[select.selectedIndex];
+      nameInput.value = option.dataset.name;
+      nameInput.readOnly = true;
+    }
   };
 
   document.getElementById('btn-test-order')?.addEventListener('click', async () => {
@@ -617,7 +719,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const deposit = parseFloat(document.getElementById('mo-deposit').value);
 
     if(deposit > total) {
-      window.showErrorAlert("La seña no puede ser mayor al total.");
+      if(window.showErrorAlert) window.showErrorAlert("La seña no puede ser mayor al total.");
+      else alert("La seña no puede ser mayor al total.");
+      return;
+    }
+
+    const itemsContainer = document.getElementById('mo-items-container');
+    const itemElements = itemsContainer.querySelectorAll('.manual-order-item');
+    const items = [];
+    
+    itemElements.forEach(el => {
+       const select = el.querySelector('.mo-item-type');
+       const details = el.querySelector('.mo-item-details').value;
+       const name = el.querySelector('.mo-item-name').value;
+       
+       let itemObj = {
+           productType: name,
+           details: details,
+           isCustomCake: select.value === 'custom',
+           price: 0
+       };
+       if (select.value !== 'custom') {
+           itemObj.product = { id: parseInt(select.value) };
+       }
+       items.push(itemObj);
+    });
+
+    if (items.length === 0) {
+      alert("Debes agregar al menos un ítem al pedido.");
       return;
     }
 
@@ -628,7 +757,7 @@ document.addEventListener('DOMContentLoaded', () => {
       totalPrice: total,
       deposit: deposit,
       status: document.getElementById('mo-status').value,
-      items: [{ productType: "Pedido Manual", details: document.getElementById('mo-details').value, price: total }]
+      items: items
     };
 
     handleDateWarning(newDate, async () => {
@@ -713,5 +842,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.detail === 'pedidos') loadOrders();
   });
 
+  initCalendarDropdowns();
   loadOrders();
 });

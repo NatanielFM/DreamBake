@@ -205,18 +205,19 @@ public class OrderRestController {
         Map<Long, Double> requiredStock = new HashMap<>();
         if (order.getItems() != null) {
             for (OrderItem item : order.getItems()) {
-                if (item.getProductType() != null) {
-                    productRepo.findByNameIgnoreCase(item.getProductType()).ifPresent(product -> {
-                        if (product.getRecipe() != null && product.getRecipe().getItems() != null) {
-                            for (RecipeItem recipeItem : product.getRecipe().getItems()) {
-                                if (recipeItem.getInventoryItem() != null && recipeItem.getInventoryItem().getId() != null) {
-                                    Long invId = recipeItem.getInventoryItem().getId();
-                                    Double qty = recipeItem.getQuantityRequired();
-                                    requiredStock.put(invId, requiredStock.getOrDefault(invId, 0.0) + qty);
-                                }
-                            }
+                Product product = item.getProduct();
+                if (product == null && item.getProductType() != null) {
+                    product = productRepo.findByNameIgnoreCase(item.getProductType()).orElse(null);
+                }
+                
+                if (product != null && product.getRecipe() != null && product.getRecipe().getItems() != null) {
+                    for (RecipeItem recipeItem : product.getRecipe().getItems()) {
+                        if (recipeItem.getInventoryItem() != null && recipeItem.getInventoryItem().getId() != null) {
+                            Long invId = recipeItem.getInventoryItem().getId();
+                            Double qty = recipeItem.getQuantityRequired();
+                            requiredStock.put(invId, requiredStock.getOrDefault(invId, 0.0) + qty);
                         }
-                    });
+                    }
                 }
             }
         }

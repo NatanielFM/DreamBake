@@ -66,9 +66,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (Array.isArray(o.items) && o.items.length > 0) {
       o.items.forEach(it => {
-        const name = it.productType || it.name || 'Torta Personalizada';
+        const name = it.isCustomCake ? 'Torta Personalizada' : (it.product?.name || it.productType || it.name || 'Desconocido');
         itemsCount++;
-        if (name.toLowerCase().includes('torta')) cakesCount++;
+        if (it.isCustomCake) cakesCount++; // Use architectural flag, not string category
         itemsMap[name] = (itemsMap[name] || 0) + 1;
       });
     } else if (typeof o.itemsDetails === 'string' && o.itemsDetails.trim() !== '') {
@@ -185,10 +185,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     upcomingDeliveries.sort((a, b) => a.deliveryDate.localeCompare(b.deliveryDate));
 
-    if (dashState.monthlyStats) {
-      monthRevenue = dashState.monthlyStats.revenue || 0;
-      ordersMonthCount = dashState.monthlyStats.ordersCount || 0;
-    }
+    // Update Pedidos del Mes strictly based on the currently selected calendar year
+    monthRevenue = monthlyRev[currentMonth] || 0;
+    ordersMonthCount = monthlyOrd[currentMonth] || 0;
 
     if (dashState.topProductsStats) {
       dashState.topProductsStats.forEach(p => {
