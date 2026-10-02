@@ -128,12 +128,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const contactInfo = (phone || email || address) ? (phone + email + address) : '<span style="color:#aaa">Sin datos</span>';
       
       const tagBadge = c.tag ? `<span class="tag-badge">${c.tag.name}</span>` : '';
+      const birthStr = c.birthDate ? formatDateToLatam(c.birthDate) : '<span style="color:#aaa">No registrado</span>';
+      const totalP = c.totalPurchases || 0;
 
       tr.innerHTML = `
         <td style="font-weight: 600;">${c.name}</td>
         <td>${contactInfo}</td>
         <td>${tagBadge}</td>
+        <td style="color: #666; font-size:0.9em;">${birthStr}</td>
         <td style="color: #666; font-size:0.9em;">${formatDateToLatam(c.dateAdded)}</td>
+        <td style="font-weight: 600;">${totalP} pedido(s)</td>
         <td style="text-align: center; display:flex; gap:8px; justify-content:center;">
           <button class="btn btn-pink btn-sm btn-edit" title="Modificar" style="display:flex; align-items:center; gap:6px;">${iconEdit} Editar</button>
           <button class="btn btn-red btn-sm btn-delete" title="Eliminar" style="display:flex; align-items:center; gap:6px;">${iconDelete} Eliminar</button>
@@ -169,6 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('client-phone').value = c.phone || '';
     document.getElementById('client-email').value = c.email || '';
     document.getElementById('client-address').value = c.address || '';
+    if (c.birthDate) document.getElementById('client-birthdate').value = c.birthDate;
     if(c.tag) document.getElementById('client-tag').value = c.tag.name;
     
     document.getElementById('client-modal-title').innerText = "Modificar Cliente";
@@ -184,6 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
         phone: document.getElementById('client-phone').value,
         email: document.getElementById('client-email').value,
         address: document.getElementById('client-address').value,
+        birthDate: document.getElementById('client-birthdate').value || null,
         tagName: document.getElementById('client-tag').value
       };
 
@@ -336,15 +342,122 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ================= 4. EVENTOS GLOBALES =================
+  // ================= 4. GESTIÓN DE CUPONES =================
+  let dbCoupons = [];
+  const iconEyeOn = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+  const iconEyeOff = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+
+  async function loadCouponsFromServer() {
+    try {
+      const res = await fetch('/api/coupons');
+      if (res.ok) {
+        dbCoupons = await res.json();
+        renderCouponsListModal();
+      }
+    } catch (e) {}
+  }
+
+  function renderCouponsListModal() {
+    const list = document.getElementById('coupons-list');
+    if(!list) return;
+    list.innerHTML = '';
+
+    dbCoupons.forEach(c => {
+      const li = document.createElement('li');
+      li.style.display = 'flex';
+      li.style.justifyContent = 'space-between';
+      li.style.alignItems = 'center';
+      
+      const eyeIcon = c.active ? iconEyeOn : iconEyeOff;
+      const opacity = c.active ? '1' : '0.5';
+
+      li.innerHTML = `
+        <div style="opacity: ${opacity}; display: flex; align-items: center; gap: 10px;">
+          <span class="cat-name" style="font-weight: bold;">${c.code}</span>
+          <span class="tag-badge">${c.type}</span>
+        </div>
+        <div class="cat-actions">
+            <button type="button" class="cat-action-btn btn-toggle" title="Activar/Desactivar">${eyeIcon}</button>
+            <button type="button" class="cat-action-btn btn-delete" title="Eliminar">${iconDelete}</button>
+        </div>
+      `;
+
+      li.querySelector('.btn-toggle').addEventListener('click', async () => {
+        try {
+          const res = await fetch(`/api/coupons/${c.id}`, { 
+            method: 'PUT', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ code: c.code, type: c.type, active: !c.active }) 
+          });
+          if (res.ok) loadCouponsFromServer();
+        } catch (e) {}
+      });
+
+      li.querySelector('.btn-delete').addEventListener('click', () => {
+        window.showConfirmModal('Eliminar Cupón', `¿Seguro que deseas eliminar el cupón "${c.code}"?`, 'Eliminar', 'btn-red', async () => {
+          await fetch(`/api/coupons/${c.id}`, { method: 'DELETE' });
+          loadCouponsFromServer();
+        });
+      });
+
+      list.appendChild(li);
+    });
+  }
+
+  const btnOpenCoupons = document.getElementById('btn-open-coupons-modal');
+  if (btnOpenCoupons) {
+    btnOpenCoupons.addEventListener('click', () => {
+      document.getElementById('modal-coupons').hidden = false;
+      document.getElementById('add-coupon-container').style.display = 'none';
+      document.getElementById('btn-show-add-coupon').style.display = 'block';
+      loadCouponsFromServer();
+    });
+  }
+
+  const btnShowAddCoupon = document.getElementById('btn-show-add-coupon');
+  if (btnShowAddCoupon) {
+    btnShowAddCoupon.addEventListener('click', (e) => {
+      e.target.style.display = 'none';
+      document.getElementById('add-coupon-container').style.display = 'flex';
+      document.getElementById('new-coupon-code').focus();
+    });
+  }
+
+  const btnAddCoupon = document.getElementById('btn-add-coupon');
+  if (btnAddCoupon) {
+    btnAddCoupon.addEventListener('click', async () => {
+      const codeInput = document.getElementById('new-coupon-code');
+      const typeInput = document.getElementById('new-coupon-type');
+      if (!codeInput.value.trim()) return;
+      try {
+        const res = await fetch('/api/coupons', { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ code: codeInput.value.trim().toUpperCase(), type: typeInput.value, active: true }) 
+        });
+        if (res.ok) {
+          codeInput.value = '';
+          document.getElementById('add-coupon-container').style.display = 'none';
+          document.getElementById('btn-show-add-coupon').style.display = 'block';
+          loadCouponsFromServer(); 
+        } else {
+          window.showErrorAlert(await res.text());
+        }
+      } catch(e) {}
+    });
+  }
+
+  // ================= 5. EVENTOS GLOBALES =================
   document.addEventListener('tabChanged', e => {
     if (e.detail === 'clientes') {
       loadTagsFromServer();
       loadClientsFromServer();
+      loadCouponsFromServer();
     }
   });
 
   // Carga inicial silente
   loadTagsFromServer();
   loadClientsFromServer();
+  loadCouponsFromServer();
 });

@@ -21,6 +21,9 @@ public class Customer {
     private String phone;
     private String address;
 
+    private LocalDate birthDate;
+    private Integer totalPurchases = 0;
+
     @Column(name = "date_added")
     private LocalDate dateAdded;
 
