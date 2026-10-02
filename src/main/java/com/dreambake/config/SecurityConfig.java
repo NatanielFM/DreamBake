@@ -21,7 +21,7 @@ public class SecurityConfig {
                         .requestMatchers("/", "/builder", "/products", "/cart", "/register", "/css/**", "/js/**",
                                 "/img/**", "/uploads/**")
                         .permitAll()
-                        .requestMatchers("/api/orders/**").permitAll()
+                        .requestMatchers("/api/orders/**", "/api/cake-config/public", "/api/coupons/validate/**", "/api/coupons/consume/**").permitAll()
                         .requestMatchers("/admin/**").hasAuthority("ADMIN")
                         .requestMatchers("/baker/**").hasAuthority("PASTELERO")
                         .requestMatchers("/api/**").hasAnyAuthority("ADMIN", "PASTELERO")

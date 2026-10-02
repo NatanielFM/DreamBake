@@ -22,4 +22,10 @@ public class Coupon {
 
     @Column(nullable = false)
     private boolean active = true;
+
+    private String description;
+    private Integer discountPercentage;
+    private String customText;
+    private Integer usageLimit;
+    private boolean isUnlimited = false;
 }

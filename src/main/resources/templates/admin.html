@@ -1007,15 +1007,29 @@
       </div>
       <div class="modal-body" style="padding-top: 10px;">
         <button id="btn-show-add-coupon" class="btn btn-pink" style="width: 100%; margin-bottom: 15px; padding: 10px;">+ Crear nuevo cupón</button>
-        <div id="add-coupon-container" class="add-cat-row" style="display: none;">
-          <input type="text" id="new-coupon-code" class="form-input" placeholder="Código (ej. DESC10)...">
-          <select id="new-coupon-type" class="form-input">
-            <option value="DESCUENTO">Descuento</option>
-            <option value="ENVIO_GRATIS">Envío Gratis</option>
-            <option value="REGALO">Regalo</option>
-            <option value="OTROS">Otros</option>
-          </select>
-          <button id="btn-add-coupon" class="btn btn-pink btn-uniform" style="width: auto;">Guardar</button>
+        <div id="add-coupon-container" class="add-cat-row" style="display: none; flex-direction: column;">
+          <input type="hidden" id="coupon-id" value="">
+          <div style="display:flex; gap:10px;">
+            <input type="text" id="new-coupon-code" class="form-input" placeholder="Código (ej. DESC10)...">
+            <select id="new-coupon-type" class="form-input">
+              <option value="DESCUENTO">Descuento</option>
+              <option value="ENVIO_GRATIS">Envío Gratis</option>
+              <option value="REGALO">Regalo</option>
+              <option value="OTROS">Otros</option>
+            </select>
+          </div>
+          <input type="text" id="new-coupon-desc" class="form-input" placeholder="Descripción..." style="margin-top:10px;">
+          <div id="coupon-dynamic-inputs" style="margin-top:10px;">
+             <input type="number" id="new-coupon-discount" class="form-input" placeholder="Porcentaje (1-100%)" min="1" max="100">
+             <input type="text" id="new-coupon-custom" class="form-input" placeholder="Texto Personalizado" style="display: none;">
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
+              <input type="number" id="new-coupon-limit" class="form-input" placeholder="Límite de usos" min="1">
+              <label style="white-space: nowrap; display:flex; align-items:center; gap:5px;">
+                  <input type="checkbox" id="new-coupon-unlimited"> Ilimitado
+              </label>
+          </div>
+          <button id="btn-add-coupon" class="btn btn-pink btn-uniform" style="width: 100%; margin-top: 10px;">Guardar</button>
         </div>
         <ul id="coupons-list" class="category-list"></ul>
       </div>

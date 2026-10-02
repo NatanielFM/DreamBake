@@ -377,17 +377,37 @@ document.addEventListener('DOMContentLoaded', () => {
           <span class="tag-badge">${c.type}</span>
         </div>
         <div class="cat-actions">
+            <button type="button" class="cat-action-btn btn-edit-coupon" title="Editar" style="color:var(--accent);">${iconEdit}</button>
             <button type="button" class="cat-action-btn btn-toggle" title="Activar/Desactivar">${eyeIcon}</button>
             <button type="button" class="cat-action-btn btn-delete" title="Eliminar">${iconDelete}</button>
         </div>
       `;
 
+      li.querySelector('.btn-edit-coupon').addEventListener('click', () => {
+        document.getElementById('coupon-id').value = c.id;
+        document.getElementById('new-coupon-code').value = c.code;
+        document.getElementById('new-coupon-type').value = c.type;
+        document.getElementById('new-coupon-desc').value = c.description || '';
+        document.getElementById('new-coupon-discount').value = c.discountPercentage || '';
+        document.getElementById('new-coupon-custom').value = c.customText || '';
+        document.getElementById('new-coupon-limit').value = c.usageLimit || '';
+        document.getElementById('new-coupon-unlimited').checked = !!c.unlimited;
+        
+        document.getElementById('new-coupon-type').dispatchEvent(new Event('change'));
+        document.getElementById('new-coupon-unlimited').dispatchEvent(new Event('change'));
+        
+        document.getElementById('btn-show-add-coupon').style.display = 'none';
+        document.getElementById('add-coupon-container').style.display = 'flex';
+        document.getElementById('new-coupon-code').focus();
+      });
+
       li.querySelector('.btn-toggle').addEventListener('click', async () => {
         try {
+          const updatedCoupon = { ...c, active: !c.active };
           const res = await fetch(`/api/coupons/${c.id}`, { 
             method: 'PUT', 
             headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ code: c.code, type: c.type, active: !c.active }) 
+            body: JSON.stringify(updatedCoupon) 
           });
           if (res.ok) loadCouponsFromServer();
         } catch (e) {}
@@ -418,8 +438,46 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnShowAddCoupon) {
     btnShowAddCoupon.addEventListener('click', (e) => {
       e.target.style.display = 'none';
+      document.getElementById('coupon-id').value = '';
+      document.getElementById('new-coupon-code').value = '';
+      document.getElementById('new-coupon-desc').value = '';
+      document.getElementById('new-coupon-discount').value = '';
+      document.getElementById('new-coupon-custom').value = '';
+      document.getElementById('new-coupon-limit').value = '';
+      document.getElementById('new-coupon-unlimited').checked = false;
+      document.getElementById('new-coupon-limit').disabled = false;
       document.getElementById('add-coupon-container').style.display = 'flex';
       document.getElementById('new-coupon-code').focus();
+    });
+  }
+
+  const newCouponType = document.getElementById('new-coupon-type');
+  const newCouponDesc = document.getElementById('new-coupon-desc');
+  const newCouponDiscount = document.getElementById('new-coupon-discount');
+  const newCouponCustom = document.getElementById('new-coupon-custom');
+  const newCouponLimit = document.getElementById('new-coupon-limit');
+  const newCouponUnlimited = document.getElementById('new-coupon-unlimited');
+
+  if (newCouponType) {
+    newCouponType.addEventListener('change', (e) => {
+      const val = e.target.value;
+      if (val === 'DESCUENTO') {
+        newCouponDiscount.style.display = 'block';
+        newCouponCustom.style.display = 'none';
+      } else if (val === 'ENVIO_GRATIS') {
+        newCouponDiscount.style.display = 'none';
+        newCouponCustom.style.display = 'none';
+      } else {
+        newCouponDiscount.style.display = 'none';
+        newCouponCustom.style.display = 'block';
+      }
+    });
+  }
+
+  if (newCouponUnlimited) {
+    newCouponUnlimited.addEventListener('change', (e) => {
+      newCouponLimit.disabled = e.target.checked;
+      if (e.target.checked) newCouponLimit.value = '';
     });
   }
 
@@ -427,16 +485,39 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnAddCoupon) {
     btnAddCoupon.addEventListener('click', async () => {
       const codeInput = document.getElementById('new-coupon-code');
-      const typeInput = document.getElementById('new-coupon-type');
       if (!codeInput.value.trim()) return;
+      
+      const id = document.getElementById('coupon-id').value;
+      const url = id ? `/api/coupons/${id}` : '/api/coupons';
+      const method = id ? 'PUT' : 'POST';
+
+      const payload = {
+         code: codeInput.value.trim().toUpperCase(),
+         type: newCouponType.value,
+         description: newCouponDesc.value.trim(),
+         discountPercentage: newCouponDiscount.value ? parseInt(newCouponDiscount.value) : null,
+         customText: newCouponCustom.value.trim(),
+         usageLimit: newCouponLimit.value ? parseInt(newCouponLimit.value) : null,
+         unlimited: newCouponUnlimited.checked,
+         active: true
+      };
+
       try {
-        const res = await fetch('/api/coupons', { 
-          method: 'POST', 
+        const res = await fetch(url, { 
+          method: method, 
           headers: { 'Content-Type': 'application/json' }, 
-          body: JSON.stringify({ code: codeInput.value.trim().toUpperCase(), type: typeInput.value, active: true }) 
+          body: JSON.stringify(payload) 
         });
         if (res.ok) {
+          document.getElementById('coupon-id').value = '';
           codeInput.value = '';
+          newCouponDesc.value = '';
+          newCouponDiscount.value = '';
+          newCouponCustom.value = '';
+          newCouponLimit.value = '';
+          newCouponUnlimited.checked = false;
+          newCouponLimit.disabled = false;
+          
           document.getElementById('add-coupon-container').style.display = 'none';
           document.getElementById('btn-show-add-coupon').style.display = 'block';
           loadCouponsFromServer(); 

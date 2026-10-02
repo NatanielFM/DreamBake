@@ -57,6 +57,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     cart = JSON.parse(localStorage.getItem('dreamBakeCart')) || [];
   } catch(e) { cart = []; }
 
+  let appliedCoupon = null;
+
+  const btnApplyCoupon = document.getElementById('btn-apply-coupon');
+  if (btnApplyCoupon) {
+    btnApplyCoupon.addEventListener('click', async () => {
+      const code = document.getElementById('cart-coupon').value.trim();
+      const msgDiv = document.getElementById('coupon-message');
+      if (!code) return;
+      try {
+        const res = await fetch(`/api/coupons/validate/${code}`);
+        if (res.ok) {
+          appliedCoupon = await res.json();
+          msgDiv.style.color = '#25D366';
+          msgDiv.innerText = 'Cupón aplicado con éxito.';
+          updateCartUI();
+        } else {
+          appliedCoupon = null;
+          msgDiv.style.color = 'red';
+          const errorText = await res.text();
+          console.error(`Error ${res.status}: ${errorText}`);
+          msgDiv.innerText = 'Cupón no válido, agotado o inactivo.';
+          updateCartUI();
+        }
+      } catch (e) {
+        msgDiv.style.color = 'red';
+        console.error('Fetch error:', e);
+        msgDiv.innerText = 'Error al validar cupón.';
+      }
+    });
+  }
+
   // ================= 2. INYECCIÓN GLOBAL (BOTÓN FLOTANTE Y POPUP MINI-CARRITO) =================
   if (currentPath !== '/cart') {
     if (!document.getElementById('floating-cart-btn')) {
@@ -125,6 +156,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(floatBtn) floatBtn.style.display = cart.length > 0 ? 'block' : 'none';
 
     let total = cart.reduce((acc, item) => acc + item.price, 0);
+    if (appliedCoupon && appliedCoupon.type === 'DESCUENTO' && appliedCoupon.discountPercentage) {
+      total = total - (total * (appliedCoupon.discountPercentage / 100));
+    }
 
     const previewContainers = document.querySelectorAll('#cart-items-preview, #cart-items');
     previewContainers.forEach(container => {
@@ -366,6 +400,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       const cPay = document.getElementById('chk-payment').value;
       
       let total = cart.reduce((acc, item) => acc + item.price, 0);
+      if (appliedCoupon && appliedCoupon.type === 'DESCUENTO' && appliedCoupon.discountPercentage) {
+        total = total - (total * (appliedCoupon.discountPercentage / 100));
+      }
 
       // Aplanar los items en un texto limpio para guardarlo en itemsDetails
       let itemsText = cart.map(item => `> *${item.productType}*\n${item.details}`).join('\n\n');
@@ -402,11 +439,28 @@ document.addEventListener('DOMContentLoaded', async () => {
           // 2. Armar el mensaje con el ID asignado por MySQL
           let waMsg = `Hola! 👋 Confirmo mi pedido 🩷\n\n> N° Referencia: #${savedOrder.id}\n\n`;
           waMsg += itemsText + '\n\n';
+          
+          if (appliedCoupon) {
+            if (appliedCoupon.type === 'DESCUENTO') {
+              waMsg += `> 🎟️ Cupón aplicado: ${appliedCoupon.code} - Descuento del ${appliedCoupon.discountPercentage}%\n`;
+            } else if (appliedCoupon.type === 'ENVIO_GRATIS') {
+              waMsg += `> 🎟️ Cupón aplicado: ${appliedCoupon.code} - ¡Envío Gratis!\n`;
+            } else {
+              waMsg += `> 🎟️ Cupón aplicado: ${appliedCoupon.code} - Beneficio: ${appliedCoupon.customText}\n`;
+            }
+          }
+
           waMsg += `> *Para el:* ${cDate.split('-').reverse().join('/')}\n`;
           waMsg += `> *Pago:* ${cPay}\n`;
           if (cDetails.trim() !== '') waMsg += `> *Aclaraciones:* ${cDetails}\n\n`;
           
           waMsg += `El total es de $${total.toLocaleString('es-AR')}.`;
+
+          if (appliedCoupon) {
+            try {
+               await fetch(`/api/coupons/consume/${appliedCoupon.code}`, { method: 'POST' });
+            } catch (err) { console.error('Error al consumir cupón', err); }
+          }
 
           const businessPhone = "5493764159312"; 
           const waUrl = `https://wa.me/${businessPhone}?text=${encodeURIComponent(waMsg)}`; 

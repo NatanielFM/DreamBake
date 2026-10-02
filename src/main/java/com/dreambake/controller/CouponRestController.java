@@ -34,6 +34,11 @@ public class CouponRestController {
             coupon.setCode(couponDetails.getCode());
             coupon.setType(couponDetails.getType());
             coupon.setActive(couponDetails.isActive());
+            coupon.setDescription(couponDetails.getDescription());
+            coupon.setDiscountPercentage(couponDetails.getDiscountPercentage());
+            coupon.setCustomText(couponDetails.getCustomText());
+            coupon.setUsageLimit(couponDetails.getUsageLimit());
+            coupon.setUnlimited(couponDetails.isUnlimited());
             return ResponseEntity.ok(couponRepository.save(coupon));
         }
         return ResponseEntity.notFound().build();
@@ -44,6 +49,39 @@ public class CouponRestController {
         if (couponRepository.existsById(id)) {
             couponRepository.deleteById(id);
             return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/validate/{code}")
+    public ResponseEntity<Coupon> validateCoupon(@PathVariable String code) {
+        Optional<Coupon> optionalCoupon = couponRepository.findByCodeIgnoreCase(code);
+        if (optionalCoupon.isPresent()) {
+            Coupon coupon = optionalCoupon.get();
+            if (coupon.isActive() && (coupon.isUnlimited() || (coupon.getUsageLimit() != null && coupon.getUsageLimit() > 0))) {
+                return ResponseEntity.ok(coupon);
+            }
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+    @PostMapping("/consume/{code}")
+    public ResponseEntity<Void> consumeCoupon(@PathVariable String code) {
+        Optional<Coupon> optionalCoupon = couponRepository.findByCodeIgnoreCase(code);
+        if (optionalCoupon.isPresent()) {
+            Coupon coupon = optionalCoupon.get();
+            if (coupon.isActive() && (coupon.isUnlimited() || (coupon.getUsageLimit() != null && coupon.getUsageLimit() > 0))) {
+                if (!coupon.isUnlimited()) {
+                    coupon.setUsageLimit(coupon.getUsageLimit() - 1);
+                    if (coupon.getUsageLimit() == 0) {
+                        coupon.setActive(false);
+                    }
+                    couponRepository.save(coupon);
+                }
+                return ResponseEntity.ok().build();
+            }
+            return ResponseEntity.badRequest().build();
         }
         return ResponseEntity.notFound().build();
     }

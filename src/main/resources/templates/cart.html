@@ -28,8 +28,9 @@
               <label>Cupón de Descuento (Opcional)</label>
               <div style="display:flex; gap:10px;">
                 <input type="text" id="cart-coupon" class="public-input" placeholder="Ej: DREAM10">
-                <button type="button" class="btn btn-grey" onclick="showPublicAlert('Lo sentimos, este cupón no es válido o ya caducó.')">Aplicar</button>
+                <button type="button" class="btn btn-grey" id="btn-apply-coupon">Aplicar</button>
               </div>
+              <div id="coupon-message" style="margin-top:5px; font-size:0.9em; font-weight:600;"></div>
             </div>
             <h2 style="text-align:right; color:var(--accent); margin-top:20px;">Total: $<span id="full-cart-total">0</span></h2>
           </div>
