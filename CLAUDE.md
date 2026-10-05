@@ -1,0 +1,182 @@
+# CLAUDE.md — DreamBake
+
+Contexto del proyecto para Claude Code. Leelo completo antes de hacer cambios.
+
+## Qué es DreamBake
+
+DreamBake es el **trabajo final (tesis)** de Nataniel Medina para la carrera **Técnico Superior en Analista de Sistemas** (IPESMI, Posadas, Misiones, ciclo 2026). Es un sistema web de gestión para la pastelería **Dulce Sueños Posadas**, un emprendimiento chico que hace tortas personalizadas y mesas dulces.
+
+### El problema (relevado en 4 entrevistas con la clienta)
+- La información está dispersa: los pedidos en un pizarrón, los clientes en WhatsApp/Instagram y las finanzas en un cuaderno.
+- No hay control de inventario ni de vencimientos de insumos y packaging.
+- Las recetas y el cálculo de insumos se hacen sin fórmula.
+- La producción de pedidos grandes se coordina de memoria (decoraciones 1 semana antes, bizcochuelos 3 días antes, galletitas 2 días antes).
+- Cuando un pedido sale mal se pierde el 100% de lo utilizado; se dedican 4–5 h semanales a tareas administrativas automatizables.
+
+### Lo que pidió la clienta (tenerlo en cuenta en cualquier cambio)
+- **Que sea intuitivo**: el personal no es técnico. Si el sistema resulta complicado, prefieren volver al papel. La simplicidad es un requisito, no un detalle.
+- Accesible desde **PC y celular** sin instalar nada → todo tiene que ser **responsive**.
+- Recordatorios de entregas con al menos 3 días de anticipación; planificación de producción con horizonte mínimo de 3 días.
+- Control de stock con alertas de stock bajo y vencimientos.
+- Fidelización de clientes (recordatorio de cumpleaños estilo Starbucks, cupones).
+- Recibos automáticos (sin valor legal).
+- Reportes de ganancias y márgenes.
+- Seguridad moderada de los datos de clientes (Ley 25.326 de Protección de Datos Personales).
+- A futuro: evolucionar a tienda online.
+
+## Módulos del sistema
+
+1. Autenticación, seguridad y perfiles
+2. Catálogo de productos y galería
+3. Creador de tortas y tienda web
+4. Gestor de pedidos
+5. Gestor de inventario
+6. Gestor de recetas
+7. Impresión de recibos
+8. Dashboard con resumen y métricas
+9. Gestor de clientes
+10. Fidelización de clientes (cupones, cumpleaños)
+11. Tareas del pastelero
+12. Gestor de equipo de trabajo
+
+## Stack técnico
+
+- **Java 21** (obligatorio, definido en `pom.xml`)
+- **Spring Boot 4.0.6**: Web MVC, Data JPA (Hibernate), Security, Validation, Thymeleaf, DevTools
+- **Thymeleaf** + `thymeleaf-extras-springsecurity6` para las vistas
+- **MySQL 8** (`mysql-connector-j`)
+- **Lombok** (requiere annotation processing en el IDE)
+- **Maven** a través del wrapper (`mvnw` / `mvnw.cmd`, Maven 3.9.16). No hace falta Maven instalado.
+- Frontend: **HTML + CSS + JavaScript vanilla** (sin frameworks, sin build step, sin npm). Fuente **Poppins** (Google Fonts) y **Chart.js** por CDN en los paneles.
+- Entorno de desarrollo: **Windows** (PowerShell / Git Bash).
+
+## Cómo levantar el proyecto
+
+```powershell
+# Requiere MySQL corriendo con la base creada:  CREATE DATABASE dreambake_db;
+.\mvnw.cmd spring-boot:run
+# Abrir http://localhost:8080
+```
+
+- Compilar sin levantar: `.\mvnw.cmd compile`
+- Tests: `.\mvnw.cmd test` (solo existe el test de contexto por defecto)
+- Conexión en `src/main/resources/application.properties`: `jdbc:mysql://localhost:3306/dreambake_db`, usuario `root`.
+- `spring.jpa.hibernate.ddl-auto=update`: Hibernate crea y actualiza las tablas solo a partir de las entidades. **No existen scripts SQL ni migraciones.** Agregar un campo a una entidad agrega la columna; renombrar o borrar campos NO limpia columnas viejas.
+- **No hay usuario administrador precargado.** Para tener uno: registrarse en `/register` y después en MySQL `UPDATE users SET roles='ADMIN' WHERE email='...';` (o `'PASTELERO'`).
+- Con DevTools, los cambios en templates, CSS y JS se ven recargando el navegador (a veces con Ctrl+F5). Los cambios en Java reinician la app cuando se recompilan (o reiniciándola a mano).
+
+## Estructura
+
+```
+src/main/java/com/dreambake/
+├── config/        SecurityConfig (rutas y roles), MvcConfig (expone /uploads), GlobalControllerAdvice (currentUser en todas las vistas)
+├── controller/    Controladores de vistas (WebController, AdminController, BakerController, AuthController, ProfileController)
+│                  y REST bajo /api (*RestController) que consume el JS del frontend
+├── entity/        Entidades JPA (ver "Modelo de datos")
+├── repository/    Interfaces Spring Data JPA
+└── service/       UserService, UserDetailsServiceImpl, ProductManagementService
+                   (gran parte de la lógica de negocio está directamente en los controladores REST)
+
+src/main/resources/
+├── templates/     Vistas Thymeleaf
+│   ├── index.html, products.html, builder.html, cart.html   → tienda pública
+│   ├── login.html, register.html, profile.html               → autenticación y perfil
+│   ├── admin.html   → panel de administración (una sola página con pestañas, ~1200 líneas)
+│   ├── baker.html   → panel del pastelero
+│   └── fragments/header.html → header compartido (th:replace)
+├── static/css/    main.css (variables globales y tienda), admin.css (paneles), y un CSS por sección (hero, promo, products, about, header, footer, login, register, public)
+├── static/js/
+│   ├── public/store.js      → carrito (localStorage "dreamBakeCart"), creador de tortas, checkout
+│   ├── header.js, wheel-carousel.js, login.js, register.js
+│   └── admin/               → un archivo por pestaña del panel: main.js (sidebar, modales globales), dashboard.js,
+│                              orders.js, products.js, inventory.js, recipes.js, clients.js, gallery.js,
+│                              cake-config.js (armador de tortas), team.js, notifications-simple.js
+└── static/img/    imágenes y videos del sitio
+
+uploads/           imágenes subidas desde el panel (servidas en /uploads/**)
+```
+
+### Detalles importantes del frontend
+- **`baker.html` reutiliza scripts del admin** (`admin/main.js`, `inventory.js`, `recipes.js`, `orders.js`). Un cambio en esos archivos afecta a **los dos paneles**: verificá que no rompa ninguno.
+- El panel admin cambia de sección con pestañas `data-tab` (resumen, pedidos, productos, inventario, recetas, clientes, galería, armador, equipo); cada pestaña tiene su JS en `static/js/admin/`.
+- Modales y confirmaciones globales: `window.showConfirmModal(...)` en `admin/main.js`. Reutilizalos en vez de usar `alert()`/`confirm()`.
+- El JS se comunica con el backend vía `fetch` a los endpoints `/api/...` y arma el HTML dinámicamente.
+- Variables de diseño en `:root`: `main.css` (tienda) y `admin.css` (paneles). Color de acento `--accent: #e0487f` (rosa). Usá las variables existentes en vez de colores sueltos.
+- Los íconos son SVG inline (se reemplazaron los emojis por SVG). No volver a usar emojis como íconos.
+- `static/js/admin.js` y `static/js/products.js` no aparecen referenciados en ningún template (posible código viejo). Confirmar con el autor antes de borrarlos.
+- Los scripts sueltos de la raíz (`strip_baker.*`, `replace_emojis.*`) fueron utilidades de una sola vez; no son parte del sistema.
+
+## Seguridad y roles
+
+Definido en `config/SecurityConfig.java`:
+
+| Ruta | Acceso |
+|---|---|
+| `/`, `/builder`, `/products`, `/cart`, `/register`, `/css/**`, `/js/**`, `/img/**`, `/uploads/**` | Público |
+| `/api/orders/**`, `/api/cake-config/public`, `/api/coupons/validate/**`, `/api/coupons/consume/**` | Público (lo usa la tienda) |
+| `/admin/**` | `ADMIN` |
+| `/baker/**` | `PASTELERO` |
+| resto de `/api/**` | `ADMIN` o `PASTELERO` |
+
+- Los roles son **authorities sin prefijo** (`ADMIN`, `PASTELERO`), guardados como texto en `User.roles`.
+- Tras el login: ADMIN → `/admin`, PASTELERO → `/baker`, otro → `/`.
+- Contraseñas con BCrypt. CSRF está deshabilitado.
+- Al agregar una ruta o endpoint nuevo, **actualizá SecurityConfig** si hace falta.
+
+## Modelo de datos (entidades JPA)
+
+| Entidad (tabla) | Contenido principal | Relaciones |
+|---|---|---|
+| `User` (users) | email (login), password, name, phone, roles, enabled | — |
+| `Customer` (customers) | name, email, phone, address, birthDate, totalPurchases, dateAdded | ManyToOne `CustomerTag` |
+| `CustomerTag` (customer_tags) | name, isDeletable, displayOrder | — |
+| `Order` (orders_table) | customerName/Phone/Email (texto), deliveryDate, deliveryShift, totalPrice, deposit (seña), status, stockStatus, createdAt | OneToMany `OrderItem` |
+| `OrderItem` (order_items) | productType, isCustomCake, details (TEXT), price | ManyToOne `Order`, ManyToOne `Product` |
+| `Product` (products) | name, description, price, enabled, imageUrl | ManyToOne `Category`, ManyToOne `Recipe` |
+| `Category` (categories) | name, isDeletable, displayOrder | — |
+| `Recipe` (recipes) | name, details | OneToMany `RecipeItem` |
+| `RecipeItem` (recipe_items) | quantityRequired | ManyToOne `Recipe`, ManyToOne `InventoryItem` |
+| `InventoryItem` (inventory_items) | name, currentStock, minimumStock, unit, expirationDate | — |
+| `Coupon` (coupons) | code, type (`CouponType`), active, discountPercentage, customText, usageLimit, isUnlimited | — |
+| `CakeSize` (cake_sizes) | name, price, maxRellenos, mixSponge, enabled | — |
+| `CakeOption` (cake_options) | name, category ("Sponge", "Crema", "Fondant"), enabled | — |
+| `GalleryImage` (gallery_images) | url, uploadedAt | — |
+
+Enums: `OrderStatus` = PENDING → CONFIRMED → IN_PROGRESS → COMPLETED (o CANCELLED). `CouponType` = DESCUENTO, ENVIO_GRATIS, REGALO.
+
+**Cadena clave del negocio:** Pedido → Ítem → Producto → Receta → Ítem de receta → Insumo. Al **confirmar** un pedido (`PUT /api/orders/{id}/confirm` o pasar de PENDING a CONFIRMED) se verifica el stock (con opción `force`), **se descuentan los insumos** del inventario y se crea el `Customer` automáticamente si su teléfono no existe.
+
+Limitaciones conocidas del modelo (no las "arregles" sin que te lo pidan; son decisiones pendientes de la tesis):
+- `Order` no tiene relación con `Customer`; guarda nombre/teléfono/email como texto.
+- `InventoryItem` y `Recipe` no tienen costo, así que todavía no se calculan costos ni márgenes reales.
+- Los roles son un String en `User`, no una tabla.
+
+## Convenciones
+
+- **Idioma**: la interfaz, los textos visibles, los mensajes de error y los comentarios van en **español (Argentina)**. Los nombres de clases, métodos y variables están en inglés; mantené esa mezcla.
+- Comentarios didácticos: el código tiene comentarios que explican qué hace cada parte (es un proyecto académico que el autor tiene que defender). Al agregar código, comentá lo que no sea obvio, en español y en lenguaje simple.
+- Usá Lombok como en las entidades existentes; inyección con `@Autowired`/constructor como en el código que rodea al cambio.
+- Endpoints REST nuevos bajo `/api/...`, devolviendo `ResponseEntity`.
+- Seguí el estilo del archivo que estás editando antes que cualquier preferencia propia.
+
+## Cómo trabajar en este repo
+
+- **Trabajá siempre en una rama**, nunca directo en `main` (la rama actual de trabajo de UI es `cambios-ui`).
+- **Alcance del rediseño:** durante las fases del rediseño, el alcance lo define el prompt de cada fase. Dentro de ese alcance se pueden reorganizar HTML y CSS libremente (por ejemplo, mover estilos inline a archivos CSS). Fuera de él sigue valiendo la regla de cambios chicos y enfocados.
+- **No borres archivos ni cambies el modelo de datos** (entidades) sin confirmación explícita: con `ddl-auto=update` un cambio de entidad altera la base real.
+- **No modifiques `application.properties`** (tiene la conexión local a la base).
+- Antes de dar algo por terminado, verificá que **compila** (`.\mvnw.cmd compile`) y, si es UI, revisá que se vea bien en **celular y PC** y en **ambos paneles** si tocaste JS compartido.
+- Explicá los cambios en lenguaje simple: el autor tiene que poder entender y defender cada línea frente a sus profesores.
+- No hagas commit ni push salvo que te lo pidan. Mensajes de commit en español.
+
+## Pendientes de la tesis (contexto, no tareas automáticas)
+
+- Diagramas por ingeniería inversa: **Casos de Uso** (actores: cliente, administrador, pastelero) y **Entidad-Relación**; también de Clases y de Dominio.
+- Posible: costos por insumo/receta y reportes de márgenes, relación Pedido–Cliente, recordatorios automáticos de entrega, integración con WhatsApp.
+
+## Diseño
+
+- **Identidad fija:** la tipografía es **Poppins** y la paleta es la definida en `:root` de `static/css/main.css` y `static/css/admin.css` (`--accent: #e0487f`, `--accent2: #cf1810`, el rosa de fondo, y los colores de texto y muted). No agregar colores nuevos. Se permiten tonos más claros u oscuros derivados de esos mismos colores.
+- **Rediseño en curso (rama `cambios-ui`):** el diseño de la web pública se está rehaciendo por fases, con inspiración en magicspoon.com adaptada a una pastelería. El plan y las decisiones se guardan en `design-review/DESIGN-PLAN.md` y `PRODUCT.md` (se crean en la Fase 0). Cuando existan, seguirlos en cualquier cambio de interfaz.
+- **Prioridad:** que sea simple de usar para personal no técnico y que se vea bien en celular. Lo vistoso nunca va por encima de lo claro.
+- **Al usar skills de diseño** (Impeccable, Taste, Emil Kowalski), respetar esta identidad. No cambiar la tipografía ni la paleta aunque la skill lo sugiera.
