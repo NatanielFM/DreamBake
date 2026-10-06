@@ -22,12 +22,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateCategoryUI() {
     const filterContainer = document.getElementById('filter-container');
-    if(filterContainer) filterContainer.innerHTML = `<button class="chip active" data-filter="all">Todos</button>`;
+    if(filterContainer) filterContainer.innerHTML = `<button type="button" class="chip active" data-filter="all">Todos</button>`;
     if(prodSelectCategory) prodSelectCategory.innerHTML = '';
 
     dbCategories.forEach(c => {
       if(filterContainer) {
         const chip = document.createElement('button');
+        chip.type = 'button';
         chip.className = 'chip';
         chip.dataset.filter = c.name;
         chip.innerText = c.name;
@@ -53,15 +54,15 @@ document.addEventListener('DOMContentLoaded', () => {
       li.innerHTML = `
         <span class="cat-name">${c.name}</span>
         <div class="cat-actions">
-            <button type="button" class="cat-action-btn btn-edit" title="Modificar">${iconEdit}</button>
+            <button type="button" class="cat-action-btn btn-edit" title="Modificar" aria-label="Cambiar el nombre de ${c.name}">${iconEdit}</button>
             <button type="button" class="cat-action-btn btn-up" title="Subir" ${index === 0 ? 'disabled' : ''}>${iconUp}</button>
             <button type="button" class="cat-action-btn btn-down" title="Bajar" ${index === dbCategories.length - 1 ? 'disabled' : ''}>${iconDown}</button>
-            ${c.deletable ? `<button type="button" class="cat-action-btn btn-delete" title="Eliminar">${iconDelete}</button>` : ''}
+            ${c.deletable ? `<button type="button" class="cat-action-btn btn-delete" title="Eliminar" aria-label="Eliminar ${c.name}">${iconDelete}</button>` : ''}
         </div>
       `;
 
       li.querySelector('.btn-edit').addEventListener('click', async () => {
-        const newName = await window.showCustomPrompt("Escribe el nuevo nombre para este tipo:", c.name);
+        const newName = await window.showCustomPrompt("Escribí el nuevo nombre de la categoría:", c.name);
         if (newName && newName.trim() !== "" && newName !== c.name) {
           await fetch(`/api/categories/${c.id}`, {
             method: 'PUT',
@@ -157,7 +158,11 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentCategoryFilter = 'all';
   let currentSearchQuery = '';
   let currentPage = 1;
-  let itemsPerPage = 12; 
+  let itemsPerPage = 12;
+
+  // Producto sin foto: cupcake de la marca dibujado en SVG (data:, sin pedir nada a internet).
+  // Antes se usaba via.placeholder.com y, al guardar, se tomaba "/300" como si fuera la foto.
+  const NO_PHOTO = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 30"><rect width="40" height="30" fill="#fbe9f0"/><g transform="translate(10 2) scale(0.5)"><path fill="#481729" d="M10.5 21h19l-2.6 11.3A2.6 2.6 0 0 1 24.4 34.4h-8.8a2.6 2.6 0 0 1-2.5-2.1L10.5 21Z"/><path fill="#e0487f" d="M9.6 22.4c-2 0-3.6-1.6-3.6-3.6 0-1.8 1.3-3.3 3-3.6.4-4 3.8-7.1 7.8-7.1 1.2 0 2.4.3 3.4.8 1.2-.9 2.7-1.4 4.2-1.4 4 0 7.3 3.2 7.4 7.2 1.4.6 2.3 2 2.3 3.6 0 2.3-1.8 4.1-4.1 4.1H9.6Z"/><circle fill="#cf1810" cx="21.5" cy="5.6" r="3"/></g></svg>');
 
   const emptyViewer = document.getElementById('empty-viewer');
   const activeViewer = document.getElementById('active-viewer');
@@ -178,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnAddNew.addEventListener('click', () => {
       productForm.reset();
       document.getElementById('prod-id').value = '';
-      document.getElementById('prod-image-preview').innerHTML = '<span>Sin Imagen</span>';
+      document.getElementById('prod-image-preview').innerHTML = '<span>Sin foto</span>';
       document.getElementById('btn-delete').disabled = true; 
       emptyViewer.style.display = 'none';
       activeViewer.style.display = 'block';
@@ -296,11 +301,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function assignChipEvents() {
-    document.querySelectorAll('.chip').forEach(chip => {
+    // Solo los chips de Productos: antes usaba '.chip' de toda la página y
+    // desmarcaba también los filtros de Inventario y Clientes
+    document.querySelectorAll('#filter-container .chip').forEach(chip => {
       chip.addEventListener('click', (e) => {
-        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-        e.target.classList.add('active');
-        currentCategoryFilter = e.target.dataset.filter;
+        document.querySelectorAll('#filter-container .chip').forEach(c => c.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        currentCategoryFilter = e.currentTarget.dataset.filter;
         currentPage = 1; 
         renderCatalog();
       });
@@ -336,22 +343,29 @@ document.addEventListener('DOMContentLoaded', () => {
     grid.innerHTML = '';
     
     if (paginatedItems.length === 0) {
-      grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; padding: 2rem; color: #666;">No hay productos creados.</p>';
+      grid.innerHTML = (currentSearchQuery || currentCategoryFilter !== 'all')
+        ? '<p class="empty-state grid-span"><strong>Ningún producto coincide</strong>Probá con otra palabra o elegí "Todos".</p>'
+        : '<p class="empty-state grid-span"><strong>Todavía no hay productos</strong>Agregá el primero con el botón "Agregar producto".</p>';
     } else {
       paginatedItems.forEach(p => {
         const div = document.createElement('div');
         div.className = `product-card-admin ${!p.enabled ? 'disabled' : ''}`;
+        // Se puede abrir con el teclado (Tab + Enter), no solo con el mouse
+        div.setAttribute('role', 'button');
+        div.tabIndex = 0;
+        div.setAttribute('aria-label', `Editar ${p.name}${!p.enabled ? ' (oculto en la tienda)' : ''}`);
         
-        const imgSrc = p.imageUrl && p.imageUrl.trim() !== '' ? p.imageUrl : 'https://via.placeholder.com/300?text=Sin+Foto';
+        const imgSrc = p.imageUrl && p.imageUrl.trim() !== '' ? p.imageUrl : NO_PHOTO;
 
         div.innerHTML = `
-          <img src="${imgSrc}" alt="${p.name}">
+          <img src="${imgSrc}" alt="" loading="lazy">
           <div class="card-overlay">
             <div class="card-name">${p.name}</div>
-            <div class="card-price">$${p.price}</div>
+            <div class="card-price">$${Number(p.price).toLocaleString('es-AR')}</div>
           </div>
         `;
         div.addEventListener('click', () => loadProductIntoViewer(p, imgSrc));
+        div.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); loadProductIntoViewer(p, imgSrc); } });
         grid.appendChild(div);
       });
     }
@@ -367,7 +381,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const btnPrev = document.createElement('button');
     btnPrev.className = 'page-btn';
-    btnPrev.innerText = '<';
+    btnPrev.type = 'button';
+    btnPrev.setAttribute('aria-label', 'Página anterior');
+    btnPrev.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
     btnPrev.disabled = currentPage === 1;
     btnPrev.addEventListener('click', () => { currentPage--; renderCatalog(); });
     container.appendChild(btnPrev);
@@ -375,6 +391,8 @@ document.addEventListener('DOMContentLoaded', () => {
     for (let i = 1; i <= totalPages; i++) {
       const btnPage = document.createElement('button');
       btnPage.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+      btnPage.type = 'button';
+      if (i === currentPage) btnPage.setAttribute('aria-current', 'page');
       btnPage.innerText = i;
       btnPage.addEventListener('click', () => { currentPage = i; renderCatalog(); });
       container.appendChild(btnPage);
@@ -382,7 +400,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const btnNext = document.createElement('button');
     btnNext.className = 'page-btn';
-    btnNext.innerText = '>';
+    btnNext.type = 'button';
+    btnNext.setAttribute('aria-label', 'Página siguiente');
+    btnNext.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
     btnNext.disabled = currentPage === totalPages;
     btnNext.addEventListener('click', () => { currentPage++; renderCatalog(); });
     container.appendChild(btnNext);

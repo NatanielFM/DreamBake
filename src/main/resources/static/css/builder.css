@@ -1,0 +1,417 @@
+/* =========================================================
+   builder.css — Creador de tortas (/builder, Fase 3)
+   ---------------------------------------------------------
+   Requiere tokens.css, components.css y public.css.
+   Estructura: indicador de pasos, pasos (.wizard-step),
+   barra de navegación (fija abajo en celular) y resumen en
+   vivo (columna lateral fija en escritorio).
+   Las tarjetas de opciones las crea store.js (.select-card).
+   ========================================================= */
+
+.builder {
+  padding: var(--space-7) 0 var(--space-8);
+  scroll-margin-top: calc(var(--header-height) + var(--space-3));
+}
+
+.builder-grid {
+  display: grid;
+  gap: var(--space-7);
+  align-items: start;
+}
+
+.builder-main { min-width: 0; }
+
+
+/* ---------- Indicador de pasos ---------- */
+.progress-bar {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  margin: 0 0 var(--space-6);
+  padding: 0;
+  list-style: none;
+  counter-reset: none;
+}
+
+.step {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-semibold);
+  text-align: center;
+}
+
+/* Línea que une los círculos; se pinta cuando el paso está hecho */
+.step::before {
+  content: "";
+  position: absolute;
+  top: 19px;
+  right: 50%;
+  width: 100%;
+  height: 3px;
+  background: var(--rose-200);
+  z-index: -1;
+}
+.step:first-child::before { display: none; }
+.step.active::before { background: var(--rose-600); transition: background-color var(--dur-base) var(--ease-out); }
+
+.step-dot {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--rose-200);
+  border-radius: 50%;
+  background: var(--white);
+  color: var(--text-muted);
+  font-weight: var(--fw-bold);
+  transition:
+    background-color var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out),
+    color var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+.step.is-done .step-dot { border-color: var(--rose-600); background: var(--rose-600); color: var(--white); }
+.step.is-current .step-dot { border-color: var(--ink); background: var(--ink); color: var(--white); transform: scale(1.08); }
+.step.is-current, .step.is-done { color: var(--ink); }
+.step.is-done { cursor: pointer; }
+
+/* En celular solo se ve la etiqueta del paso actual */
+.step-label { display: none; }
+.step.is-current .step-label { display: block; }
+@media (min-width: 30rem) {
+  .step-label { display: block; }
+}
+
+
+/* ---------- Pasos ---------- */
+.wizard-step { display: none; }
+.wizard-step.active {
+  display: block;
+  animation: step-in var(--dur-slow) var(--ease-out);
+}
+.wizard-step.active.from-left { animation-name: step-in-back; }
+
+@keyframes step-in {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes step-in-back {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.step-heading {
+  margin: 0 0 var(--space-2);
+  color: var(--ink);
+  font-size: var(--fs-h2);
+  font-weight: var(--fw-black);
+  letter-spacing: var(--ls-heading);
+  line-height: 1.05;
+}
+.step-heading:focus { outline: none; }
+.step-heading--sub {
+  margin-top: var(--space-7);
+  font-size: clamp(1.5rem, 1.25rem + 1vw, 2rem);
+}
+
+.step-help {
+  margin: 0 0 var(--space-5);
+  color: var(--rose-800);
+}
+
+/* Mensaje de validación del paso */
+.step-message {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: var(--space-5) 0 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--cherry-50);
+  color: var(--cherry-700);
+  font-weight: var(--fw-medium);
+}
+.step-message:focus { outline: none; }
+.step-message--top { margin: 0 0 var(--space-4); }
+.step-message:not([hidden]) { animation: message-in var(--dur-base) var(--ease-out); }
+@keyframes message-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+
+/* ---------- Tarjetas de opción (las crea store.js) ---------- */
+.cards-grid {
+  display: grid;
+  gap: var(--space-3);
+}
+.size-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.coverage-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+.select-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 44px;
+  padding: var(--space-4);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  color: var(--ink);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-semibold);
+  text-align: left;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+.select-card:active { transform: scale(0.97); }
+
+@media (hover: hover) and (pointer: fine) {
+  .select-card:hover { border-color: var(--rose-300); }
+}
+
+/* Elegida: borde de tinta, fondo rosa y tilde */
+.select-card.selected {
+  border-color: var(--ink);
+  background: var(--rose-100);
+}
+
+.option-check {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--white);
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+.option-check svg { width: 14px; height: 14px; }
+.select-card.selected .option-check { opacity: 1; transform: none; }
+
+/* Tamaño: número de porciones grande */
+.size-portions {
+  font-size: 2rem;
+  font-weight: var(--fw-black);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.size-unit {
+  color: var(--rose-800);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-semibold);
+}
+.size-name {
+  margin-top: var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-medium);
+}
+.select-card .price {
+  margin-top: var(--space-2);
+  color: var(--ink);
+  font-size: 1.125rem;
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Cobertura: ícono + nombre + descripción */
+.coverage-card { padding: var(--space-5) var(--space-4); }
+.coverage-icon { width: 44px; height: 44px; margin-bottom: var(--space-2); color: var(--rose-600); }
+.coverage-name { font-size: 1.25rem; font-weight: var(--fw-black); }
+.coverage-desc { color: var(--text-muted); font-size: var(--fs-small); font-weight: var(--fw-medium); }
+
+/* Bizcochuelos y rellenos: chips en dos columnas */
+.options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+.chip-option {
+  justify-content: center;
+  min-height: 56px;
+  padding: var(--space-3) 40px var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  /* Nombres largos: se cortan por sílabas con guion (html lang="es") y solo
+     parten una palabra si de verdad no entra */
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+.chip-option .option-check { top: 50%; margin-top: -12px; }
+.chip-option.selected .option-check { transform: none; }
+
+/* Al llegar al límite, las opciones no elegidas se atenúan (se pueden tocar para ver el aviso) */
+.select-card.is-limited {
+  opacity: 0.45;
+}
+
+
+/* ---------- Detalles y resumen del paso 5 ---------- */
+.review-list,
+.summary-list {
+  display: grid;
+  gap: 0;
+  margin: var(--space-4) 0;
+}
+.review-list > div,
+.summary-list > div {
+  display: grid;
+  grid-template-columns: 7.5rem 1fr;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--line);
+}
+.review-list dt,
+.summary-list dt {
+  color: var(--text-muted);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-semibold);
+}
+.review-list dd,
+.summary-list dd {
+  margin: 0;
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+.summary-list > div.is-empty dd { color: var(--text-muted); font-weight: var(--fw-regular); }
+
+.review-total,
+.summary-price {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: var(--space-4) 0;
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
+}
+.review-total strong,
+.summary-price strong {
+  font-size: clamp(2rem, 1.6rem + 1.6vw, 2.75rem);
+  font-weight: var(--fw-black);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* El precio "late" apenas cuando cambia */
+[data-sum="price"].is-bumped { animation: price-bump 360ms var(--ease-out); }
+@keyframes price-bump {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+[data-sum="price"] { display: inline-block; transform-origin: right center; }
+/* Todavía no hay precio: el guion en negro y grande parecía una barra; se muestra liviano */
+[data-sum="price"].is-empty { color: var(--rose-600); font-weight: var(--fw-medium); }   /* liviano pero con contraste suficiente (≥3:1) */
+
+
+/* ---------- Navegación entre pasos ----------
+   En celular: barra fija abajo con el precio y los botones.
+   En escritorio: fila debajo del paso (el precio está en la columna lateral). */
+.builder-nav {
+  position: sticky;
+  bottom: 0;
+  z-index: var(--z-raised);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;            /* si precio y botones no entran (320 px y precios altos), los botones bajan */
+  gap: var(--space-2) var(--space-3);
+  margin: var(--space-6) calc(var(--gutter) * -1) 0;
+  padding: var(--space-3) var(--gutter) calc(var(--space-3) + env(safe-area-inset-bottom));
+  background: var(--white);
+  box-shadow: 0 -1px 0 var(--line), 0 -12px 28px -16px rgb(72 23 41 / 0.25);
+}
+
+.builder-nav-price {
+  display: grid;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-small);
+  line-height: 1.2;
+}
+.builder-nav-price strong {
+  color: var(--ink);
+  font-size: 1.375rem;
+  font-weight: var(--fw-black);
+  font-variant-numeric: tabular-nums;
+  transform-origin: left center;
+}
+
+.builder-nav-buttons {
+  display: flex;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+.builder-nav-buttons .button { padding: 0 var(--space-4); }
+
+
+/* ---------- Resumen lateral (escritorio) ---------- */
+.builder-summary { display: none; }
+
+@media (min-width: 64rem) {
+  .builder-grid {
+    grid-template-columns: minmax(0, 1fr) 22rem;
+    gap: var(--space-8);
+  }
+
+  .size-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .options-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+  .builder-nav {
+    position: static;
+    margin: var(--space-7) 0 0;
+    padding: var(--space-5) 0 0;
+    background: transparent;
+    box-shadow: 0 -1px 0 var(--line);
+  }
+  .builder-nav-price strong { display: none; }   /* el precio está en el resumen lateral */
+  .builder-nav-buttons .button { min-height: 52px; padding: 0 var(--space-6); }
+
+  .builder-summary {
+    position: sticky;
+    top: calc(var(--header-height) + var(--space-5));
+    display: block;
+    padding: var(--space-6);
+    border-radius: var(--radius-xl);
+    background: var(--rose-100);
+  }
+  .summary-title {
+    margin: 0;
+    color: var(--ink);
+    font-size: var(--fs-h3);
+    font-weight: var(--fw-black);
+  }
+  .summary-list > div { grid-template-columns: 6.5rem 1fr; border-bottom-color: rgb(72 23 41 / 0.12); }
+  .summary-note { margin: 0; color: var(--rose-800); font-size: var(--fs-small); }
+}
+
+
+/* ---------- Movimiento reducido ---------- */
+@media (prefers-reduced-motion: reduce) {
+  /* Sin desplazamiento lateral: el paso nuevo solo aparece con un fundido */
+  .wizard-step.active,
+  .wizard-step.active.from-left { animation-name: fade-in; }
+  .step-message:not([hidden]) { animation-name: fade-in; }
+  .select-card:active { transform: none; }
+  .option-check { transform: none; transition: opacity var(--dur-fast) ease; }
+  .step.is-current .step-dot { transform: none; }
+  [data-sum="price"].is-bumped { animation: none; }
+}

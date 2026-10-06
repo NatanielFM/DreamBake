@@ -2,126 +2,439 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Dulce Sueños Posadas - Inicio</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <!-- Color de la barra del navegador en el celular: el mismo fondo del header -->
+  <meta name="theme-color" content="#fef9f9" />
+  <link rel="icon" type="image/svg+xml" th:href="@{/img/favicon.svg}" />
+  <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
+  <script th:src="@{/js/csrf.js}"></script>
+  <title>Dulce Sueños Posadas — Tortas personalizadas y mesas dulces</title>
+  <meta name="description" content="Tortas personalizadas, mesas dulces y souvenirs hechos a mano en Posadas, Misiones. Armá tu torta online y pedila por WhatsApp.">
 
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
+  <!-- La foto del hero se pide antes que todo lo demás -->
+  <link rel="preload" as="image" th:href="@{/img/galeria/torta-01.webp}">
+
+  <!-- Orden: base vieja compartida → tokens → componentes → header → CSS de la página → footer -->
   <link rel="stylesheet" th:href="@{/css/main.css}">
+  <link rel="stylesheet" th:href="@{/css/tokens.css}">
+  <link rel="stylesheet" th:href="@{/css/components.css}">
   <link rel="stylesheet" th:href="@{/css/header.css}">
-  <link rel="stylesheet" th:href="@{/css/hero.css}">
-  <link rel="stylesheet" th:href="@{/css/promo.css}">
-  <link rel="stylesheet" th:href="@{/css/about.css}">
-  <link rel="stylesheet" th:href="@{/css/footer.css}">
   <link rel="stylesheet" th:href="@{/css/public.css}">
+  <link rel="stylesheet" th:href="@{/css/home.css}">
+  <link rel="stylesheet" th:href="@{/css/footer.css}">
 </head>
 
-<body>
+<body class="page-home">
   <div th:replace="~{fragments/header :: header}"></div>
 
-  <main>
-    <section class="hero-hero">
-      <video class="hero-bg" autoplay muted loop playsinline preload="metadata" aria-hidden="true" tabindex="-1" th:poster="@{/img/hero-poster.jpg}">
-        <source th:src="@{/img/hero-loop.mp4}" type="video/mp4">
-        <source th:src="@{/img/hero-loop.webm}" type="video/webm">
-      </video>
+  <main id="main">
 
-      <div class="hero-overlay" role="region" aria-label="Introducción">
-        <img class="hero-logo" th:src="@{/img/logo.svg}" alt="Logo de Dulce Sueños Posadas" />
-        <p class="hero-sub">Porque soñar es lindo</p>
-        <div class="hero-ctas">
-          <a class="btn btn-primary" th:href="@{/builder}">Hace tu torta</a>
-          <a class="btn btn-secondary" th:href="@{/products}">Ver menú</a>
+    <!-- =====================================================
+         1. HERO: qué hacemos y la acción principal
+         ===================================================== -->
+    <section class="home-hero" aria-labelledby="hero-title">
+      <div class="site-container hero-grid">
+        <div class="hero-copy">
+          <h1 id="hero-title" class="hero-title">Porque soñar es lindo.</h1>
+          <p class="hero-lead">Tortas personalizadas, mesas dulces y souvenirs hechos a mano en Posadas.</p>
+
+          <div class="hero-actions">
+            <a class="button button--primary button--lg" th:href="@{/builder}">Armá tu torta</a>
+            <a class="button button--secondary button--lg" th:href="@{/products}">Ver productos</a>
+          </div>
+
+          <ul class="hero-facts">
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                <rect x="3" y="5" width="18" height="16" rx="3"></rect><path d="M3 10h18M8 3v4M16 3v4"></path>
+              </svg>
+              Pedidos con 3 días de anticipación
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z"></path><circle cx="12" cy="9.5" r="2.5"></circle>
+              </svg>
+              Retiro y envío en Posadas
+            </li>
+          </ul>
+        </div>
+
+        <!-- Foto en un marco redondeado con movimiento lento (reemplaza al video) -->
+        <div class="hero-media">
+          <div class="hero-plate">
+            <img th:src="@{/img/galeria/torta-01.webp}"
+                 width="720" height="900" fetchpriority="high"
+                 alt="Torta de tres pisos con rosetas de crema rosa, frente a globos rosados">
+          </div>
+          <!-- El precio mínimo lo completa home.js con los tamaños reales del creador -->
+          <span class="sticker sticker--cherry sticker--right hero-sticker hero-sticker--bottom" data-min-price hidden>Desde $<span data-min-price-value></span></span>
         </div>
       </div>
     </section>
 
-    <section class="phrase-banner">
-      <div class="phrase-overlay">
-        <p class="phrase-text">"Un pedacito de amor en forma de torta."</p>
+    <!-- =====================================================
+         2. CINTA (marquee): frases que se desplazan
+         El segundo grupo es una copia para que el movimiento no tenga cortes
+         ===================================================== -->
+    <section class="home-marquee" aria-label="Lo que hacemos">
+      <div class="marquee-track">
+        <ul class="marquee-group">
+          <li>Tortas personalizadas</li>
+          <li class="marquee-sep" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.6H22l-6.2 4.6 2.4 7.6L12 17.2l-6.2 4.6 2.4-7.6L2 9.6h7.6z"/></svg></li>
+          <li>Mesas dulces</li>
+          <li class="marquee-sep" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.6H22l-6.2 4.6 2.4 7.6L12 17.2l-6.2 4.6 2.4-7.6L2 9.6h7.6z"/></svg></li>
+          <li>Souvenirs</li>
+          <li class="marquee-sep" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.6H22l-6.2 4.6 2.4 7.6L12 17.2l-6.2 4.6 2.4-7.6L2 9.6h7.6z"/></svg></li>
+          <li>“Un pedacito de amor en forma de torta”</li>
+          <li class="marquee-sep" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.6H22l-6.2 4.6 2.4 7.6L12 17.2l-6.2 4.6 2.4-7.6L2 9.6h7.6z"/></svg></li>
+          <li>Retiro y envío en Posadas</li>
+          <li class="marquee-sep" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.6H22l-6.2 4.6 2.4 7.6L12 17.2l-6.2 4.6 2.4-7.6L2 9.6h7.6z"/></svg></li>
+        </ul>
+        <ul class="marquee-group" aria-hidden="true">
+          <li>Tortas personalizadas</li>
+          <li class="marquee-sep"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.6H22l-6.2 4.6 2.4 7.6L12 17.2l-6.2 4.6 2.4-7.6L2 9.6h7.6z"/></svg></li>
+          <li>Mesas dulces</li>
+          <li class="marquee-sep"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.6H22l-6.2 4.6 2.4 7.6L12 17.2l-6.2 4.6 2.4-7.6L2 9.6h7.6z"/></svg></li>
+          <li>Souvenirs</li>
+          <li class="marquee-sep"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.6H22l-6.2 4.6 2.4 7.6L12 17.2l-6.2 4.6 2.4-7.6L2 9.6h7.6z"/></svg></li>
+          <li>“Un pedacito de amor en forma de torta”</li>
+          <li class="marquee-sep"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.6H22l-6.2 4.6 2.4 7.6L12 17.2l-6.2 4.6 2.4-7.6L2 9.6h7.6z"/></svg></li>
+          <li>Retiro y envío en Posadas</li>
+          <li class="marquee-sep"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.6H22l-6.2 4.6 2.4 7.6L12 17.2l-6.2 4.6 2.4-7.6L2 9.6h7.6z"/></svg></li>
+        </ul>
       </div>
     </section>
 
-    <section class="products-section">
-      <h2 class="products-title">Nuestros productos</h2>
-      <div class="products-grid">
-        <div class="product-card">
-          <div class="product-image"><img th:src="@{/img/dulces.jpg}" alt="Dulces"></div>
-          <div class="product-label">Dulces</div>
+    <!-- =====================================================
+         3. LO QUE HACEMOS: categorías + creador de tortas
+         ===================================================== -->
+    <section class="site-section site-section--blush home-categories" aria-labelledby="categories-title">
+      <div class="site-container">
+        <div class="section-head" data-reveal>
+          <h2 id="categories-title" class="text-h2">Lo que hacemos</h2>
+          <p class="text-lead">Todo se prepara a pedido, con recetas caseras y mucho detalle.</p>
         </div>
-        <div class="product-card">
-          <div class="product-image"><img th:src="@{/img/tortas.jpg}" alt="Tortas"></div>
-          <div class="product-label">Tortas</div>
-        </div>
-        <div class="product-card">
-          <div class="product-image"><img th:src="@{/img/souvenirs.jpg}" alt="Souvenirs"></div>
-          <div class="product-label">Souvenirs</div>
-        </div>
-      </div>
-    </section>
 
-    <section class="about-section" aria-labelledby="about-title">
-      <h2 id="about-title" class="about-title">Sobre Nosotros</h2>
-      <div class="container about-inner">
-        <div class="about-left">
-          <h3 class="about-subtitle">Vero y Maca</h3>
-          <p class="about-text">
-            Somos Vero y Maca, emprendedoras apasionadas por la pastelería artesanal.
-            Nuestro objetivo es crear recuerdos dulces que acompañen a los momentos lindos de la vida.
-            Trabajamos con ingredientes locales y recetas cuidadas para ofrecer productos frescos, personalizados y con sabor casero.
-          </p>
-          <p class="about-actions">
-            <a th:href="@{/contact}" class="btn btn-primary about-btn">Escribinos! ❤️</a>
-          </p>
-        </div>
-        <div class="about-right" aria-hidden="false">
-          <div class="about-image-wrap" role="img" aria-label="Vero y Maca, fundadoras de Dulce Sueños">
-            <img th:src="@{/img/about/veroymaca.jpg}" alt="Vero y Maca" class="about-image">
+        <div class="category-grid">
+          <div class="category-cell category-cell--tortas" data-reveal>
+            <a class="category-tile category-tile--rose" th:href="@{/products(categoria='Tortas')}">
+              <div class="tile-plate">
+                <img th:src="@{/img/categorias/tortas.webp}" width="800" height="1000" loading="lazy"
+                     alt="Torta con chorreado rosa, crema y frutillas">
+              </div>
+              <div class="tile-body">
+                <h3 class="tile-title">Tortas</h3>
+                <span class="tile-text">Personalizadas para cumpleaños, bautismos y cualquier festejo.</span>
+                <span class="tile-cta">Ver tortas
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                </span>
+              </div>
+              <span class="sticker tile-sticker">A pedido</span>
+            </a>
+          </div>
+
+          <div class="category-cell category-cell--builder" data-reveal>
+            <a class="category-tile category-tile--builder" th:href="@{/builder}">
+              <span class="builder-plate" aria-hidden="true">
+              <svg class="builder-mark" viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+                <path class="bi-wrapper" d="M10.5 21h19l-2.6 11.3A2.6 2.6 0 0 1 24.4 34.4h-8.8a2.6 2.6 0 0 1-2.5-2.1L10.5 21Z"/>
+                <path class="bi-stripes" d="M16 22.5l.9 10.4M20 22.5v10.4M24 22.5l-.9 10.4" fill="none" stroke-width="1.6" stroke-linecap="round"/>
+                <path class="bi-frosting" d="M9.6 22.4c-2 0-3.6-1.6-3.6-3.6 0-1.8 1.3-3.3 3-3.6.4-4 3.8-7.1 7.8-7.1 1.2 0 2.4.3 3.4.8 1.2-.9 2.7-1.4 4.2-1.4 4 0 7.3 3.2 7.4 7.2 1.4.6 2.3 2 2.3 3.6 0 2.3-1.8 4.1-4.1 4.1H9.6Z"/>
+                <circle class="bi-cherry" cx="21.5" cy="5.6" r="3"/>
+              </svg>
+              </span>
+              <div class="tile-body">
+                <h3 class="tile-title tile-title--xl">Armá tu torta</h3>
+                <span class="tile-text">Elegí tamaño, cobertura, sabores y rellenos, y mirá el precio al instante.</span>
+                <span class="builder-steps" aria-hidden="true">
+                  <span>Tamaño</span><span>Sabores</span><span>Temática</span>
+                </span>
+                <span class="tile-cta tile-cta--button">Empezar
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                </span>
+              </div>
+            </a>
+          </div>
+
+          <div class="category-cell category-cell--dulces" data-reveal>
+            <a class="category-tile category-tile--peach" th:href="@{/products(categoria='Dulces')}">
+              <div class="tile-plate">
+                <img th:src="@{/img/categorias/dulces.webp}" width="800" height="1000" loading="lazy"
+                     alt="Macarons de colores sobre un fondo rosa">
+              </div>
+              <div class="tile-body">
+                <h3 class="tile-title">Dulces</h3>
+                <span class="tile-text">Para la mesa dulce, para regalar o para darte un gusto.</span>
+                <span class="tile-cta">Ver dulces
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                </span>
+              </div>
+            </a>
+          </div>
+
+          <div class="category-cell category-cell--souvenirs" data-reveal>
+            <a class="category-tile category-tile--cherry" th:href="@{/products(categoria='Souvenirs')}">
+              <div class="tile-plate">
+                <img th:src="@{/img/categorias/souvenirs.webp}" width="800" height="1000" loading="lazy"
+                     alt="Caja con cupcakes decorados">
+              </div>
+              <div class="tile-body">
+                <h3 class="tile-title">Souvenirs</h3>
+                <span class="tile-text">Detalles dulces para que tus invitados se lleven un recuerdo.</span>
+                <span class="tile-cta">Ver souvenirs
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                </span>
+              </div>
+            </a>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="wheel-gallery">
-      <h2 class="gallery-title">Galería</h2>
-      <div class="wheel-carousel" id="wheelCarousel" tabindex="0">
-         </div>
+    <!-- =====================================================
+         4. VITRINA: productos cargados por el admin (solo si hay)
+         Los botones usan los mismos data-* que el catálogo (/products)
+         ===================================================== -->
+    <section class="site-section site-section--blush home-showcase" aria-labelledby="showcase-title"
+             th:if="${featuredProducts != null and !#lists.isEmpty(featuredProducts)}">
+      <div class="site-container">
+        <div class="section-head section-head--row" data-reveal>
+          <h2 id="showcase-title" class="text-h2">Para encargar ya</h2>
+          <a class="link" th:href="@{/products}">Ver todos los productos</a>
+        </div>
+
+        <ul class="showcase-grid" role="list">
+          <li class="showcase-card" th:each="prod : ${featuredProducts}" data-reveal>
+            <div class="showcase-plate">
+              <img th:if="${prod.imageUrl != null and !prod.imageUrl.isEmpty()}"
+                   th:src="${prod.imageUrl}" th:alt="${prod.name}" width="600" height="600" loading="lazy">
+              <!-- Sin foto: se muestra el isotipo de la marca en vez de "Sin imagen" -->
+              <svg th:unless="${prod.imageUrl != null and !prod.imageUrl.isEmpty()}" class="showcase-fallback" viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+                <path class="bi-wrapper" d="M10.5 21h19l-2.6 11.3A2.6 2.6 0 0 1 24.4 34.4h-8.8a2.6 2.6 0 0 1-2.5-2.1L10.5 21Z"/>
+                <path class="bi-frosting" d="M9.6 22.4c-2 0-3.6-1.6-3.6-3.6 0-1.8 1.3-3.3 3-3.6.4-4 3.8-7.1 7.8-7.1 1.2 0 2.4.3 3.4.8 1.2-.9 2.7-1.4 4.2-1.4 4 0 7.3 3.2 7.4 7.2 1.4.6 2.3 2 2.3 3.6 0 2.3-1.8 4.1-4.1 4.1H9.6Z"/>
+                <circle class="bi-cherry" cx="21.5" cy="5.6" r="3"/>
+              </svg>
+              <span class="sticker showcase-sticker" th:if="${prod.category != null}" th:text="${prod.category.name}">Categoría</span>
+            </div>
+            <div class="showcase-body">
+              <h3 class="showcase-name" th:text="${prod.name}">Producto</h3>
+              <p class="showcase-desc" th:if="${prod.description != null and !prod.description.isEmpty()}" th:text="${prod.description}">Descripción</p>
+              <div class="showcase-foot">
+                <p class="showcase-price">
+                  <span class="showcase-currency">$</span><span th:text="${#numbers.formatDecimal(prod.price, 0, 'POINT', 0, 'COMMA')}">0</span>
+                </p>
+                <button type="button" class="button button--primary showcase-add" data-add-to-cart
+                        th:attr="data-prod-name=${prod.name}, data-prod-desc=${prod.description != null and !prod.description.isEmpty() ? prod.description : 'Producto del catálogo'}, data-prod-price=${prod.price}, aria-label='Agregar ' + ${prod.name} + ' al pedido'">
+                  <svg class="showcase-add-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>
+                  <svg class="showcase-added-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+                  <span class="showcase-add-label" data-add-label>Agregar</span>
+                </button>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
     </section>
 
-    <section class="promo-section" aria-labelledby="promo-title">
-      <div class="container promo-inner">
-        <div class="promo-left">
-          <h2 id="promo-title" class="promo-title">Promociones y novedades</h2>
-          <p class="promo-lead">Suscribite al newsletter y recibí ofertas exclusivas, novedades y descuentos.</p>
-          <form class="promo-subscribe" th:action="@{/subscribe}" method="post" id="promo-form" novalidate>
-            <label for="promo-email" class="visually-hidden">Tu email</label>
-            <input id="promo-email" name="email" type="email" placeholder="Ingresá tu email" required>
-          </form>
-          <p class="promo-note">Sin spam. Podés darte de baja cuando quieras.</p>
-          <div class="promo-cta-wrap">
-            <button type="submit" form="promo-form" class="promo-btn promo-btn-desktop">Suscribirse</button>
+    <!-- =====================================================
+         5. EL CREADOR EN 3 PASOS
+         ===================================================== -->
+    <section class="site-section site-section--deep home-steps has-scallop on-dark" aria-labelledby="steps-title">
+      <div class="site-container steps-grid">
+        <div class="steps-intro" data-reveal>
+          <h2 id="steps-title" class="text-h2">Tu torta, a&nbsp;tu manera</h2>
+          <p class="text-lead">Elegí cada detalle desde el celular y mirá el precio al instante. Después nos mandás el pedido por WhatsApp.</p>
+          <!-- Precio mínimo real del creador, en tipografía grande (lo completa home.js) -->
+          <p class="steps-price" data-min-price hidden>Tortas desde <strong>$<span data-min-price-value></span></strong></p>
+          <a class="button button--light button--lg" th:href="@{/builder}">Empezar a armarla</a>
+        </div>
+
+        <ol class="steps-list">
+          <li class="step-item" data-reveal>
+            <span class="step-number" aria-hidden="true">1</span>
+            <div>
+              <h3 class="step-title">Tamaño y cobertura</h3>
+              <p class="step-text">Elegí cuántas porciones necesitás y si la querés con crema o fondant.</p>
+            </div>
+          </li>
+          <li class="step-item" data-reveal>
+            <span class="step-number" aria-hidden="true">2</span>
+            <div>
+              <h3 class="step-title">Sabores y rellenos</h3>
+              <p class="step-text">Combiná el bizcochuelo y los rellenos que más te gustan.</p>
+            </div>
+          </li>
+          <li class="step-item" data-reveal>
+            <span class="step-number" aria-hidden="true">3</span>
+            <div>
+              <h3 class="step-title">Tu temática</h3>
+              <p class="step-text">Contanos el diseño, el nombre o la frase, y elegí la fecha (con 3 días de anticipación).</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- =====================================================
+         6. NOSOTROS (destino del link "Nosotros")
+         ===================================================== -->
+    <section id="nosotros" class="site-section site-section--peach home-about has-scallop" aria-labelledby="about-title">
+      <div class="site-container about-grid">
+        <figure class="about-media" data-reveal>
+          <img th:src="@{/img/galeria/torta-08.webp}" width="720" height="900" loading="lazy"
+               alt="Torta semidesnuda decorada con rosas naturales">
+        </figure>
+
+        <div class="about-copy" data-reveal>
+          <h2 id="about-title" class="text-h2">Somos Vero y Maca</h2>
+          <p class="text-lead">Emprendedoras apasionadas por la pastelería artesanal. Nuestro objetivo es crear recuerdos dulces que acompañen los momentos lindos de la vida.</p>
+          <p class="about-text">Trabajamos con ingredientes locales y recetas cuidadas para ofrecer productos frescos, personalizados y con sabor casero.</p>
+          <a class="button button--ink button--lg" href="https://wa.me/5493764159312" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3Z"></path>
+              <path d="M9.2 8.6c.2 2.9 3.3 6 6.2 6.2l1.1-1.4-1.9-1-.9.8c-1-.4-2-1.4-2.4-2.4l.8-.9-1-1.9-1.9.6Z" fill="currentColor" stroke="none"></path>
+            </svg>
+            Escribinos por WhatsApp
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================
+         7. GALERÍA: carrusel con snap (wheel-carousel.js)
+         Primero las fotos que sube el admin; si son menos de 6, se suman fotos de ejemplo
+         ===================================================== -->
+    <section class="site-section site-section--blush home-gallery has-scallop" aria-labelledby="gallery-title">
+      <div class="site-container">
+        <div class="section-head section-head--row" data-reveal>
+          <div>
+            <h2 id="gallery-title" class="text-h2">Ideas para tu próxima torta</h2>
+            <p class="text-lead">Inspirate con estilos y decoraciones, y contanos cuál te gusta para hacerla a tu manera.</p>
+          </div>
+          <div class="carousel-controls">
+            <button type="button" class="button button--icon carousel-btn" data-carousel-prev aria-controls="wheelCarousel" aria-label="Ver fotos anteriores">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+            </button>
+            <button type="button" class="button button--icon carousel-btn" data-carousel-next aria-controls="wheelCarousel" aria-label="Ver más fotos">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </button>
           </div>
         </div>
-        <div class="promo-right" aria-hidden="false">
-          <figure class="promo-card">
-            <img th:src="@{/img/promo/promo-1.jpg}" alt="Cliente frecuente" class="promo-image">
-            <figcaption class="promo-label">Cliente frecuente</figcaption>
-          </figure>
-          <figure class="promo-card">
-            <img th:src="@{/img/promo/promo-2.jpg}" alt="Promo cumpleañero" class="promo-image">
-            <figcaption class="promo-label">Promo cumpleañero</figcaption>
-          </figure>
+      </div>
+
+      <div class="gallery-carousel" id="wheelCarousel" role="region" aria-roledescription="carrusel" aria-label="Galería de tortas. Usá las flechas del teclado para moverte." tabindex="0">
+        <ul class="gallery-track" role="list">
+          <li class="gallery-slide" th:each="img : ${galleryImages}">
+            <img th:src="${img.url}" alt="Torta de la galería de Dulce Sueños" width="720" height="900" loading="lazy" draggable="false">
+          </li>
+          <th:block th:if="${galleryImages == null or #lists.size(galleryImages) < 6}">
+            <li class="gallery-slide"><img th:src="@{/img/galeria/torta-02.webp}" alt="Torta con rosetas de crema en degradé de rosa" width="720" height="900" loading="lazy" draggable="false"></li>
+            <li class="gallery-slide"><img th:src="@{/img/galeria/torta-03.webp}" alt="Torta celeste con rosetas rosas sobre una base blanca" width="720" height="900" loading="lazy" draggable="false"></li>
+            <li class="gallery-slide"><img th:src="@{/img/galeria/torta-04.webp}" alt="Torta rosa decorada con un conejito de azúcar" width="720" height="900" loading="lazy" draggable="false"></li>
+            <li class="gallery-slide"><img th:src="@{/img/galeria/torta-05.webp}" alt="Torta con crema de colores pastel" width="720" height="900" loading="lazy" draggable="false"></li>
+            <li class="gallery-slide"><img th:src="@{/img/galeria/torta-06.webp}" alt="Torta blanca con chorreado rosa y galletitas" width="720" height="900" loading="lazy" draggable="false"></li>
+            <li class="gallery-slide"><img th:src="@{/img/galeria/torta-07.webp}" alt="Torta de varios pisos decorada con flores" width="720" height="900" loading="lazy" draggable="false"></li>
+            <li class="gallery-slide"><img th:src="@{/img/galeria/torta-09.webp}" alt="Torta con chorreado rosa y confites de colores" width="720" height="900" loading="lazy" draggable="false"></li>
+            <li class="gallery-slide"><img th:src="@{/img/galeria/torta-10.webp}" alt="Porción de torta de crema con frutillas" width="720" height="900" loading="lazy" draggable="false"></li>
+          </th:block>
+        </ul>
+      </div>
+
+      <div class="site-container">
+        <div class="carousel-progress" aria-hidden="true"><span></span></div>
+      </div>
+    </section>
+
+    <!-- =====================================================
+         8. PROMOCIONES
+         ===================================================== -->
+    <section class="site-section site-section--pink home-promos has-scallop" aria-labelledby="promos-title">
+      <div class="site-container">
+        <div class="section-head" data-reveal>
+          <h2 id="promos-title" class="text-h2">Promociones</h2>
+          <p class="text-lead">Beneficios para que festejar sea todavía más dulce.</p>
         </div>
+
+        <div class="promo-grid">
+          <article class="promo-tile" data-reveal>
+            <div class="promo-media">
+              <img th:src="@{/img/promos/cumpleanero.webp}" width="900" height="675" loading="lazy"
+                   alt="Torta blanca y rosa con una vela encendida">
+            </div>
+            <div class="promo-body">
+              <h3 class="promo-title">Promo cumpleañero</h3>
+              <p class="promo-text">Si es tu cumple, tenemos un beneficio especial para vos.</p>
+              <a class="button button--soft" href="https://wa.me/5493764159312" target="_blank" rel="noopener">Consultar por WhatsApp</a>
+            </div>
+          </article>
+
+          <article class="promo-tile" data-reveal>
+            <div class="promo-media">
+              <img th:src="@{/img/promos/cliente-frecuente.webp}" width="900" height="675" loading="lazy"
+                   alt="Cupcakes con crema en tonos pastel">
+            </div>
+            <div class="promo-body">
+              <h3 class="promo-title">Cliente frecuente</h3>
+              <p class="promo-text">Si ya nos elegiste, preguntanos por los beneficios para clientes frecuentes.</p>
+              <a class="button button--soft" href="https://wa.me/5493764159312" target="_blank" rel="noopener">Consultar por WhatsApp</a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================
+         9. CONTACTO (destino del link "Contacto")
+         ===================================================== -->
+    <section id="contacto" class="site-section site-section--deep home-contact has-scallop on-dark" aria-labelledby="contact-title">
+      <div class="site-container contact-grid">
+        <div class="contact-copy" data-reveal>
+          <h2 id="contact-title" class="contact-title">¿Tenés un evento en mente?</h2>
+          <p class="contact-lead">Contanos qué estás imaginando y te ayudamos a armarlo. Te respondemos por WhatsApp.</p>
+          <div class="contact-actions">
+            <a class="button button--light button--lg" href="https://wa.me/5493764159312" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                <path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3Z"></path>
+                <path d="M9.2 8.6c.2 2.9 3.3 6 6.2 6.2l1.1-1.4-1.9-1-.9.8c-1-.4-2-1.4-2.4-2.4l.8-.9-1-1.9-1.9.6Z" fill="currentColor" stroke="none"></path>
+              </svg>
+              Escribinos por WhatsApp
+            </a>
+            <a class="button button--outline-light button--lg" href="https://www.instagram.com/dulcessuenos_posadas/" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                <rect x="3" y="3" width="18" height="18" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.5" cy="6.5" r="1.1" fill="currentColor" stroke="none"></circle>
+              </svg>
+              Seguinos en Instagram
+            </a>
+          </div>
+        </div>
+
+        <ul class="contact-facts" data-reveal>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z"></path><circle cx="12" cy="9.5" r="2.5"></circle></svg>
+            <span><strong>Posadas, Misiones</strong>Retiro y envío</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="16" rx="3"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>
+            <span><strong>3 días de anticipación</strong>Para preparar cada pedido con tiempo</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.5" cy="6.5" r="1.1" fill="currentColor" stroke="none"></circle></svg>
+            <span><strong>@dulcessuenos_posadas</strong>Nuestros trabajos en Instagram</span>
+          </li>
+        </ul>
       </div>
     </section>
   </main>
 
-  <footer>
-    © <strong>Dulce Sueños Posadas</strong>
-  </footer>
+  <div th:replace="~{fragments/footer :: footer}"></div>
 
   <script th:src="@{/js/header.js}"></script>
   <script th:src="@{/js/wheel-carousel.js}"></script>
   <script th:src="@{/js/public/store.js}"></script>
+  <script th:src="@{/js/public/home.js}"></script>
 </body>
 </html>

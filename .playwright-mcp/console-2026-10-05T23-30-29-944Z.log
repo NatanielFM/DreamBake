@@ -1,0 +1,2 @@
+[    1569ms] TypeError: Cannot read properties of null (reading 'setAttribute')
+    at HTMLFormElement.<anonymous> (http://localhost:8080/js/public/store.js:864:17)

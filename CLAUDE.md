@@ -84,7 +84,8 @@ src/main/resources/
 │   ├── admin.html   → panel de administración (una sola página con pestañas, ~1200 líneas)
 │   ├── baker.html   → panel del pastelero
 │   └── fragments/header.html → header compartido (th:replace)
-├── static/css/    main.css (variables globales y tienda), admin.css (paneles), y un CSS por sección (hero, promo, products, about, header, footer, login, register, public)
+├── static/css/    tokens.css (colores, letra, espacios: lo usan todas las páginas), components.css (botones, campos, foco…),
+│                  main.css (base vieja, no se toca), admin.css (paneles) y un CSS por página pública (home, products, builder, cart, login…)
 ├── static/js/
 │   ├── public/store.js      → carrito (localStorage "dreamBakeCart"), creador de tortas, checkout
 │   ├── header.js, wheel-carousel.js, login.js, register.js
@@ -99,9 +100,11 @@ uploads/           imágenes subidas desde el panel (servidas en /uploads/**)
 ### Detalles importantes del frontend
 - **`baker.html` reutiliza scripts del admin** (`admin/main.js`, `inventory.js`, `recipes.js`, `orders.js`). Un cambio en esos archivos afecta a **los dos paneles**: verificá que no rompa ninguno.
 - El panel admin cambia de sección con pestañas `data-tab` (resumen, pedidos, productos, inventario, recetas, clientes, galería, armador, equipo); cada pestaña tiene su JS en `static/js/admin/`.
-- Modales y confirmaciones globales: `window.showConfirmModal(...)` en `admin/main.js`. Reutilizalos en vez de usar `alert()`/`confirm()`.
+- Modales y confirmaciones globales: `window.showConfirmModal(...)` y `window.showErrorAlert(...)` en `admin/main.js`. Reutilizalos en vez de usar `alert()`/`confirm()`. Todas las ventanas (`.modal-overlay`) se cierran con Esc; las que no tienen formulario, también tocando el fondo.
+- Tablas de los paneles: en el celular cada fila se ve como tarjeta. Cada `<td>` que arma el JS lleva `data-label="…"` (la etiqueta de la tarjeta); la celda de botones lleva `class="cell-actions"`.
+- `baker.html` oculta con su propio `<style>` los botones de admin por clase (`.btn-edit`, `.btn-delete`, `button.btn-red`…) y la 5.ª columna de Pedidos (el total): no cambiar esas clases ni el orden de las columnas.
 - El JS se comunica con el backend vía `fetch` a los endpoints `/api/...` y arma el HTML dinámicamente.
-- Variables de diseño en `:root`: `main.css` (tienda) y `admin.css` (paneles). Color de acento `--accent: #e0487f` (rosa). Usá las variables existentes en vez de colores sueltos.
+- Variables de diseño: `tokens.css` (paleta y escalas) y, en los paneles, las variables `--admin-*` de `admin.css` (modo claro y oscuro). Color de acento `--accent: #e0487f` (rosa). Usá las variables existentes en vez de colores sueltos.
 - Los íconos son SVG inline (se reemplazaron los emojis por SVG). No volver a usar emojis como íconos.
 - `static/js/admin.js` y `static/js/products.js` no aparecen referenciados en ningún template (posible código viejo). Confirmar con el autor antes de borrarlos.
 - Los scripts sueltos de la raíz (`strip_baker.*`, `replace_emojis.*`) fueron utilidades de una sola vez; no son parte del sistema.
@@ -112,15 +115,23 @@ Definido en `config/SecurityConfig.java`:
 
 | Ruta | Acceso |
 |---|---|
-| `/`, `/builder`, `/products`, `/cart`, `/register`, `/css/**`, `/js/**`, `/img/**`, `/uploads/**` | Público |
-| `/api/orders/**`, `/api/cake-config/public`, `/api/coupons/validate/**`, `/api/coupons/consume/**` | Público (lo usa la tienda) |
+| `/`, `/builder`, `/products`, `/cart`, `/register`, `/login`, `/css/**`, `/js/**`, `/img/**`, `/uploads/**` | Público |
+| `POST /api/orders`, `GET /api/cake-config/public`, `GET /api/coupons/validate/**`, `POST /api/coupons/consume/**` | Público (lo usa la tienda) |
 | `/admin/**` | `ADMIN` |
 | `/baker/**` | `PASTELERO` |
-| resto de `/api/**` | `ADMIN` o `PASTELERO` |
+| `/api/orders/**`, `/api/inventory/**`, `/api/recipes/**`, `GET /api/products/**`, `GET /api/categories/**` | `ADMIN` o `PASTELERO` |
+| resto de `/api/**` (usuarios, clientes, cupones, galería, configuración del creador, altas/bajas de productos) | `ADMIN` |
 
 - Los roles son **authorities sin prefijo** (`ADMIN`, `PASTELERO`), guardados como texto en `User.roles`.
-- Tras el login: ADMIN → `/admin`, PASTELERO → `/baker`, otro → `/`.
-- Contraseñas con BCrypt. CSRF está deshabilitado.
+- Tras el login: ADMIN → `/admin`, PASTELERO → `/baker`, otro → `/`. Logout → `/login?logout`.
+- Contraseñas con BCrypt.
+- **CSRF activado** (`csrf.spa()`): el token viaja en la cookie `XSRF-TOKEN`. Los formularios con `th:action` lo incluyen solos; los `fetch` lo agregan con `static/js/csrf.js`, que se carga primero en **todas** las páginas (públicas y paneles). Toda página nueva debe incluirlo.
+- Encabezados: Content-Security-Policy (orígenes permitidos en `SecurityConfig`; si se agrega un CDN nuevo, sumarlo ahí), `X-Frame-Options: DENY`, `Referrer-Policy`, cookie de sesión `SameSite=Lax`.
+- Login: bloqueo de 15 min tras 5 intentos fallidos (`LoginAttemptService`). Cuentas con `enabled=false` no pueden entrar.
+- `RateLimitFilter`: límite por IP de pedidos, cupones y registros.
+- Pedidos públicos: el servidor fuerza `PENDING`, seña 0 y pedido nuevo, exige nombre/teléfono/fecha/ítems y limpia los textos (`util/InputSanitizer`) para evitar XSS en el panel.
+- Registro: solo se aceptan `name`, `email`, `phone`, `password` (`@InitBinder`) y el email debe ser único.
+- Galería: solo imágenes JPG/PNG/WEBP/GIF, guardadas con nombre UUID.
 - Al agregar una ruta o endpoint nuevo, **actualizá SecurityConfig** si hace falta.
 
 ## Modelo de datos (entidades JPA)
@@ -176,7 +187,7 @@ Limitaciones conocidas del modelo (no las "arregles" sin que te lo pidan; son de
 
 ## Diseño
 
-- **Identidad fija:** la tipografía es **Poppins** y la paleta es la definida en `:root` de `static/css/main.css` y `static/css/admin.css` (`--accent: #e0487f`, `--accent2: #cf1810`, el rosa de fondo, y los colores de texto y muted). No agregar colores nuevos. Se permiten tonos más claros u oscuros derivados de esos mismos colores.
+- **Identidad fija:** la tipografía es **Poppins** y la paleta es la definida en `:root` de `static/css/main.css` y `static/css/admin.css` (`--accent: #e0487f`, `--accent2: #cf1810`, el rosa de fondo, y los colores de texto y muted). No agregar colores nuevos. Se permiten tonos más claros u oscuros derivados de esos mismos colores. Única excepción aprobada por el autor (Fase 7): un verde solo para los estados "Completado" / "Hay insumos" de los paneles.
 - **Rediseño en curso (rama `cambios-ui`):** el diseño de la web pública se está rehaciendo por fases, con inspiración en magicspoon.com adaptada a una pastelería. El plan y las decisiones se guardan en `design-review/DESIGN-PLAN.md` y `PRODUCT.md` (se crean en la Fase 0). Cuando existan, seguirlos en cualquier cambio de interfaz.
 - **Prioridad:** que sea simple de usar para personal no técnico y que se vea bien en celular. Lo vistoso nunca va por encima de lo claro.
 - **Al usar skills de diseño** (Impeccable, Taste, Emil Kowalski), respetar esta identidad. No cambiar la tipografía ni la paleta aunque la skill lo sugiera.

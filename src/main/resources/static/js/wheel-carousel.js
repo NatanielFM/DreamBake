@@ -1,193 +1,134 @@
-// scripts/wheel-carousel.js
-// Carrusel tipo "rueda" — desplazamiento continuo, loop perfecto y pausa al hover/touch/focus.
-// Ajustá SPEED_PX_PER_SEC para controlar la velocidad (px por segundo).
+// wheel-carousel.js — Carrusel de la galería de la home.
+//
+// Se apoya en el scroll nativo del navegador con "scroll-snap" (cada foto
+// se acomoda sola al soltar) y le suma:
+//   - Flechas anterior / siguiente.
+//   - Teclado: con el carrusel enfocado, ← y → avanzan de a una foto; Inicio y Fin van a los extremos.
+//   - Arrastre con el mouse en computadora (en el celular ya se desliza con el dedo, con inercia).
+//   - Una línea de progreso que muestra cuánto se recorrió.
+//
+// Contrato con el HTML (index.html):
+//   #wheelCarousel (contenedor que hace scroll) > .gallery-track > .gallery-slide
+//   [data-carousel-prev], [data-carousel-next], .carousel-progress span
 
 document.addEventListener('DOMContentLoaded', () => {
-  const SPEED_PX_PER_SEC = 30; // px por segundo. Reducí para más lento, aumentá para más rápido.
-
   const carousel = document.getElementById('wheelCarousel');
   if (!carousel) return;
 
-  const track = carousel.querySelector('.wheel-track');
-  const wrapper = carousel.querySelector('.wheel-track-wrapper');
+  const track = carousel.querySelector('.gallery-track');
+  if (!track) return;
 
-  if (!track || !wrapper) return;
+  const slides = Array.from(track.children);
+  const prevBtn = document.querySelector('[data-carousel-prev]');
+  const nextBtn = document.querySelector('[data-carousel-next]');
+  const progress = document.querySelector('.carousel-progress span');
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-  // Tomamos los elementos originales (antes de clonar)
-  const originalNodes = Array.from(track.children);
-
-  // Si no hay items, salimos
-  if (originalNodes.length === 0) return;
-
-  // Evitar duplicados si el script se ejecuta más de una vez
-  if (!track.dataset.cloned) {
-    const frag = document.createDocumentFragment();
-    originalNodes.forEach(node => frag.appendChild(node.cloneNode(true)));
-    track.appendChild(frag);
-    track.dataset.cloned = 'true';
-  }
-
-  // Variables runtime
-  let originalWidth = 0; // ancho total de la secuencia original (px)
-  let pos = 0;           // desplazamiento acumulado en px
-  let lastTime = null;
-  let rafId = null;
-  let running = true;
-
-  // Calcula el ancho total de los slides originales (incluye gaps)
-  function calculateOriginalWidth() {
-    const originals = Array.from(track.children).slice(0, originalNodes.length);
-    if (originals.length === 0) return 0;
-
-    // Suma de anchos de cada item
-    let sum = 0;
-    originals.forEach(item => {
-      const rect = item.getBoundingClientRect();
-      sum += rect.width;
-    });
-
-    // Añadir gaps entre items (si existe gap en CSS)
-    const style = getComputedStyle(track);
-    const gap = parseFloat(style.gap || style.columnGap || 0);
-    if (gap && originals.length > 1) {
-      sum += gap * (originals.length - 1);
-    }
-
-    // Fallback: si sum es 0, usar scrollWidth/2
-    if (!sum || !isFinite(sum)) {
-      const total = track.scrollWidth || track.getBoundingClientRect().width;
-      sum = total / 2 || 1;
-    }
-
-    originalWidth = sum;
-    // Aseguramos pos dentro del rango para evitar saltos al recalcular
-    pos = pos % originalWidth;
-    if (pos < 0) pos += originalWidth;
-  }
-
-  // Loop de animación con requestAnimationFrame
-  function step(timestamp) {
-    if (!lastTime) lastTime = timestamp;
-    const dt = (timestamp - lastTime) / 1000; // segundos
-    lastTime = timestamp;
-
-    if (running && originalWidth > 0) {
-      pos += SPEED_PX_PER_SEC * dt;
-      // wrap-around perfecto
-      if (pos >= originalWidth) pos -= originalWidth;
-      // aplicar transform
-      track.style.transform = `translateX(${-pos}px)`;
-    }
-
-    rafId = requestAnimationFrame(step);
-  }
-
-  // Pausa / reanudar
-  function pause() {
-    running = false;
-  }
-  function resume() {
-    // reset lastTime para evitar salto grande en dt
-    lastTime = null;
-    running = true;
-  }
-
-  // Handlers de interacción
-  function addInteractionHandlers() {
-    // pausa al entrar y reanuda al salir
-    wrapper.addEventListener('mouseenter', pause);
-    wrapper.addEventListener('mouseleave', resume);
-
-    // pausa al focus y reanuda al blur
-    carousel.addEventListener('focusin', pause);
-    carousel.addEventListener('focusout', resume);
-
-    // pausa al tocar (mobile)
-    wrapper.addEventListener('touchstart', pause, { passive: true });
-    wrapper.addEventListener('touchend', resume, { passive: true });
-
-    // pausa si el usuario mantiene el dedo (touchmove)
-    wrapper.addEventListener('touchmove', () => {}, { passive: true });
-
-    // pausa cuando se hace hover sobre un item (por si wrapper no cubre todo)
-    track.querySelectorAll('.carousel-item').forEach(item => {
-      item.addEventListener('mouseenter', pause);
-      item.addEventListener('mouseleave', resume);
-    });
-
-    // pausa cuando la pestaña pierde visibilidad
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) pause();
-      else resume();
-    });
-  }
-
-  // Recalcular medidas al cambiar tamaño
-  window.addEventListener('resize', () => {
-    // recalcular después de un pequeño delay para estabilizar layout
-    clearTimeout(window.__wheelRecalcTimer);
-    window.__wheelRecalcTimer = setTimeout(() => {
-      calculateOriginalWidth();
-    }, 120);
+  // Cada foto se anuncia como "Foto 3 de 9" para lectores de pantalla
+  slides.forEach((slide, i) => {
+    slide.setAttribute('aria-label', `Foto ${i + 1} de ${slides.length}`);
   });
 
-  // Esperar a que las imágenes (de los originales) carguen para medir correctamente
-  function waitForImagesThenStart() {
-    const originals = Array.from(track.children).slice(0, originalNodes.length);
-    const imgs = originals.flatMap(item => Array.from(item.querySelectorAll('img')));
-    let toLoad = imgs.length;
+  // Distancia de una foto + el espacio entre fotos
+  function slideStep() {
+    if (!slides[0]) return carousel.clientWidth;
+    const gap = parseFloat(getComputedStyle(track).columnGap) || 0;
+    return slides[0].getBoundingClientRect().width + gap;
+  }
 
-    if (toLoad === 0) {
-      calculateOriginalWidth();
-      rafId = requestAnimationFrame(step);
-      return;
-    }
-
-    imgs.forEach(img => {
-      if (img.complete) {
-        toLoad--;
-        if (toLoad === 0) {
-          calculateOriginalWidth();
-          rafId = requestAnimationFrame(step);
-        }
-      } else {
-        img.addEventListener('load', () => {
-          toLoad--;
-          if (toLoad === 0) {
-            calculateOriginalWidth();
-            rafId = requestAnimationFrame(step);
-          }
-        }, { once: true });
-        // también manejar error para no bloquear
-        img.addEventListener('error', () => {
-          toLoad--;
-          if (toLoad === 0) {
-            calculateOriginalWidth();
-            rafId = requestAnimationFrame(step);
-          }
-        }, { once: true });
-      }
+  function scrollBySlides(count) {
+    carousel.scrollBy({
+      left: count * slideStep(),
+      behavior: reduceMotion.matches ? 'auto' : 'smooth'
     });
   }
 
-  // Inicializar
-  addInteractionHandlers();
-  waitForImagesThenStart();
+  if (prevBtn) prevBtn.addEventListener('click', () => scrollBySlides(-1));
+  if (nextBtn) nextBtn.addEventListener('click', () => scrollBySlides(1));
 
-  // Limpieza si se navega fuera
-  window.addEventListener('beforeunload', () => {
-    if (rafId) cancelAnimationFrame(rafId);
+  carousel.addEventListener('keydown', (e) => {
+    const max = carousel.scrollWidth - carousel.clientWidth;
+    if (e.key === 'ArrowRight') { e.preventDefault(); scrollBySlides(1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); scrollBySlides(-1); }
+    else if (e.key === 'Home') { e.preventDefault(); carousel.scrollTo({ left: 0 }); }
+    else if (e.key === 'End') { e.preventDefault(); carousel.scrollTo({ left: max }); }
   });
 
-  // Exponer funciones útiles en el elemento para debugging (opcional)
-  try {
-    carousel.__wheel = {
-      pause,
-      resume,
-      recalc: calculateOriginalWidth,
-      getState: () => ({ originalWidth, pos, running })
-    };
-  } catch (e) {
-    // no crítico si falla
+  /* ---------- Estado de las flechas y línea de progreso ---------- */
+  let ticking = false;
+  function updateState() {
+    const max = carousel.scrollWidth - carousel.clientWidth;
+    const pos = carousel.scrollLeft;
+
+    if (prevBtn) prevBtn.disabled = pos <= 2;
+    if (nextBtn) nextBtn.disabled = pos >= max - 2;
+
+    if (progress) {
+      // La barra arranca mostrando la parte visible y llega a 1 al final
+      const visible = max > 0 ? carousel.clientWidth / carousel.scrollWidth : 1;
+      const ratio = max > 0 ? pos / max : 1;
+      progress.style.setProperty('--progress', (visible + (1 - visible) * ratio).toFixed(3));
+    }
+    ticking = false;
   }
+
+  carousel.addEventListener('scroll', () => {
+    if (!ticking) {
+      ticking = true;
+      requestAnimationFrame(updateState);
+    }
+  }, { passive: true });
+  window.addEventListener('resize', updateState);
+  updateState();
+
+  /* ---------- Arrastre con el mouse (solo puntero de mouse) ---------- */
+  let dragging = false;
+  let moved = false;
+  let startX = 0;
+  let startScroll = 0;
+
+  carousel.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'mouse' || e.button !== 0) return;
+    dragging = true;
+    moved = false;
+    startX = e.clientX;
+    startScroll = carousel.scrollLeft;
+    carousel.setPointerCapture(e.pointerId);
+  });
+
+  carousel.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    if (!moved && Math.abs(dx) > 4) {
+      moved = true;
+      carousel.classList.add('is-dragging'); // desactiva el snap mientras se arrastra
+    }
+    if (moved) carousel.scrollLeft = startScroll - dx;
+  });
+
+  function endDrag(e) {
+    if (!dragging) return;
+    dragging = false;
+    if (carousel.hasPointerCapture && carousel.hasPointerCapture(e.pointerId)) {
+      carousel.releasePointerCapture(e.pointerId);
+    }
+    if (moved) {
+      // Al soltar se vuelve a activar el snap y se acomoda en la foto más cercana
+      carousel.classList.remove('is-dragging');
+      const step = slideStep();
+      const target = Math.round(carousel.scrollLeft / step) * step;
+      carousel.scrollTo({ left: target, behavior: reduceMotion.matches ? 'auto' : 'smooth' });
+    }
+  }
+  carousel.addEventListener('pointerup', endDrag);
+  carousel.addEventListener('pointercancel', endDrag);
+
+  // Si hubo arrastre, el click que viene después no debe disparar nada
+  carousel.addEventListener('click', (e) => {
+    if (moved) {
+      e.preventDefault();
+      e.stopPropagation();
+      moved = false;
+    }
+  }, true);
 });

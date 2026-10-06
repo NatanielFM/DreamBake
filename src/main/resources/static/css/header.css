@@ -1,122 +1,482 @@
-:root {
-  --header-height: 64px;
-  --accent: #e0487f;
-  --bg-header: rgba(255, 255, 255, 0.85);
-  --btn-whatsapp-bg: #25D366;
-  --btn-ig-bg: linear-gradient(45deg,#f58529,#dd2a7b);
-}
+/* =========================================================
+   header.css — Header compartido del sitio público (Fase 1)
+   ---------------------------------------------------------
+   Requiere tokens.css y components.css.
+   El header es fijo (position: fixed) y mide --header-height (64 px).
+   Las páginas dejan ese espacio arriba con padding-top.
+   Al hacer scroll se compacta a 56 px y gana una sombra suave.
+   ========================================================= */
 
 .site-header {
-  position: fixed; top: 0; left: 0; right: 0; height: var(--header-height);
-  background: var(--bg-header); backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05); z-index: 1000;
+  /* Alto actual del header: lo usan la barra y el menú móvil */
+  --header-current: var(--header-height);
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: var(--z-header);
+  background: var(--blush-50);
+  /* La línea inferior es una sombra de 1 px (un borde sumaría 1 px al alto del header) */
+  transition: box-shadow var(--dur-base) var(--ease-out);
+}
+
+/* Compacto al hacer scroll (header.js agrega .is-scrolled) */
+.site-header.is-scrolled {
+  --header-current: var(--header-height-compact);
+  box-shadow: 0 1px 0 var(--line), var(--shadow-1);
+}
+
+/* Con el menú móvil abierto, el header sube de capa para quedar
+   por encima del botón flotante del carrito */
+.site-header.is-menu-open {
+  z-index: var(--z-overlay);
+  box-shadow: 0 1px 0 var(--line);
 }
 
 .header-inner {
-  max-width: 1100px; margin: 0 auto; height: 100%;
-  display: flex; align-items: center; padding: 0 1rem; gap: 1rem;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: var(--header-current);
+  max-width: calc(var(--container) + var(--gutter) * 2);
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+  /* El alto cambia de golpe (sin animar): animar "height" obliga al navegador a
+     recalcular el layout en cada cuadro. Lo que se anima es la sombra y el logo. */
 }
 
-/* Identidad de marca */
-.brand { display: flex; align-items: center; gap: 0.5rem; text-decoration: none; }
-.brand-text { font-weight: 700; color: var(--accent); font-size: 1.1rem; }
-
-/* Navegación Desktop */
-.main-nav { flex: 1; display: flex; justify-content: center; }
-.nav-list { list-style: none; display: flex; gap: 1.5rem; margin: 0; padding: 0; }
-.nav-list a { text-decoration: none; color: #222; font-weight: 600; transition: color 0.2s; }
-.nav-list a:hover { color: var(--accent); }
-
-/* Acciones */
-.header-actions { display: flex; align-items: center; gap: 0.5rem; margin-left: auto; }
-
-/* --- BOTONES BASE --- */
-.btn-icon {
-  width: 40px; height: 40px; border-radius: 8px;
-  display: inline-flex; align-items: center; justify-content: center;
-  border: none; text-decoration: none; cursor: pointer; background: #fff;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.06); transition: transform 0.2s;
-}
-.btn-icon:hover { transform: translateY(-2px); }
-.btn-icon svg { fill: currentColor; }
-
-/* Colores específicos */
-.btn-whatsapp { background: var(--btn-whatsapp-bg); }
-.btn-ig { background: var(--btn-ig-bg); }
-.btn-cart { position: relative; color: var(--accent); }
-.btn-login { background: linear-gradient(90deg,#ff7aa8,#d43b73); color: #fff; }
-
-.btn-account {
-  display: inline-flex; align-items: center; gap: 0.5rem;
-  background: white; border: 1px solid #eee; padding: 0.4rem 0.8rem;
-  border-radius: 8px; cursor: pointer; font-weight: 600; color: #333;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+/* Anillo de foco del header: más específico para que ninguna regla vieja de las páginas lo apague */
+.site-header a:focus-visible,
+.site-header button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
-.cart-count {
-  position: absolute; top: -6px; right: -6px; background: var(--accent);
-  color: #fff; font-size: 0.75rem; font-weight: 700; min-width: 18px;
-  height: 18px; display: flex; align-items: center; justify-content: center;
-  border-radius: 9px; padding: 0 4px;
+/* Con mouse o toque no se dibuja contorno (main.css ponía uno pálido en cualquier :focus) */
+.site-header a:focus:not(:focus-visible),
+.site-header button:focus:not(:focus-visible) {
+  outline: none;
 }
 
-/* --- MENÚ DESPLEGABLE CUENTA --- */
+
+/* ---------- Marca ---------- */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin-right: auto;
+  color: var(--ink);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+}
+
+.brand-icon {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.site-header.is-scrolled .brand-icon { transform: scale(0.9); }
+
+/* Colores del isotipo (cupcake) */
+.brand-icon .bi-frosting { fill: var(--rose-500); }
+.brand-icon .bi-wrapper  { fill: var(--ink); }
+.brand-icon .bi-stripes  { stroke: var(--rose-300); }
+.brand-icon .bi-cherry   { fill: var(--cherry-500); }
+
+.brand-text {
+  font-size: 1.125rem;
+  font-weight: var(--fw-black);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+
+/* Celulares muy angostos (menos de 360 px, por ejemplo 320 px): la marca y los
+   tres botones no entraban y el botón de menú quedaba cortado. Se achica un poco
+   la marca y se juntan los botones, sin bajar de 44 px cada uno. */
+@media (max-width: 22.49rem) {
+  .header-inner { gap: var(--space-2); }
+  .brand { gap: 8px; }
+  .brand-icon { width: 30px; height: 30px; }
+  .brand-text { font-size: 1rem; }
+  .header-actions { gap: 0; }
+}
+
+
+/* ---------- Navegación de escritorio ---------- */
+.main-nav {
+  display: none;   /* en celular y tablet se usa el menú móvil */
+}
+
+.nav-list {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nav-list a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
+  color: var(--ink);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
+  text-decoration: none;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+/* Página actual (header.js pone aria-current="page") */
+.nav-list a[aria-current="page"] {
+  background: var(--rose-100);
+  color: var(--rose-800);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .nav-list a:hover { background: var(--rose-100); }
+}
+
+
+/* ---------- Acciones (cuenta, carrito, menú) ---------- */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.header-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink);
+  text-decoration: none;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+.header-icon-btn:active { transform: scale(0.94); }
+.header-icon-btn[aria-expanded="true"] { background: var(--rose-100); }
+
+@media (hover: hover) and (pointer: fine) {
+  .header-icon-btn:hover { background: var(--rose-100); }
+}
+
+
+/* ---------- Carrito: píldora de tinta con contador ---------- */
+.btn-cart {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: 44px;
+  height: 44px;
+  padding: 0 11px;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--white);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
+  text-decoration: none;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+.btn-cart svg { flex: none; }
+.btn-cart:active { transform: scale(0.96); }
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-cart:hover { background: var(--rose-800); }
+}
+
+/* En celular solo se ve el ícono; el texto "Carrito" aparece desde 768 px */
+.btn-cart-label { display: none; }
+
+/* Contador: en celular va sobre la esquina del ícono */
+.btn-cart .cart-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: 0 0 0 2px var(--ink);
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+
+/* Carrito vacío: el contador se oculta (header.js mantiene data-count actualizado) */
+.btn-cart[data-count="0"] .cart-count {
+  opacity: 0;
+  transform: scale(0.6);
+}
+
+/* "Pop" del contador cuando se agrega algo */
+.btn-cart.is-bumped .cart-count {
+  animation: cart-pop 360ms var(--ease-pop);
+}
+@keyframes cart-pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.28); }
+  100% { transform: scale(1); }
+}
+
+
+/* ---------- Botón de menú (hamburguesa → X) ---------- */
+.menu-bars {
+  position: relative;
+  display: block;
+  width: 22px;
+  height: 16px;
+}
+.menu-bars span {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transition:
+    transform var(--dur-base) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out);
+}
+.menu-bars span:nth-child(1) { top: 0; }
+.menu-bars span:nth-child(2) { top: 7px; }
+.menu-bars span:nth-child(3) { top: 14px; }
+
+.menu-button[aria-expanded="true"] .menu-bars span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.menu-button[aria-expanded="true"] .menu-bars span:nth-child(2) { opacity: 0; }
+.menu-button[aria-expanded="true"] .menu-bars span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+
+/* ---------- Menú de cuenta (desplegable) ---------- */
 .user-wrapper { position: relative; }
+
 .user-menu {
-  position: absolute; right: 0; top: 110%; background: #fff;
-  border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-  min-width: 200px; z-index: 1200; padding: 0.5rem;
-  border: 1px solid #f0f0f0;
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: var(--z-dropdown);
+  min-width: 240px;
+  padding: var(--space-2);
+  border-radius: 18px;
+  background: var(--white);
+  box-shadow: var(--shadow-3);
+  /* Nace desde la esquina del botón que lo abre */
+  transform-origin: top right;
+  opacity: 0;
+  transform: translateY(-4px) scale(0.96);
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
 }
-.user-menu[hidden] { display: none; }
-.user-menu hr { border: 0; border-top: 1px solid #eee; margin: 8px 0; }
-.user-menu-title { font-weight: 700; color: #222; padding: 8px; }
+.user-menu.is-open {
+  opacity: 1;
+  transform: none;
+}
+
+.user-menu-title {
+  margin-bottom: 6px;
+  padding: 10px 12px 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  font-weight: var(--fw-bold);
+}
+
+.user-menu form { margin: 0; }
+
 .user-menu-item {
-  display: flex; align-items: center; gap: 10px; width: 100%;
-  padding: 10px 8px; text-decoration: none; color: #444; border: none;
-  background: transparent; font-size: 14px; cursor: pointer;
-  border-radius: 6px; font-weight: 500; text-align: left;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-strong);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-medium);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
 }
-.user-menu-item:hover { background: #f5f5f5; color: var(--accent); }
-.user-menu-item .icon { 
-  width: 18px; height: 18px; 
-  stroke: currentColor; 
-  fill: none; 
-  stroke-width: 2; 
-  stroke-linecap: round; 
+.user-menu-item--accent {
+  color: var(--rose-700);
+  font-weight: var(--fw-semibold);
+}
+.user-menu-item .icon {
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
   stroke-linejoin: round;
 }
-form { margin: 0; } /* Para el form del logout */
 
-/* --- RESPONSIVE MOBILE --- */
-@media (min-width: 881px) {
-  .menu-button { display: none; }
+@media (hover: hover) and (pointer: fine) {
+  .user-menu-item:hover {
+    background: var(--rose-50);
+    color: var(--rose-700);
+  }
+}
+
+
+/* ---------- Menú móvil de pantalla completa ---------- */
+.mobile-menu {
+  position: fixed;
+  top: var(--header-current);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;   /* el scroll no "se escapa" a la página de atrás */
+  background: var(--blush-50);
+  opacity: 0;
+  transition: opacity var(--dur-base) var(--ease-out);
+}
+.mobile-menu.is-open { opacity: 1; }
+
+.mobile-menu-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  max-width: 560px;
+  margin: 0 auto;
+  padding: var(--space-4) var(--gutter) calc(var(--space-7) + env(safe-area-inset-bottom));
+  transform: translateY(-8px);
+  transition: transform var(--dur-slow) var(--ease-drawer);
+}
+.mobile-menu.is-open .mobile-menu-panel { transform: none; }
+
+.mobile-menu-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Cada link entra apenas después del anterior (escalonado de 30 ms) */
+.mobile-menu-list li {
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+.mobile-menu.is-open .mobile-menu-list li { opacity: 1; transform: none; }
+.mobile-menu.is-open .mobile-menu-list li:nth-child(2) { transition-delay: 30ms; }
+.mobile-menu.is-open .mobile-menu-list li:nth-child(3) { transition-delay: 60ms; }
+.mobile-menu.is-open .mobile-menu-list li:nth-child(4) { transition-delay: 90ms; }
+.mobile-menu.is-open .mobile-menu-list li:nth-child(5) { transition-delay: 120ms; }
+
+/* Al cerrar, todo sale junto y más rápido que al entrar */
+.mobile-menu:not(.is-open),
+.mobile-menu:not(.is-open) .mobile-menu-panel,
+.mobile-menu:not(.is-open) .mobile-menu-list li {
+  transition-duration: var(--dur-fast);
+  transition-delay: 0ms;
+}
+
+.mobile-menu-list a {
+  display: flex;
+  align-items: center;
+  min-height: 60px;
+  padding: 0 var(--space-1);
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  font-size: clamp(1.5rem, 1.2rem + 1.4vw, 2rem);
+  font-weight: var(--fw-black);
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+.mobile-menu-list a[aria-current="page"] { color: var(--rose-700); }
+
+.mobile-menu-contact {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.mobile-menu-account { text-align: center; }
+
+.mobile-menu-account-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  color: var(--rose-700);
+  font-weight: var(--fw-semibold);
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.2em;
+}
+
+
+/* ---------- Tablet (desde 768 px) ---------- */
+@media (min-width: 48rem) {
+  .header-actions { gap: var(--space-2); }
+
+  /* El carrito muestra el texto y el contador va en línea */
+  /* Ancho mínimo = píldora con contador: cuando header.js muestra el contador
+     al cargar, la píldora no crece y el menú no se corre */
+  .btn-cart { min-width: 9rem; justify-content: center; padding: 0 18px 0 14px; }
+  .btn-cart-label { display: inline; }
+  .btn-cart .cart-count {
+    position: static;
+    box-shadow: none;
+  }
+  .btn-cart[data-count="0"] .cart-count { display: none; }
+}
+
+
+/* ---------- Escritorio (desde 1024 px) ---------- */
+@media (min-width: 64rem) {
+  .brand { margin-right: 0; }
+
+  .main-nav {
+    display: flex;
+    flex: 1;
+    justify-content: center;
+  }
+
+  .menu-button,
   .mobile-menu { display: none !important; }
 }
 
-@media (max-width: 880px) {
-  .main-nav { display: none; }
-  
-  .menu-button { 
-    display: inline-flex; border: none; background: transparent;
-    color: var(--accent); padding: 0.5rem; cursor: pointer; order: 0;
-  }
-  
-  .brand { order: 1; margin-right: auto; }
-  .header-actions { order: 2; }
-  
-  .btn-account span { display: none; } /* Oculta texto "Mi cuenta", deja solo el icono */
-  .btn-account { padding: 0.4rem; }
 
-  /* Menú Mobile abierto */
-  .mobile-menu {
-    position: absolute; top: var(--header-height); left: 0; width: 100%;
-    background: #fff; border-top: 1px solid #eee;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.06); padding: 1rem;
+/* ---------- Movimiento reducido: solo fundidos, sin desplazamientos ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .brand-icon,
+  .menu-bars span {
+    transition: none;
   }
-  .mobile-menu[hidden] { display: none; }
-  .mobile-menu ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
-  .mobile-menu a { display: block; padding: 0.8rem; text-decoration: none; color: #222; font-weight: 600; border-radius: 6px; }
-  .mobile-menu a:hover { background: #f9f9f9; color: var(--accent); }
+  .site-header.is-scrolled .brand-icon { transform: none; }
+
+  .mobile-menu-panel,
+  .mobile-menu-list li,
+  .user-menu {
+    transform: none !important;
+    transition-property: opacity;
+  }
+
+  .btn-cart.is-bumped .cart-count { animation: none; }
+  .header-icon-btn:active,
+  .btn-cart:active { transform: none; }
 }

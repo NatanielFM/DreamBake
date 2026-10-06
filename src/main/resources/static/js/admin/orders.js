@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     switch(status) {
       case 'PENDING': return `<span class="status-badge status-pending">Pendiente</span>`;
       case 'CONFIRMED': return `<span class="status-badge status-agendado">Agendado</span>`;
-      case 'IN_PROGRESS': return `<span class="status-badge status-agendado">En Preparación</span>`; 
+      case 'IN_PROGRESS': return `<span class="status-badge status-progress">En preparación</span>`;
       case 'COMPLETED': return `<span class="status-badge status-completado">Completado</span>`;
       default: return `<span class="status-badge status-cancelled">Cancelado</span>`;
     }
@@ -106,16 +106,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const completedCount = dayOrders.filter(o => o.status === 'COMPLETED').length;
 
       let badgesHtml = '';
+      // data-count: en el celular solo se muestra el número (ver admin.css)
       if (confirmedCount > 0) {
-        badgesHtml += `<div class="order-badge" style="background:var(--accent);">${confirmedCount} pedido(s)</div>`;
+        badgesHtml += `<div class="order-badge" data-count="${confirmedCount}">${confirmedCount} ${confirmedCount === 1 ? 'pedido' : 'pedidos'}</div>`;
       }
       if (completedCount > 0) {
-        badgesHtml += `<div class="order-badge completed-badge">${completedCount} completado(s)</div>`;
+        badgesHtml += `<div class="order-badge completed-badge" data-count="${completedCount}">${completedCount} ${completedCount === 1 ? 'entregado' : 'entregados'}</div>`;
       }
 
       const dayCell = document.createElement('div');
       dayCell.className = `calendar-day ${isTodayClass}`;
-      dayCell.innerHTML = `<div class="day-num">${i}</div><div style="flex:1; display:flex; flex-direction:column; justify-content:center;">${badgesHtml}</div>`;
+      dayCell.innerHTML = `<div class="day-num">${i}</div><div class="day-badges">${badgesHtml}</div>`;
       
       dayCell.addEventListener('click', () => openDayOrders(dateStr, dayOrders));
       grid.appendChild(dayCell);
@@ -151,8 +152,8 @@ document.addEventListener('DOMContentLoaded', () => {
   tabs.forEach(tab => {
     tab.addEventListener('click', (e) => {
       tabs.forEach(t => t.classList.remove('active'));
-      e.target.classList.add('active');
-      currentTab = e.target.dataset.tab;
+      e.currentTarget.classList.add('active');
+      currentTab = e.currentTarget.dataset.tab;
       renderTable();
     });
   });
@@ -182,49 +183,58 @@ document.addEventListener('DOMContentLoaded', () => {
     filtered.sort((a, b) => new Date(a.deliveryDate) - new Date(b.deliveryDate));
 
     if (filtered.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:#666;">No hay pedidos para mostrar en esta sección.</td></tr>`;
+      // Mensaje según la lista (y si hay una búsqueda escrita)
+      const emptyText = query ? 'Ningún pedido coincide con la búsqueda.'
+        : currentTab === 'nuevos' ? 'No hay pedidos nuevos. Cuando alguien compre en la web, aparece acá para confirmarlo.'
+        : currentTab === 'agendados' ? 'No hay pedidos agendados.'
+        : 'Todavía no hay pedidos completados.';
+      tbody.innerHTML = `<tr><td colspan="7" class="cell-empty">${emptyText}</td></tr>`;
       return;
     }
 
     filtered.forEach(o => {
       const tr = document.createElement('tr');
-      const [year, month, day] = o.deliveryDate.split('-');
+      // Un pedido sin fecha no debe romper toda la tabla
+      const [year, month, day] = o.deliveryDate ? o.deliveryDate.split('-') : ['', '', ''];
       
       let actionsHtml = '';
       if (currentTab === 'nuevos') {
         actionsHtml = `
-          <button class="btn btn-pink btn-sm" title="Confirmar" onclick="openConfirmModal(${o.id})">${iconCheck} Confirmar</button>
-          <button class="btn btn-grey btn-sm" title="Ver" onclick="actionView(${o.id})">${iconEye} Ver</button>
-          <button class="btn btn-red btn-sm" title="Rechazar" onclick="actionReject(${o.id})">${iconX}</button>
+          <button type="button" class="btn btn-pink btn-sm" onclick="openConfirmModal(${o.id})">${iconCheck} Confirmar</button>
+          <button type="button" class="btn btn-grey btn-sm" onclick="actionView(${o.id})">${iconEye} Ver</button>
+          <button type="button" class="btn btn-red btn-sm" onclick="actionReject(${o.id})">${iconX} Rechazar</button>
         `;
       } else if (currentTab === 'agendados') {
         actionsHtml = `
-          <button class="btn btn-pink btn-sm" title="Completado" onclick="actionToggleComplete(${o.id}, true)">${iconCheck} Completado</button>
-          <button class="btn btn-grey btn-sm" title="Ver" onclick="actionView(${o.id})">${iconEye} Ver</button>
-          <button class="btn btn-red btn-sm" title="Eliminar" onclick="actionDelete(${o.id})">${iconTrash}</button>
+          <button type="button" class="btn btn-pink btn-sm" onclick="actionToggleComplete(${o.id}, true)">${iconCheck} Entregado</button>
+          <button type="button" class="btn btn-grey btn-sm" onclick="actionView(${o.id})">${iconEye} Ver</button>
+          <button type="button" class="btn btn-red btn-sm btn-icon" aria-label="Eliminar el pedido #${o.id}" title="Eliminar" onclick="actionDelete(${o.id})">${iconTrash}</button>
         `;
       } else {
         actionsHtml = `
-          <button class="btn btn-grey btn-sm" title="Ver" onclick="actionView(${o.id})">${iconEye} Ver</button>
-          <button class="btn btn-red btn-sm" title="Eliminar" onclick="actionDelete(${o.id})">${iconTrash}</button>
+          <button type="button" class="btn btn-grey btn-sm" onclick="actionView(${o.id})">${iconEye} Ver</button>
+          <button type="button" class="btn btn-red btn-sm btn-icon" aria-label="Eliminar el pedido #${o.id}" title="Eliminar" onclick="actionDelete(${o.id})">${iconTrash}</button>
         `;
       }
 
       let stockBadge = '';
       if (o.status === 'PENDING' && o.stockStatus) {
-          if (o.stockStatus === 'Realizable') stockBadge = '<br><span class="status-badge status-completado" style="margin-top:4px; font-size:0.75rem;">Realizable</span>';
-          else if (o.stockStatus === 'Bajo stock') stockBadge = '<br><span class="status-badge status-pending" style="margin-top:4px; font-size:0.75rem;">Bajo Stock</span>';
-          else if (o.stockStatus === 'Sin inventario') stockBadge = '<br><span class="status-badge status-cancelled" style="margin-top:4px; font-size:0.75rem;">Sin Inventario</span>';
+          // ¿Alcanzan los insumos para hacerlo? (lo calcula el servidor)
+          if (o.stockStatus === 'Realizable') stockBadge = '<span class="status-badge is-small status-completado">Hay insumos</span>';
+          else if (o.stockStatus === 'Bajo stock') stockBadge = '<span class="status-badge is-small status-pending">Insumos justos</span>';
+          else if (o.stockStatus === 'Sin inventario') stockBadge = '<span class="status-badge is-small status-cancelled">Faltan insumos</span>';
       }
 
+      // data-label: en el celular cada fila se ve como tarjeta con "Etiqueta: valor".
+      // El orden de las columnas no cambia (baker.html oculta la 5.ª, el total).
       tr.innerHTML = `
-        <td style="font-weight:bold; color:var(--accent);">#${o.id}</td>
-        <td style="font-weight:600;">${o.customerName || 'Sin Nombre'}</td>
-        <td style="color:#666;">${o.customerPhone}</td>
-        <td>${day}/${month}/${year}</td>
-        <td style="font-weight:bold;">$${o.totalPrice.toLocaleString('es-AR')}</td>
-        <td>${getStatusBadge(o.status)}${stockBadge}</td>
-        <td><div class="action-buttons-container">${actionsHtml}</div></td>
+        <td class="cell-id" data-label="Pedido">#${o.id}</td>
+        <td class="cell-strong" data-label="Cliente">${o.customerName || 'Sin nombre'}</td>
+        <td class="cell-soft" data-label="Teléfono">${o.customerPhone || '—'}</td>
+        <td data-label="Entrega">${o.deliveryDate ? `${day}/${month}/${year}` : 'Sin fecha'}</td>
+        <td class="cell-money" data-label="Total">$${o.totalPrice.toLocaleString('es-AR')}</td>
+        <td data-label="Estado"><div class="status-stack">${getStatusBadge(o.status)}${stockBadge}</div></td>
+        <td class="cell-actions"><div class="action-buttons-container">${actionsHtml}</div></td>
       `;
       tbody.appendChild(tr);
     });
@@ -389,7 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Función auxiliar que SOLO llena los datos (Separa los datos de la interfaz)
   function fillViewModal(order) {
-    document.getElementById('view-order-title').innerText = `Pedido - N° Ref #${order.id}`;
+    document.getElementById('view-order-title').innerText = `Pedido #${order.id}`;
     document.getElementById('vo-name').value = order.customerName || '';
     document.getElementById('vo-phone').value = order.customerPhone || '';
     document.getElementById('vo-date-input').value = order.deliveryDate;
@@ -441,11 +451,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (completeBtn && cancelBtn) {
       if (viewingOrder.status === 'CONFIRMED') {
         completeBtn.style.display = 'flex';
-        completeBtn.innerHTML = '✅ Completar';
+        completeBtn.innerHTML = `${iconCheck} Marcar entregado`;
         cancelBtn.style.display = 'flex';
       } else if (viewingOrder.status === 'COMPLETED') {
         completeBtn.style.display = 'flex';
-        completeBtn.innerHTML = '⏪ Revertir a Agendado';
+        completeBtn.innerHTML = 'Volver a agendado';
         cancelBtn.style.display = 'flex';
       } else {
         completeBtn.style.display = 'none';
@@ -533,7 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const receiptHtml = `
       <div class="receipt-container">
-        <h2 style="text-align: center; margin-bottom: 5px;">Recibo de Pedido - DreamBake</h2>
+        <h2 style="text-align: center; margin-bottom: 5px;">Dulce Sueños Posadas · Recibo de pedido</h2>
         <p class="receipt-date" style="text-align: center; font-size: 0.9rem; color: #555;">Fecha: ${dateStr}</p>
         <hr style="border-top: 2px dashed #000; margin: 15px 0;">
         <div class="receipt-info">
@@ -643,30 +653,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('mo-items-container');
     if (!container) return;
     
-    let optionsHtml = '<option value="custom">Torta Personalizada / Otro</option>';
+    let optionsHtml = '<option value="custom">Torta personalizada u otro</option>';
     manualCatalogProducts.forEach(p => {
         optionsHtml += `<option value="${p.id}" data-name="${p.name}">Catálogo: ${p.name}</option>`;
     });
 
     const itemHtml = `
-      <div class="manual-order-item" style="border: 1px solid #eee; padding: 10px; border-radius: 5px; background: #fafafa; display: flex; flex-direction: column; gap: 10px; position: relative;">
-        <button type="button" onclick="if(document.querySelectorAll('.manual-order-item').length > 1) this.parentElement.remove()" style="position:absolute; top:5px; right:5px; background:none; border:none; color:var(--danger); font-size:1.2rem; cursor:pointer;" title="Eliminar ítem">&times;</button>
-        <div style="display:flex; gap:10px;">
-          <div style="flex:1;">
-            <label style="font-size:0.8rem; color:#666;">Selección</label>
-            <select class="form-input mo-item-type" onchange="toggleManualItemType(this)" style="padding: 6px;">
+      <div class="manual-order-item">
+        <button type="button" class="manual-item-remove" aria-label="Quitar este producto" title="Quitar" onclick="if(document.querySelectorAll('.manual-order-item').length > 1) this.parentElement.remove()">&times;</button>
+        <div class="form-grid-2">
+          <label class="form-group">
+            <span>Producto</span>
+            <select class="form-input mo-item-type" onchange="toggleManualItemType(this)">
               ${optionsHtml}
             </select>
-          </div>
-          <div style="flex:1;">
-            <label style="font-size:0.8rem; color:#666;">Nombre del Producto</label>
-            <input type="text" class="form-input mo-item-name" placeholder="Ej: Torta Personalizada" value="Torta Personalizada" style="padding: 6px;">
-          </div>
+          </label>
+          <label class="form-group">
+            <span>Nombre</span>
+            <input type="text" class="form-input mo-item-name" placeholder="Ej: Torta personalizada" value="Torta Personalizada">
+          </label>
         </div>
-        <div>
-          <label style="font-size:0.8rem; color:#666;">Detalles y Especificaciones</label>
-          <textarea class="form-input mo-item-details" rows="2" placeholder="Ej: 20 porciones, relleno de mousse..." required style="padding: 6px;"></textarea>
-        </div>
+        <label class="form-group">
+          <span>Detalles</span>
+          <textarea class="form-input mo-item-details" rows="2" placeholder="Ej: 20 porciones, relleno de mousse…" required></textarea>
+        </label>
       </div>
     `;
     container.insertAdjacentHTML('beforeend', itemHtml);
@@ -685,32 +695,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  document.getElementById('btn-test-order')?.addEventListener('click', async () => {
-    const testOrder = {
-      customerName: "TEST USER",
-      customerPhone: "123456",
-      deliveryDate: new Date().toISOString().split('T')[0],
-      totalPrice: 1000,
-      deposit: 0,
-      status: "PENDING",
-      items: [{ productType: "Papas fritas", details: "Test Mock Order", price: 1000 }]
-    };
-    try {
-      const res = await fetch('/api/orders', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(testOrder)
-      });
-      if (res.ok) {
-        if (typeof window.showPublicAlert === 'function') {
-           window.showPublicAlert("Pedido de prueba generado con éxito");
-        } else if (typeof window.showConfirmModal === 'function') {
-           window.showConfirmModal('Éxito', 'Pedido de prueba generado con éxito', 'OK', 'btn-pink', () => {});
-        } else {
-           alert("Pedido de prueba generado");
-        }
-        loadOrders();
-      }
-    } catch (e) { console.error(e); }
-  });
 
   document.getElementById('form-manual-order')?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -746,7 +730,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (items.length === 0) {
-      alert("Debes agregar al menos un ítem al pedido.");
+      window.showErrorAlert("Agregá al menos un producto al pedido.");
       return;
     }
 
@@ -795,24 +779,24 @@ document.addEventListener('DOMContentLoaded', () => {
       let actionsHtml = '';
       if (o.status === 'CONFIRMED') {
         actionsHtml = `
-          <button class="btn btn-grey btn-sm" title="Ver" onclick="actionView(${o.id})">${iconEye}</button>
-          <button class="btn btn-red btn-sm" title="Eliminar" onclick="actionDelete(${o.id})">${iconTrash}</button>
-          <button class="btn btn-sm" style="background:#25D366; color:#fff;" title="Marcar Completado" onclick="setOrderStatus(${o.id}, 'COMPLETED')">${iconCheck}</button>
+          <button type="button" class="btn btn-pink btn-sm" onclick="setOrderStatus(${o.id}, 'COMPLETED')">${iconCheck} Entregado</button>
+          <button type="button" class="btn btn-grey btn-sm" onclick="actionView(${o.id})">${iconEye} Ver</button>
+          <button type="button" class="btn btn-red btn-sm btn-icon" aria-label="Eliminar el pedido #${o.id}" title="Eliminar" onclick="actionDelete(${o.id})">${iconTrash}</button>
         `;
       } else if (o.status === 'COMPLETED') {
         actionsHtml = `
-          <button class="btn btn-grey btn-sm" title="Ver" onclick="actionView(${o.id})">${iconEye}</button>
-          <button class="btn btn-sm" style="background:#f59e0b; color:#fff;" title="Revertir a Agendado" onclick="setOrderStatus(${o.id}, 'CONFIRMED')">${iconRevert}</button>
+          <button type="button" class="btn btn-grey btn-sm" onclick="actionView(${o.id})">${iconEye} Ver</button>
+          <button type="button" class="btn btn-grey btn-sm" onclick="setOrderStatus(${o.id}, 'CONFIRMED')">${iconRevert} Volver a agendado</button>
         `;
       }
 
       tbody.innerHTML += `
         <tr>
-          <td style="font-weight:bold;">#${o.id}</td>
-          <td>${o.customerName} <br><small>${o.customerPhone}</small></td>
-          <td style="font-weight:bold;">$${o.totalPrice.toLocaleString('es-AR')}</td>
-          <td>${getStatusBadge(o.status)}</td>
-          <td><div class="action-buttons-container">${actionsHtml}</div></td>
+          <td class="cell-id" data-label="Pedido">#${o.id}</td>
+          <td data-label="Cliente"><span class="cell-strong">${o.customerName}</span><br><span class="cell-soft">${o.customerPhone}</span></td>
+          <td class="cell-money" data-label="Total">$${o.totalPrice.toLocaleString('es-AR')}</td>
+          <td data-label="Estado">${getStatusBadge(o.status)}</td>
+          <td class="cell-actions"><div class="action-buttons-container">${actionsHtml}</div></td>
         </tr>
       `;
     });

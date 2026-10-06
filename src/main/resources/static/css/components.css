@@ -1,0 +1,805 @@
+/* =========================================================
+   components.css — Base y componentes del sitio público (Fase 1)
+   ---------------------------------------------------------
+   Requiere tokens.css cargado antes.
+   Orden de carga en cada página:
+     main.css → tokens.css → components.css → header.css → CSS de la página → footer.css
+
+   Importante:
+   - main.css lo comparten los paneles (admin y pastelero), por eso no
+     se toca; las reglas de acá van después y lo corrigen solo en el
+     sitio público.
+   - Las reglas sobre etiquetas (h1, h2, p…) van dentro de :where(),
+     que tiene especificidad 0: cualquier clase vieja de una página
+     sigue ganando y su contenido no cambia hasta que se rediseñe.
+   - Los componentes usan nombres nuevos (.button, .field, .card…)
+     para no mezclarse con los viejos (.btn, .btn-primary, .container).
+   ========================================================= */
+
+
+/* =========================================================
+   1. BASE
+   ========================================================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* Las anclas (/#nosotros) y scrollIntoView dejan espacio para el header fijo */
+  scroll-padding-top: calc(var(--header-height) + var(--space-4));
+  /* Barra de scroll con los colores de la marca (Firefox y Chrome nuevos) */
+  scrollbar-color: var(--rose-300) transparent;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* En celular, los controles responden al toque sin la espera del doble toque (zoom),
+   y mantener el dedo apretado no selecciona el texto de un botón */
+a, button, [role="button"], label, summary {
+  touch-action: manipulation;
+}
+.chip, .toggle-password, .line-remove, .qty-btn, .carousel-btn {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Desplazamiento suave a las anclas, solo si la persona no pidió menos movimiento */
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  caret-color: var(--rose-600);    /* cursor de escritura rosa */
+  accent-color: var(--rose-600);   /* checkboxes y radios nativos en rosa */
+}
+
+/* Bloquea el scroll de la página mientras el menú móvil está abierto (lo pone header.js) */
+html.is-scroll-locked,
+html.is-scroll-locked body {
+  overflow: hidden;
+}
+
+img,
+picture,
+video,
+svg {
+  max-width: 100%;
+}
+
+img {
+  height: auto;
+}
+
+/* Los controles de formulario heredan Poppins (antes se veían en Arial) */
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* El atributo hidden siempre oculta, aunque otra regla diga display:flex.
+   header.js y store.js muestran/ocultan menús y modales con hidden. */
+[hidden] {
+  display: none !important;
+}
+
+/* Tipografía base de títulos y párrafos (especificidad 0) */
+:where(h1, h2, h3, h4) {
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-heading);
+  letter-spacing: var(--ls-tight);
+  text-wrap: balance;   /* reparte las palabras para no dejar una sola en la última línea */
+}
+:where(h1) { font-size: var(--fs-h1); font-weight: var(--fw-black); letter-spacing: var(--ls-heading); line-height: var(--lh-tight); }
+:where(h2) { font-size: var(--fs-h2); font-weight: var(--fw-black); letter-spacing: var(--ls-heading); line-height: 1.05; }
+:where(h3) { font-size: var(--fs-h3); }
+:where(p, li) { text-wrap: pretty; }
+
+/* Texto seleccionado con los colores de la marca */
+::selection {
+  background: var(--rose-200);
+  color: var(--ink);
+}
+
+/* Anillo de foco visible al navegar con teclado.
+   Se usa :focus-visible (no aparece al hacer click con el mouse).
+   La especificidad (etiqueta + pseudoclase) alcanza para ganarle a la
+   regla vieja de main.css que lo dejaba casi invisible. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+/* Al hacer click con el mouse o tocar, sin contorno (main.css ponía uno pálido en cualquier :focus).
+   Con teclado se sigue viendo el anillo de :focus-visible de arriba. */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Oculta un texto a la vista pero lo deja para lectores de pantalla */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* "Saltar al contenido": primer link de la página, aparece solo con Tab */
+.skip-link {
+  position: fixed;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: var(--z-toast);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--white);
+  font-weight: var(--fw-semibold);
+  text-decoration: none;
+  transform: translateY(-150%);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.skip-link:focus-visible {
+  transform: translateY(0);
+  outline-color: var(--white);
+}
+
+/* Clases de texto para usar en las páginas rediseñadas */
+.text-display { font-size: var(--fs-display); font-weight: var(--fw-black); line-height: 0.95; letter-spacing: var(--ls-display); color: var(--color-heading); text-wrap: balance; }
+.text-h1 { font-size: var(--fs-h1); font-weight: var(--fw-black); line-height: var(--lh-tight); letter-spacing: var(--ls-heading); color: var(--color-heading); }
+.text-h2 { font-size: var(--fs-h2); font-weight: var(--fw-black); line-height: 1.05; letter-spacing: var(--ls-heading); color: var(--color-heading); }
+.text-h3 { font-size: var(--fs-h3); font-weight: var(--fw-bold); line-height: 1.2; letter-spacing: var(--ls-tight); }
+.text-lead { font-size: var(--fs-lead); line-height: 1.55; max-width: 62ch; }
+.text-muted { color: var(--text-muted); }
+.text-price { font-weight: var(--fw-bold); font-variant-numeric: tabular-nums; }
+
+/* Link dentro de un texto */
+.link {
+  color: var(--color-link);
+  font-weight: var(--fw-semibold);
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.2em;
+  transition: color var(--dur-fast) ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .link:hover { color: var(--ink); }
+}
+
+
+/* =========================================================
+   2. CONTENEDORES Y SECCIONES
+   ========================================================= */
+
+/* Centra el contenido con un ancho máximo y margen lateral */
+.site-container {
+  width: 100%;
+  max-width: calc(var(--container) + var(--gutter) * 2);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+.site-container--wide   { max-width: calc(var(--container-wide) + var(--gutter) * 2); }
+.site-container--narrow { max-width: calc(var(--container-narrow) + var(--gutter) * 2); }
+
+/* Sección de borde a borde; el aire de abajo es un poco mayor (corrección óptica) */
+.site-section {
+  position: relative;
+  padding-block: var(--section-y) calc(var(--section-y) * 1.1);
+}
+/* Cada tono define también el color de su festoneado (--scallop-color) */
+.site-section--blush  { --scallop-color: var(--blush-50);  background: var(--blush-50); }
+.site-section--rose   { --scallop-color: var(--rose-100);  background: var(--rose-100); }
+.site-section--peach  { --scallop-color: var(--blush-300); background: var(--blush-300); }
+.site-section--pink   { --scallop-color: var(--rose-200);  background: var(--rose-200); }
+.site-section--accent { --scallop-color: var(--rose-500);  background: var(--rose-500); color: var(--white); }
+.site-section--deep   { --scallop-color: var(--rose-600);  background: var(--rose-600); color: var(--white); }
+.site-section--ink    { --scallop-color: var(--ink);       background: var(--ink); color: var(--white); }
+
+/* Sección con borde festoneado arriba: los semicírculos sobresalen
+   sobre la sección anterior, del mismo color que esta sección */
+.has-scallop::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: 14px;
+  background:
+    radial-gradient(circle 14px at 50% 100%, var(--scallop-color) 96%, transparent 100%)
+    0 0 / 28px 14px repeat-x;
+  pointer-events: none;
+}
+
+/* Borde festoneado (como el borde de un papel de torta).
+   Se coloca al principio de una sección y toma su color (--scallop-color).
+   Dibuja una fila de semicírculos con un degradado radial que se repite. */
+.scallop {
+  --scallop-size: 14px;
+  height: var(--scallop-size);
+  background:
+    radial-gradient(circle var(--scallop-size) at 50% 100%,
+      var(--scallop-color, currentColor) 96%, transparent 100%)
+    0 0 / calc(var(--scallop-size) * 2) var(--scallop-size) repeat-x;
+}
+
+
+/* =========================================================
+   3. BOTONES
+   ---------------------------------------------------------
+   <a class="button button--primary">…</a>
+   Variantes: --primary, --ink, --secondary, --ghost, --soft, --icon
+   Tamaños:   --sm (40 px), por defecto 48 px, --lg (56 px), --block
+   ========================================================= */
+
+.button {
+  --spinner-color: var(--white);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  padding: 0 var(--space-5);
+  border: 2px solid transparent;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-semibold);
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+
+.button svg {
+  width: 1.25em;
+  height: 1.25em;
+  flex: none;
+}
+
+/* Al presionar, el botón se achica apenas: confirma que "escuchó" el toque */
+.button:active:not(:disabled):not([aria-disabled="true"]) {
+  transform: scale(0.97);
+}
+
+/* Principal: rosa un tono más oscuro que el de la marca para que el texto blanco se lea */
+.button--primary {
+  background: var(--color-primary);
+  color: var(--white);
+}
+
+/* Tinta: máximo énfasis (por ejemplo, confirmar el pedido) */
+.button--ink {
+  background: var(--ink);
+  color: var(--white);
+}
+
+/* Secundario: contorno de tinta */
+.button--secondary {
+  --spinner-color: var(--ink);
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+/* Fantasma: solo texto, para acciones de menor peso */
+.button--ghost {
+  --spinner-color: var(--rose-700);
+  color: var(--rose-700);
+}
+
+/* Suave: fondo rosa claro */
+.button--soft {
+  --spinner-color: var(--rose-700);
+  background: var(--rose-100);
+  color: var(--rose-700);
+}
+
+/* Ícono: círculo de 44 × 44 (área táctil mínima recomendada) */
+.button--icon {
+  --spinner-color: var(--ink);
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+}
+.button--icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Para fondos oscuros o de color (bloques rosa fuerte, tinta) */
+.button--light {
+  background: var(--white);
+  color: var(--ink);
+  --spinner-color: var(--ink);
+}
+.button--outline-light {
+  border-color: var(--white);
+  color: var(--white);
+}
+
+.button--sm    { min-height: 40px; padding: 0 var(--space-4); font-size: var(--fs-small); }
+.button--lg    { min-height: 56px; padding: 0 var(--space-6); font-size: 1.0625rem; }
+.button--block { display: flex; width: 100%; }
+
+/* Un botón nunca puede ser más ancho que su contenedor. En celulares muy
+   angostos (menos de 360 px) el texto de los botones largos puede pasar a dos
+   renglones en vez de empujar la tarjeta fuera de la pantalla. */
+.button { max-width: 100%; }
+@media (max-width: 22.49rem) {
+  .button {
+    white-space: normal;
+    text-wrap: balance;
+    padding-block: 10px;
+    line-height: 1.25;
+  }
+}
+
+/* Hover solo en dispositivos con mouse (en celular el hover queda "pegado") */
+@media (hover: hover) and (pointer: fine) {
+  .button--primary:hover   { background: var(--color-primary-hover); }
+  .button--ink:hover       { background: var(--rose-800); }
+  .button--secondary:hover { background: var(--ink); color: var(--white); }
+  .button--ghost:hover     { background: var(--rose-100); }
+  .button--soft:hover      { background: var(--rose-200); }
+  .button--icon:hover      { background: var(--rose-100); }
+  .button--light:hover     { background: var(--rose-100); }
+  .button--outline-light:hover { background: var(--white); color: var(--ink); }
+}
+
+/* Deshabilitado: se ve apagado pero el texto sigue legible */
+.button:disabled,
+.button[aria-disabled="true"] {
+  background: var(--rose-100);
+  border-color: transparent;
+  color: rgb(112 36 64 / 0.55);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* Cargando: el texto se vuelve transparente (el botón no cambia de ancho)
+   y aparece un círculo girando encima */
+.button.is-loading,
+.button[aria-busy="true"] {
+  color: transparent !important;
+  pointer-events: none;
+}
+.button.is-loading::after,
+.button[aria-busy="true"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 1.25em;
+  height: 1.25em;
+  margin: auto;
+  border: 2.5px solid var(--spinner-color);
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: button-spin 700ms linear infinite;
+}
+
+@keyframes button-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Sobre fondos oscuros, el anillo de foco pasa a blanco */
+.on-dark a:focus-visible,
+.on-dark button:focus-visible,
+.site-section--ink :focus-visible,
+.site-section--accent :focus-visible {
+  outline-color: var(--white);
+}
+
+
+/* =========================================================
+   4. FORMULARIOS
+   ---------------------------------------------------------
+   <div class="field">
+     <label class="field__label" for="x">Nombre</label>
+     <input class="input" id="x" aria-describedby="x-hint">
+     <p class="field__hint" id="x-hint">Como figura en tu DNI</p>
+   </div>
+   Error: agregar .field--error y aria-invalid="true" al input,
+   y un <p class="field__error"> con el mensaje.
+   ========================================================= */
+
+.field-stack {
+  display: grid;
+  gap: 20px;
+}
+
+.field {
+  display: grid;
+  align-content: start;   /* si la grilla de afuera estira el campo, el contenido queda arriba */
+  gap: var(--space-2);
+}
+
+.field__label {
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-snug);
+  color: var(--text-strong);
+}
+
+/* "(opcional)" al lado del label: se marca lo opcional, no lo obligatorio */
+.field__optional {
+  font-weight: var(--fw-regular);
+  color: var(--text-muted);
+}
+
+.field__hint {
+  margin: 0;
+  font-size: var(--fs-small);
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.field__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  font-size: var(--fs-small);
+  font-weight: var(--fw-medium);
+  line-height: 1.45;
+  color: var(--color-error);
+}
+.field__error svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+}
+/* Cuando aparece un error, entra con un fundido corto desde arriba
+   (solo opacidad y transform: no mueve el resto del formulario más de lo que ya lo hace el texto) */
+.field__error:not([hidden]) {
+  animation: field-error-in var(--dur-fast) var(--ease-out);
+}
+@keyframes field-error-in {
+  from { opacity: 0; transform: translateY(-4px); }
+}
+
+.input {
+  display: block;
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 16px;
+  border: 1.5px solid var(--line-input);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  color: var(--text-strong);
+  font-size: var(--fs-body);   /* 16 px: iOS no hace zoom al enfocar */
+  line-height: 1.4;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .input:hover:not(:disabled):not([readonly]) {
+    border-color: var(--ink);
+  }
+}
+
+/* Foco: borde rosa + halo. El outline transparente se mantiene para el modo
+   de alto contraste de Windows, donde las sombras no se ven. */
+.input:focus,
+.input:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 0;
+  border-color: var(--rose-600);
+  box-shadow: 0 0 0 3px rgb(190 61 108 / 0.3);
+}
+
+.input[aria-invalid="true"],
+.field--error .input {
+  border-color: var(--cherry-500);
+}
+.input[aria-invalid="true"]:focus,
+.field--error .input:focus {
+  box-shadow: 0 0 0 3px rgb(207 24 16 / 0.22);
+}
+
+.input:disabled,
+.input[readonly] {
+  background: var(--blush-100);
+  border-color: var(--line);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+textarea.input {
+  min-height: 120px;
+  padding-block: 14px;
+  resize: vertical;
+}
+
+/* Select con flecha propia (SVG en color tinta) */
+select.input {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 44px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23481729' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 18px;
+  cursor: pointer;
+}
+
+/* Checkbox / radio con área táctil cómoda */
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  font-size: var(--fs-body);
+  cursor: pointer;
+}
+.check input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  flex: none;
+}
+
+
+/* =========================================================
+   5. TARJETAS, CHIPS, STICKERS Y CONTADOR
+   ========================================================= */
+
+/* Tarjeta: superficie blanca sin borde ni sombra (se apoya sobre bloques de color) */
+.card {
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+}
+.card--tinted { background: var(--rose-100); }
+.card--raised { box-shadow: var(--shadow-2); }
+
+/* Chip: opción o filtro en forma de píldora */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--rose-100);
+  color: var(--rose-700);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color var(--dur-base) var(--ease-out),
+    color var(--dur-base) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+.chip:active { transform: scale(0.97); }
+.chip[aria-pressed="true"],
+.chip.is-selected {
+  background: var(--ink);
+  color: var(--white);
+}
+@media (hover: hover) and (pointer: fine) {
+  .chip:not([aria-pressed="true"]):not(.is-selected):hover { background: var(--rose-200); }
+}
+
+/* Sticker: etiqueta girada como una calcomanía ("Hecho a mano", "Desde $44.000").
+   Solo con textos verdaderos (ver DESIGN-PLAN §4.4). */
+.sticker {
+  --sticker-tilt: -4deg;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--rose-200);
+  color: var(--ink);
+  font-size: var(--fs-eyebrow);
+  font-weight: var(--fw-bold);
+  line-height: 1.1;
+  letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase;
+  box-shadow: var(--shadow-sticker);
+  transform: rotate(var(--sticker-tilt));
+}
+.sticker--cherry { background: var(--cherry-500); color: var(--white); }
+.sticker--ink    { background: var(--ink); color: var(--white); }
+.sticker--right  { --sticker-tilt: 5deg; }
+
+/* Contador redondo (cantidad de ítems del carrito) */
+.count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--white);
+  font-size: 0.75rem;
+  font-weight: var(--fw-bold);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* =========================================================
+   6. AVISOS (TOAST) Y APARICIÓN AL HACER SCROLL
+   ========================================================= */
+
+/* Aviso flotante abajo al centro (lo crea store.js con showToast) */
+.toast-region {
+  position: fixed;
+  left: 50%;
+  bottom: calc(84px + env(safe-area-inset-bottom));   /* por encima del botón flotante del carrito */
+  z-index: var(--z-toast);
+  width: min(calc(100% - 2 * var(--gutter)), 440px);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 56px;
+  padding: 6px 6px 6px 16px;
+  border-radius: 20px;
+  background: var(--ink);
+  color: var(--white);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-medium);
+  line-height: 1.35;
+  box-shadow: 0 0 0 2px var(--blush-50), var(--shadow-3);   /* aro claro: se distingue sobre el footer oscuro */
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateY(12px) scale(0.98);
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    transform var(--dur-slow) var(--ease-out);
+}
+.toast.is-visible {
+  opacity: 1;
+  transform: none;
+}
+.toast svg {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  color: var(--rose-300);
+}
+.toast-message { flex: 1; }
+
+.toast-action {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 14px;
+  background: rgb(255 255 255 / 0.14);
+  color: var(--white);
+  font-weight: var(--fw-semibold);
+  text-decoration: none;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+.toast-action:focus-visible { outline-color: var(--white); }
+.toast-action:active { transform: scale(0.96); }
+@media (hover: hover) and (pointer: fine) {
+  .toast-action:hover { background: rgb(255 255 255 / 0.24); }
+}
+
+@media (min-width: 48rem) {
+  .toast-region { bottom: calc(24px + env(safe-area-inset-bottom)); }
+}
+
+/* Aparición suave al entrar en pantalla.
+   El contenido es visible por defecto: solo se oculta si el JS agregó
+   .has-reveal al <html> (y no hay preferencia de movimiento reducido).
+   El JS agrega .is-visible cuando el elemento entra en pantalla. */
+.has-reveal [data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity var(--dur-reveal) var(--ease-out),
+    transform var(--dur-reveal) var(--ease-out);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.has-reveal [data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+
+/* =========================================================
+   7. MOVIMIENTO REDUCIDO
+   ---------------------------------------------------------
+   Si la persona activó "reducir movimiento" en su teléfono o
+   computadora, se quitan los desplazamientos y escalas pero se
+   mantienen los fundidos de opacidad (ayudan a entender qué cambió).
+   Cada componente con animación propia tiene además su ajuste.
+   ========================================================= */
+/* Fundido simple: lo usan los bloques de movimiento reducido de cada página
+   como reemplazo de las entradas con desplazamiento (menos movimiento, no cero) */
+@keyframes fade-in {
+  from { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button:active:not(:disabled):not([aria-disabled="true"]),
+  .chip:active {
+    transform: none;
+  }
+  .field__error:not([hidden]) {
+    animation-name: fade-in;
+  }
+  .button.is-loading::after,
+  .button[aria-busy="true"]::after {
+    animation-duration: 1.6s;   /* el spinner sigue (indica que algo pasa), pero más lento */
+  }
+  .skip-link {
+    transition: none;
+  }
+  .toast-action:active { transform: none; }
+  .toast {
+    transform: none;
+    transition: opacity var(--dur-base) ease;
+  }
+  .has-reveal [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

@@ -233,11 +233,11 @@ document.addEventListener('DOMContentLoaded', () => {
     setText('kpi-total-revenue', '$' + totalRevenue.toLocaleString('es-AR'));
     setText('kpi-month-revenue', 'Este mes: $' + monthRevenue.toLocaleString('es-AR'));
     setText('kpi-pending-balance', '$' + pendingBalance.toLocaleString('es-AR'));
-    setText('kpi-collected-deposits', 'Cobrado/Señas: $' + collectedDeposits.toLocaleString('es-AR'));
+    setText('kpi-collected-deposits', 'Cobrado (señas): $' + collectedDeposits.toLocaleString('es-AR'));
     setText('kpi-orders-month', ordersMonthCount);
     setText('kpi-orders-year', `Total en ${selectedYear}: ${ordersYearCount} pedidos`);
     setText('kpi-cakes-sold', cakesSoldCount);
-    setText('kpi-avg-ticket', 'Ticket Promedio: $' + avgTicket.toLocaleString('es-AR'));
+    setText('kpi-avg-ticket', 'Ticket promedio: $' + avgTicket.toLocaleString('es-AR'));
 
     if (upcomingDeliveries.length > 0) {
       const next = upcomingDeliveries[0];
@@ -277,18 +277,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const upTbody = document.getElementById('dash-upcoming-tbody');
     if (upTbody) {
       if (upcomingDeliveries.length === 0) {
-        upTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#888; padding:18px;">No hay entregas próximas agendadas.</td></tr>`;
+        upTbody.innerHTML = `<tr><td colspan="4" class="cell-empty">No hay entregas agendadas por ahora.</td></tr>`;
       } else {
         upTbody.innerHTML = upcomingDeliveries.slice(0, 6).map(o => {
+          // Mismos colores que en Pedidos: Agendado rosa, Pendiente ámbar (con texto e ícono)
           const badge = o.status === 'CONFIRMED'
-            ? `<span class="dash-badge dash-badge-ok">Agendado</span>`
-            : `<span class="dash-badge dash-badge-warn">Pendiente</span>`;
+            ? `<span class="status-badge status-agendado">Agendado</span>`
+            : `<span class="status-badge status-pending">Pendiente</span>`;
+          // data-label: en el celular cada fila se ve como tarjeta con "Etiqueta: valor"
           return `
             <tr>
-              <td><strong>#${o.id}</strong> - ${o.customerName}</td>
-              <td>${formatDateAR(o.deliveryDate)}</td>
-              <td style="font-weight:700; color:var(--accent);">$${o.totalPrice.toLocaleString('es-AR')}</td>
-              <td style="text-align:center;">${badge}</td>
+              <td class="cell-title"><span class="cell-id">#${o.id}</span> <span class="cell-strong">${o.customerName}</span></td>
+              <td data-label="Entrega">${formatDateAR(o.deliveryDate)}</td>
+              <td data-label="Total" class="cell-money">$${o.totalPrice.toLocaleString('es-AR')}</td>
+              <td data-label="Estado">${badge}</td>
             </tr>
           `;
         }).join('');
@@ -300,14 +302,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const topClients = Object.values(clientMap).sort((a, b) => b.spent - a.spent).slice(0, 6);
     if (cliTbody) {
       if (topClients.length === 0) {
-        cliTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#888; padding:18px;">Aún no hay clientes con compras confirmadas.</td></tr>`;
+        cliTbody.innerHTML = `<tr><td colspan="4" class="cell-empty">Todavía no hay clientes con compras confirmadas.</td></tr>`;
       } else {
         cliTbody.innerHTML = topClients.map((c, idx) => `
           <tr>
-            <td><span class="dash-rank-num">${idx + 1}</span> <strong>${c.name}</strong></td>
-            <td>${c.phone}</td>
-            <td style="text-align:center;">${c.orders}</td>
-            <td style="font-weight:700; color:var(--accent);">$${c.spent.toLocaleString('es-AR')}</td>
+            <td class="cell-title"><span class="dash-rank-num">${idx + 1}</span> <span class="cell-strong">${c.name}</span></td>
+            <td data-label="Contacto">${c.phone}</td>
+            <td data-label="Compras">${c.orders}</td>
+            <td data-label="Invertido" class="cell-money">$${c.spent.toLocaleString('es-AR')}</td>
           </tr>
         `).join('');
       }
@@ -317,7 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const stockTbody = document.getElementById('dash-low-stock-tbody');
     if (stockTbody) {
       if (criticalInventory.length === 0) {
-        stockTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#10b981; font-weight:600; padding:18px;">✓ Todo el inventario está en niveles óptimos.</td></tr>`;
+        stockTbody.innerHTML = `<tr><td colspan="4" class="cell-empty"><span class="status-badge status-completado">Todo el inventario está bien</span></td></tr>`;
       } else {
         stockTbody.innerHTML = criticalInventory.slice(0, 8).map(it => {
           let alertBadge = '';
@@ -326,14 +328,14 @@ document.addEventListener('DOMContentLoaded', () => {
           } else if (it.isExpiring) {
             alertBadge = `<span class="dash-badge dash-badge-warn">Vence en ${it.daysToExp}d</span>`;
           } else {
-            alertBadge = `<span class="dash-badge dash-badge-danger">Stock Bajo</span>`;
+            alertBadge = `<span class="dash-badge dash-badge-danger">Stock bajo</span>`;
           }
           return `
             <tr>
-              <td><strong>${it.name}</strong></td>
-              <td style="color:#dc2626; font-weight:700;">${it.current} ${it.unit}</td>
-              <td>${it.min} ${it.unit}</td>
-              <td style="text-align:center;">${alertBadge}</td>
+              <td class="cell-title cell-strong">${it.name}</td>
+              <td data-label="Stock actual" class="text-danger">${it.current} ${it.unit}</td>
+              <td data-label="Stock mínimo">${it.min} ${it.unit}</td>
+              <td data-label="Condición">${alertBadge}</td>
             </tr>
           `;
         }).join('');
@@ -341,8 +343,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Colores de los gráficos: salen de las variables de admin.css, así respetan
+  // la paleta y el modo oscuro (se leen cada vez que se dibuja)
+  function chartTheme() {
+    const css = getComputedStyle(document.documentElement);
+    const v = (name) => css.getPropertyValue(name).trim();
+    return {
+      text: v('--admin-text-soft'), line: v('--admin-line'), surface: v('--admin-surface'),
+      rose: '#e0487f', roseSoft: 'rgba(224, 72, 127, 0.78)', ink: v('--admin-heading'),
+      amber: '#f59e0b', green: '#3f9e6b', cherry: '#cf1810'
+    };
+  }
+
+  // Muestra "Todavía no hay datos" en lugar de un gráfico vacío
+  function toggleEmpty(canvasId, isEmpty) {
+    const canvas = document.getElementById(canvasId);
+    const msg = document.querySelector(`[data-empty-for="${canvasId}"]`);
+    if (canvas) canvas.hidden = isEmpty;
+    if (msg) msg.hidden = !isEmpty;
+  }
+
   function renderCharts(monthlyRev, monthlyOrd, statusCounts, productRanking, weekdayCounts) {
     if (typeof Chart === 'undefined') return;
+
+    const th = chartTheme();
+    Chart.defaults.font.family = "'Poppins', system-ui, sans-serif";
+    Chart.defaults.color = th.text;
+    Chart.defaults.borderColor = th.line;
 
     const monthsLabels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
@@ -359,18 +386,18 @@ document.addEventListener('DOMContentLoaded', () => {
               type: 'bar',
               label: 'Facturación ($)',
               data: monthlyRev,
-              backgroundColor: 'rgba(224, 72, 127, 0.78)',
-              borderColor: '#e0487f',
+              backgroundColor: th.roseSoft,
+              borderColor: th.rose,
               borderWidth: 1,
               borderRadius: 6,
               yAxisID: 'y'
             },
             {
               type: 'line',
-              label: 'Pedidos del Mes',
+              label: 'Pedidos del mes',
               data: monthlyOrd,
-              borderColor: '#7c3aed',
-              backgroundColor: '#7c3aed',
+              borderColor: th.ink,
+              backgroundColor: th.ink,
               borderWidth: 2.5,
               tension: 0.35,
               pointRadius: 4,
@@ -401,17 +428,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. Gráfico Dona: Distribución de Estados de Pedidos
     const ctxStatus = document.getElementById('chart-orders-status')?.getContext('2d');
+    const statusTotal = statusCounts.PENDING + statusCounts.CONFIRMED + statusCounts.COMPLETED + statusCounts.CANCELLED;
+    toggleEmpty('chart-orders-status', statusTotal === 0);
     if (ctxStatus) {
       if (chartStatus) chartStatus.destroy();
       chartStatus = new Chart(ctxStatus, {
         type: 'doughnut',
         data: {
-          labels: ['Nuevos (Pendientes)', 'Agendados', 'Completados', 'Cancelados'],
+          labels: ['Pendientes', 'Agendados', 'Completados', 'Cancelados'],
           datasets: [{
             data: [statusCounts.PENDING, statusCounts.CONFIRMED, statusCounts.COMPLETED, statusCounts.CANCELLED],
-            backgroundColor: ['#f59e0b', '#3b82f6', '#10b981', '#ef4444'],
+            // Mismos colores que las etiquetas de estado de Pedidos
+            backgroundColor: [th.amber, th.rose, th.green, th.cherry],
             borderWidth: 2,
-            borderColor: '#ffffff'
+            borderColor: th.surface
           }]
         },
         options: {
@@ -430,6 +460,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (ctxProd) {
       if (chartProducts) chartProducts.destroy();
       const sortedProds = Object.entries(productRanking).sort((a, b) => b[1] - a[1]).slice(0, 6);
+      toggleEmpty('chart-top-products', sortedProds.length === 0);
       const prodLabels = sortedProds.length ? sortedProds.map(p => p[0]) : ['Sin datos aún'];
       const prodValues = sortedProds.length ? sortedProds.map(p => p[1]) : [0];
 
@@ -438,11 +469,9 @@ document.addEventListener('DOMContentLoaded', () => {
         data: {
           labels: prodLabels,
           datasets: [{
-            label: 'Unidades Vendidas',
+            label: 'Unidades vendidas',
             data: prodValues,
-            backgroundColor: [
-              '#e0487f', '#ec6b98', '#f48fb1', '#b388ff', '#81d4fa', '#a5d6a7'
-            ],
+            backgroundColor: th.roseSoft,
             borderRadius: 6
           }]
         },
@@ -458,35 +487,29 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // 4. Gráfico Polar: Demanda por Día de Entrega
+    // 4. Barras: cuántas entregas caen en cada día de la semana
+    //    (antes era un gráfico polar; las barras se leen de un vistazo)
     const ctxDays = document.getElementById('chart-delivery-days')?.getContext('2d');
+    toggleEmpty('chart-delivery-days', weekdayCounts.every(n => n === 0));
     if (ctxDays) {
       if (chartDays) chartDays.destroy();
       chartDays = new Chart(ctxDays, {
-        type: 'polarArea',
+        type: 'bar',
         data: {
-          labels: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
+          labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
           datasets: [{
+            label: 'Entregas',
             data: weekdayCounts,
-            backgroundColor: [
-              'rgba(224, 72, 127, 0.75)',
-              'rgba(245, 158, 11, 0.75)',
-              'rgba(16, 185, 129, 0.75)',
-              'rgba(59, 130, 246, 0.75)',
-              'rgba(139, 92, 246, 0.75)',
-              'rgba(236, 72, 153, 0.85)',
-              'rgba(244, 63, 94, 0.85)'
-            ]
+            backgroundColor: th.roseSoft,
+            borderRadius: 6
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'right' }
-          },
+          plugins: { legend: { display: false } },
           scales: {
-            r: { ticks: { stepSize: 1, precision: 0 } }
+            y: { ticks: { stepSize: 1, precision: 0 }, beginAtZero: true }
           }
         }
       });
@@ -634,6 +657,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   btnRefresh?.addEventListener('click', loadDashboardData);
+  // Al cambiar entre modo claro y oscuro, los gráficos se vuelven a dibujar con los colores nuevos
+  document.addEventListener('themechange', () => { if (dashState.summary) computeAndRender(); });
   btnPdf?.addEventListener('click', exportDashboardPDF);
 
   // Recargar en tiempo real cada vez que se hace clic en la pestaña "Resumen"

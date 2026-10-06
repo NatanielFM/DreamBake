@@ -2,6 +2,7 @@ package com.dreambake.controller;
 
 import com.dreambake.entity.Product;
 import com.dreambake.repository.CategoryRepository;
+import com.dreambake.repository.GalleryImageRepository;
 import com.dreambake.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -20,8 +21,18 @@ public class WebController {
     @Autowired
     private CategoryRepository categoryRepository;
 
+    @Autowired
+    private GalleryImageRepository galleryImageRepository;
+
     @GetMapping("/")
-    public String index() {
+    public String index(Model model) {
+        // Vitrina de la home: hasta 8 productos activos (si no hay, la vista muestra solo las categorías)
+        model.addAttribute("featuredProducts", productRepository.findAll().stream()
+                .filter(Product::isEnabled)
+                .limit(8)
+                .collect(Collectors.toList()));
+        // Fotos que el admin sube desde la pestaña Galería del panel
+        model.addAttribute("galleryImages", galleryImageRepository.findAll());
         return "index";
     }
 

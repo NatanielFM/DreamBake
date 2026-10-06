@@ -115,32 +115,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (filtered.length === 0) {
-      clientsTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:2rem; color:#666;">No se encontraron clientes que coincidan con la búsqueda.</td></tr>`;
+      const hasQuery = searchClient && searchClient.value.trim() !== '';
+      const emptyText = (hasQuery || currentClientFilter !== 'all') ? 'Ningún cliente coincide con la búsqueda.'
+        : 'Todavía no hay clientes. Se agregan solos al confirmar un pedido, o con "Nuevo cliente".';
+      clientsTbody.innerHTML = `<tr><td colspan="7" class="cell-empty">${emptyText}</td></tr>`;
       return;
     }
 
     filtered.forEach(c => {
       const tr = document.createElement('tr');
       
-      const phone = c.phone ? `<div style="font-size:0.85em; color:#666;">📞 ${c.phone}</div>` : '';
-      const email = c.email ? `<div style="font-size:0.85em; color:#666;">✉️ ${c.email}</div>` : '';
-      const address = c.address ? `<div style="font-size:0.85em; color:#666;">📍 ${c.address}</div>` : '';
-      const contactInfo = (phone || email || address) ? (phone + email + address) : '<span style="color:#aaa">Sin datos</span>';
+      // Contacto en renglones (sin emojis; cada dato con su nombre para lectores de pantalla)
+      const phone = c.phone ? `<span class="contact-line"><span class="visually-hidden">Teléfono: </span>${c.phone}</span>` : '';
+      const email = c.email ? `<span class="contact-line"><span class="visually-hidden">Email: </span>${c.email}</span>` : '';
+      const address = c.address ? `<span class="contact-line"><span class="visually-hidden">Dirección: </span>${c.address}</span>` : '';
+      const contactInfo = (phone || email || address) ? (phone + email + address) : '<span class="cell-soft">Sin datos</span>';
       
       const tagBadge = c.tag ? `<span class="tag-badge">${c.tag.name}</span>` : '';
-      const birthStr = c.birthDate ? formatDateToLatam(c.birthDate) : '<span style="color:#aaa">No registrado</span>';
+      const birthStr = c.birthDate ? formatDateToLatam(c.birthDate) : '<span class="cell-soft">Sin fecha</span>';
       const totalP = c.totalPurchases || 0;
 
       tr.innerHTML = `
-        <td style="font-weight: 600;">${c.name}</td>
-        <td>${contactInfo}</td>
-        <td>${tagBadge}</td>
-        <td style="color: #666; font-size:0.9em;">${birthStr}</td>
-        <td style="color: #666; font-size:0.9em;">${formatDateToLatam(c.dateAdded)}</td>
-        <td style="font-weight: 600;">${totalP} pedido(s)</td>
-        <td style="text-align: center; display:flex; gap:8px; justify-content:center;">
-          <button class="btn btn-pink btn-sm btn-edit" title="Modificar" style="display:flex; align-items:center; gap:6px;">${iconEdit} Editar</button>
-          <button class="btn btn-red btn-sm btn-delete" title="Eliminar" style="display:flex; align-items:center; gap:6px;">${iconDelete} Eliminar</button>
+        <td class="cell-title cell-strong">${c.name}</td>
+        <td data-label="Contacto"><span class="contact-lines">${contactInfo}</span></td>
+        <td data-label="Etiqueta">${tagBadge || '<span class="cell-soft">—</span>'}</td>
+        <td data-label="Cumpleaños">${birthStr}</td>
+        <td data-label="Registro" class="cell-soft">${formatDateToLatam(c.dateAdded)}</td>
+        <td data-label="Pedidos" class="cell-strong">${totalP} ${totalP === 1 ? 'pedido' : 'pedidos'}</td>
+        <td class="cell-actions"><div class="action-buttons-container">
+          <button type="button" class="btn btn-grey btn-sm btn-edit">${iconEdit} Editar</button>
+          <button type="button" class="btn btn-red btn-sm btn-delete">${iconDelete} Eliminar</button>
+        </div>
         </td>
       `;
 
@@ -161,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnAddClient.addEventListener('click', () => {
       clientForm.reset();
       document.getElementById('client-id').value = '';
-      document.getElementById('client-modal-title').innerText = "Agregar Cliente";
+      document.getElementById('client-modal-title').innerText = "Nuevo cliente";
       document.getElementById('modal-client-form').hidden = false;
     });
   }
@@ -176,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (c.birthDate) document.getElementById('client-birthdate').value = c.birthDate;
     if(c.tag) document.getElementById('client-tag').value = c.tag.name;
     
-    document.getElementById('client-modal-title').innerText = "Modificar Cliente";
+    document.getElementById('client-modal-title').innerText = "Editar cliente";
     document.getElementById('modal-client-form').hidden = false;
   }
 
@@ -224,9 +229,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const filterContainer = document.getElementById('client-filters');
     if (filterContainer) {
-      filterContainer.innerHTML = `<button class="chip active" data-filter="all">Todos</button>`;
+      filterContainer.innerHTML = `<button type="button" class="chip active" data-filter="all">Todos</button>`;
       dbTags.forEach(t => {
         const chip = document.createElement('button');
+        chip.type = 'button';
         chip.className = 'chip';
         chip.dataset.filter = t.name;
         chip.innerText = t.name;
@@ -243,8 +249,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('#client-filters .chip').forEach(chip => {
       chip.addEventListener('click', (e) => {
         document.querySelectorAll('#client-filters .chip').forEach(c => c.classList.remove('active'));
-        e.target.classList.add('active');
-        currentClientFilter = e.target.dataset.filter;
+        e.currentTarget.classList.add('active');
+        currentClientFilter = e.currentTarget.dataset.filter;
         renderClients();
       });
     });
@@ -260,15 +266,15 @@ document.addEventListener('DOMContentLoaded', () => {
       li.innerHTML = `
         <span class="cat-name">${t.name}</span>
         <div class="cat-actions">
-            <button type="button" class="cat-action-btn btn-edit" title="Modificar">${iconEdit}</button>
+            <button type="button" class="cat-action-btn btn-edit" title="Modificar" aria-label="Cambiar el nombre de ${t.name}">${iconEdit}</button>
             <button type="button" class="cat-action-btn btn-up" title="Subir" ${index === 0 ? 'disabled' : ''}>${iconUp}</button>
             <button type="button" class="cat-action-btn btn-down" title="Bajar" ${index === dbTags.length - 1 ? 'disabled' : ''}>${iconDown}</button>
-            ${t.deletable ? `<button type="button" class="cat-action-btn btn-delete" title="Eliminar">${iconDelete}</button>` : ''}
+            ${t.deletable ? `<button type="button" class="cat-action-btn btn-delete" title="Eliminar" aria-label="Eliminar ${t.name}">${iconDelete}</button>` : ''}
         </div>
       `;
 
       li.querySelector('.btn-edit').addEventListener('click', async () => {
-        const newName = await window.showCustomPrompt("Escribe el nuevo nombre para esta etiqueta:", t.name);
+        const newName = await window.showCustomPrompt("Escribí el nuevo nombre de la etiqueta:", t.name);
         if (newName && newName.trim() !== "" && newName !== t.name) {
           await fetch(`/api/tags/${t.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newName.trim() }) });
           loadTagsFromServer();
@@ -357,6 +363,9 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) {}
   }
 
+  // Nombre de cada tipo de cupón para mostrar (en la base se guarda en mayúsculas)
+  const COUPON_TYPES = { DESCUENTO: 'Descuento', ENVIO_GRATIS: 'Envío gratis', REGALO: 'Regalo', OTROS: 'Otros' };
+
   function renderCouponsListModal() {
     const list = document.getElementById('coupons-list');
     if(!list) return;
@@ -364,22 +373,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     dbCoupons.forEach(c => {
       const li = document.createElement('li');
-      li.style.display = 'flex';
-      li.style.justifyContent = 'space-between';
-      li.style.alignItems = 'center';
+      if (!c.active) li.classList.add('is-inactive');   // cupón apagado: se ve atenuado y lo dice
       
       const eyeIcon = c.active ? iconEyeOn : iconEyeOff;
-      const opacity = c.active ? '1' : '0.5';
+      
 
       li.innerHTML = `
-        <div style="opacity: ${opacity}; display: flex; align-items: center; gap: 10px;">
-          <span class="cat-name" style="font-weight: bold;">${c.code}</span>
-          <span class="tag-badge">${c.type}</span>
+        <div class="coupon-info">
+          <span class="cat-name">${c.code}</span>
+          <span class="tag-badge">${COUPON_TYPES[c.type] || c.type}</span>
+          ${c.active ? '' : '<span class="status-badge is-small status-cancelled">Pausado</span>'}
         </div>
         <div class="cat-actions">
-            <button type="button" class="cat-action-btn btn-edit-coupon" title="Editar" style="color:var(--accent);">${iconEdit}</button>
-            <button type="button" class="cat-action-btn btn-toggle" title="Activar/Desactivar">${eyeIcon}</button>
-            <button type="button" class="cat-action-btn btn-delete" title="Eliminar">${iconDelete}</button>
+            <button type="button" class="cat-action-btn btn-edit-coupon" title="Editar" aria-label="Editar el cupón ${c.code}">${iconEdit}</button>
+            <button type="button" class="cat-action-btn btn-toggle" title="${c.active ? 'Pausar' : 'Activar'}" aria-label="${c.active ? 'Pausar' : 'Activar'} el cupón ${c.code}">${eyeIcon}</button>
+            <button type="button" class="cat-action-btn btn-delete" title="Eliminar" aria-label="Eliminar el cupón ${c.code}">${iconDelete}</button>
         </div>
       `;
 

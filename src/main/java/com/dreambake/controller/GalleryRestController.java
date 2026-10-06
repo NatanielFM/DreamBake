@@ -40,9 +40,17 @@ public class GalleryRestController {
                 Files.createDirectories(uploadPath);
             }
 
-            // Generar nombre único para evitar que se sobrescriban imágenes con el mismo
-            // nombre
-            String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+            // Seguridad: solo imágenes. Sin este control se podría subir, por ejemplo, un .html con
+            // código que quedaría publicado en /uploads y se ejecutaría en nuestro propio dominio.
+            String original = file.getOriginalFilename() == null ? "" : file.getOriginalFilename().toLowerCase();
+            String extension = original.contains(".") ? original.substring(original.lastIndexOf('.') + 1) : "";
+            String contentType = file.getContentType() == null ? "" : file.getContentType();
+            if (!List.of("jpg", "jpeg", "png", "webp", "gif").contains(extension) || !contentType.startsWith("image/")) {
+                return ResponseEntity.badRequest().body("Solo se permiten imágenes JPG, PNG, WEBP o GIF.");
+            }
+
+            // Nombre nuevo y único: no se usa el nombre original (podría traer rutas raras como "../")
+            String fileName = UUID.randomUUID() + "." + extension;
             Path filePath = uploadPath.resolve(fileName);
             Files.copy(file.getInputStream(), filePath);
 

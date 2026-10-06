@@ -1,0 +1,49 @@
+/* =========================================================
+   profile.css — Mi cuenta (/profile, Fase 4)
+   ---------------------------------------------------------
+   Requiere tokens.css, components.css, public.css (encabezado)
+   y login.css (avisos y botón de mostrar contraseña).
+   ========================================================= */
+
+.profile-page {
+  display: grid;
+  gap: var(--space-5);
+  padding-block: var(--space-7) var(--space-9);
+}
+
+.profile-page .login-alert { margin: 0; }
+
+.profile-card {
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+}
+
+.profile-card-head { display: grid; align-content: start; gap: var(--space-1); }
+.profile-card-title {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-black);
+  letter-spacing: -0.01em;
+}
+.profile-card-text { margin: 0; color: var(--rose-800); }
+
+.field-row { display: grid; gap: 20px; }
+
+.profile-actions { padding-top: var(--space-1); }
+
+@media (min-width: 48rem) {
+  .profile-card {
+    grid-template-columns: 14rem 1fr;
+    gap: var(--space-7);
+    padding: var(--space-6) var(--space-6);
+  }
+  .field-row { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 29.99rem) {
+  .profile-actions .button { width: 100%; }
+}

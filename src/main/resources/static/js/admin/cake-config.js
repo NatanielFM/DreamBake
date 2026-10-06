@@ -29,28 +29,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Interruptor "En la tienda" (mismo estilo que el de Productos), con nombre accesible
+  function storeSwitch(checked, onchange, name) {
+    return `<label class="toggle-switch">
+              <input type="checkbox" ${checked ? 'checked' : ''} onchange="${onchange}" aria-label="Mostrar ${name} en la tienda">
+              <span class="slider"></span>
+              <span class="switch-text" aria-hidden="true"><span class="switch-on">Sí</span><span class="switch-off">No</span></span>
+            </label>`;
+  }
+
   function renderSizes() {
     sizesTbody.innerHTML = '';
+    if (allSizes.length === 0) {
+      sizesTbody.innerHTML = '<tr><td colspan="6" class="cell-empty">Todavía no hay tamaños. Sin tamaños, el cliente no puede armar su torta.</td></tr>';
+      return;
+    }
     allSizes.forEach(s => {
       sizesTbody.innerHTML += `
         <tr>
-          <td style="font-weight:600;">${s.name}</td>
-          <td style="font-weight:700; color:var(--accent);">$${Number(s.price).toLocaleString('es-AR')}</td>
-          <td style="text-align:center;">Hasta ${s.maxRellenos}</td>
-          <td style="text-align:center;">${s.mixSponge ? 'Sí (2 sabores)' : 'No (1 sabor)'}</td>
-          <td style="text-align:center;">
-            <input type="checkbox" ${s.enabled ? 'checked' : ''} onchange="toggleSizeEnabled(${s.id}, this.checked)" style="transform:scale(1.2); cursor:pointer;">
-          </td>
-          <td style="text-align:center;">
-            <div style="display:flex; justify-content:center; gap:8px;">
-              <button class="btn btn-pink" style="padding:6px 12px; display:inline-flex; align-items:center; gap:6px; font-size:0.85rem;" onclick="openEditSize(${s.id})">
-                ${svgEdit} Editar
-              </button>
-              <button class="btn btn-red" style="padding:6px 12px; display:inline-flex; align-items:center; gap:6px; font-size:0.85rem;" onclick="confirmDeleteSize(${s.id})">
-                ${svgTrash} Eliminar
-              </button>
-            </div>
-          </td>
+          <td class="cell-title cell-strong">${s.name}</td>
+          <td data-label="Precio" class="cell-money">$${Number(s.price).toLocaleString('es-AR')}</td>
+          <td data-label="Rellenos">Hasta ${s.maxRellenos}</td>
+          <td data-label="Bizcochuelos">${s.mixSponge ? '2 sabores' : '1 sabor'}</td>
+          <td data-label="En la tienda">${storeSwitch(s.enabled, `toggleSizeEnabled(${s.id}, this.checked)`, s.name)}</td>
+          <td class="cell-actions"><div class="action-buttons-container">
+            <button type="button" class="btn btn-grey btn-sm" onclick="openEditSize(${s.id})">${svgEdit} Editar</button>
+            <button type="button" class="btn btn-red btn-sm" onclick="confirmDeleteSize(${s.id})">${svgTrash} Eliminar</button>
+          </div></td>
         </tr>
       `;
     });
@@ -59,30 +64,26 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderOptions() {
     optionsTbody.innerHTML = '';
     const filtered = allOptions.filter(o => currentOptionFilter === 'all' || o.category === currentOptionFilter);
+    if (filtered.length === 0) {
+      optionsTbody.innerHTML = '<tr><td colspan="4" class="cell-empty">No hay sabores de este tipo todavía.</td></tr>';
+      return;
+    }
 
     filtered.forEach(o => {
       let badgeLabel = o.category;
       if (o.category === 'Sponge') badgeLabel = 'Bizcochuelo';
-      else if (o.category === 'Crema') badgeLabel = 'Relleno (Crema)';
-      else if (o.category === 'Fondant') badgeLabel = 'Relleno (Fondant)';
+      else if (o.category === 'Crema') badgeLabel = 'Relleno para crema';
+      else if (o.category === 'Fondant') badgeLabel = 'Relleno para fondant';
 
       optionsTbody.innerHTML += `
         <tr>
-          <td style="font-weight:600;">${o.name}</td>
-          <td style="text-align:center;"><span class="tag-badge">${badgeLabel}</span></td>
-          <td style="text-align:center;">
-            <input type="checkbox" ${o.enabled ? 'checked' : ''} onchange="toggleOptionEnabled(${o.id}, this.checked)" style="transform:scale(1.2); cursor:pointer;">
-          </td>
-          <td style="text-align:center;">
-            <div style="display:flex; justify-content:center; gap:8px;">
-              <button class="btn btn-pink" style="padding:6px 12px; display:inline-flex; align-items:center; gap:6px; font-size:0.85rem;" onclick="openEditOption(${o.id})">
-                ${svgEdit} Editar
-              </button>
-              <button class="btn btn-red" style="padding:6px 12px; display:inline-flex; align-items:center; gap:6px; font-size:0.85rem;" onclick="confirmDeleteOption(${o.id})">
-                ${svgTrash} Eliminar
-              </button>
-            </div>
-          </td>
+          <td class="cell-title cell-strong">${o.name}</td>
+          <td data-label="Tipo"><span class="tag-badge">${badgeLabel}</span></td>
+          <td data-label="En la tienda">${storeSwitch(o.enabled, `toggleOptionEnabled(${o.id}, this.checked)`, o.name)}</td>
+          <td class="cell-actions"><div class="action-buttons-container">
+            <button type="button" class="btn btn-grey btn-sm" onclick="openEditOption(${o.id})">${svgEdit} <span class="btn-label">Editar <span class="visually-hidden">${o.name}</span></span></button>
+            <button type="button" class="btn btn-red btn-sm" onclick="confirmDeleteOption(${o.id})">${svgTrash} <span class="btn-label">Eliminar <span class="visually-hidden">${o.name}</span></span></button>
+          </div></td>
         </tr>
       `;
     });
@@ -92,15 +93,15 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('#cake-option-chips .chip').forEach(chip => {
     chip.addEventListener('click', (e) => {
       document.querySelectorAll('#cake-option-chips .chip').forEach(c => c.classList.remove('active'));
-      e.target.classList.add('active');
-      currentOptionFilter = e.target.dataset.cat;
+      e.currentTarget.classList.add('active');
+      currentOptionFilter = e.currentTarget.dataset.cat;
       renderOptions();
     });
   });
 
   // --- CRUD TAMAÑOS ---
   document.getElementById('btn-new-size')?.addEventListener('click', () => {
-    document.getElementById('modal-size-title').innerText = 'Nuevo Tamaño de Torta';
+    document.getElementById('modal-size-title').innerText = 'Nuevo tamaño';
     document.getElementById('size-id').value = '';
     document.getElementById('size-name').value = '';
     document.getElementById('size-price').value = '';
@@ -113,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.openEditSize = function(id) {
     const s = allSizes.find(item => item.id === id);
     if (!s) return;
-    document.getElementById('modal-size-title').innerText = 'Editar Tamaño de Torta';
+    document.getElementById('modal-size-title').innerText = 'Editar tamaño';
     document.getElementById('size-id').value = s.id;
     document.getElementById('size-name').value = s.name;
     document.getElementById('size-price').value = s.price;
@@ -173,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- CRUD OPCIONES (BIZCOCHUELOS Y RELLENOS) ---
   document.getElementById('btn-new-option')?.addEventListener('click', () => {
-    document.getElementById('modal-option-title').innerText = 'Nuevo Sabor / Relleno';
+    document.getElementById('modal-option-title').innerText = 'Nuevo sabor';
     document.getElementById('option-id').value = '';
     document.getElementById('option-name').value = '';
     document.getElementById('option-category').value = currentOptionFilter !== 'all' ? currentOptionFilter : 'Crema';
@@ -184,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.openEditOption = function(id) {
     const o = allOptions.find(item => item.id === id);
     if (!o) return;
-    document.getElementById('modal-option-title').innerText = 'Editar Sabor / Relleno';
+    document.getElementById('modal-option-title').innerText = 'Editar sabor';
     document.getElementById('option-id').value = o.id;
     document.getElementById('option-name').value = o.name;
     document.getElementById('option-category').value = o.category;

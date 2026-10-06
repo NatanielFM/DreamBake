@@ -1,0 +1,71 @@
+[    3644ms] [ERROR] Failed to load resource: the server responded with a status of 400 () @ http://localhost:8080/api/orders:0
+[    3751ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "new-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/register:0
+[    3751ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "new-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/register:0
+[    4497ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "new-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/register:0
+[    4497ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "new-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/register:0
+[    5227ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login:0
+[    6628ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ http://localhost:8080/api/users/pasteleros:0
+[    6726ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login:0
+[    7469ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login?error:0
+[    8103ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login:0
+[    8852ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login?error:0
+[    9491ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login:0
+[   10237ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login?error:0
+[   10878ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login:0
+[   11608ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login?error:0
+[   12235ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login:0
+[   12973ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login?error:0
+[   13606ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login:0
+[   14349ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login?blocked:0
+[   34546ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "new-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/register:0
+[   34546ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "new-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/register:0
+[   35220ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "new-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/register:0
+[   35220ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "new-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/register:0
+[   35764ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login:0
+[   36592ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/admin:0
+[   36653ms] [ERROR] TypeError: Cannot read properties of null (reading 'split')
+    at http://localhost:8080/js/admin/orders.js:191:49
+    at Array.forEach (<anonymous>)
+    at renderTable (http://localhost:8080/js/admin/orders.js:189:14)
+    at loadOrders (http://localhost:8080/js/admin/orders.js:27:9) @ http://localhost:8080/js/admin/orders.js:29
+[   38271ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login?logout:0
+[   61641ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login:0
+[   62390ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/admin:0
+[   62449ms] [ERROR] TypeError: Cannot read properties of null (reading 'split')
+    at http://localhost:8080/js/admin/orders.js:191:49
+    at Array.forEach (<anonymous>)
+    at renderTable (http://localhost:8080/js/admin/orders.js:189:14)
+    at loadOrders (http://localhost:8080/js/admin/orders.js:27:9) @ http://localhost:8080/js/admin/orders.js:29
+[   65064ms] [ERROR] TypeError: Cannot read properties of null (reading 'split')
+    at http://localhost:8080/js/admin/orders.js:191:49
+    at Array.forEach (<anonymous>)
+    at renderTable (http://localhost:8080/js/admin/orders.js:189:14)
+    at loadOrders (http://localhost:8080/js/admin/orders.js:27:9) @ http://localhost:8080/js/admin/orders.js:29
+[   69261ms] [ERROR] Failed to load resource: the server responded with a status of 400 () @ http://localhost:8080/api/gallery:0
+[   69506ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/admin:0
+[   70161ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login:0
+[   70912ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/baker:0
+[   72981ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ http://localhost:8080/api/users/pasteleros:0
+[   72985ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ http://localhost:8080/api/customers:0
+[   72988ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ http://localhost:8080/api/products/1:0
+[   72992ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ http://localhost:8080/admin:0
+[   73091ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login:0
+[   73926ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/admin:0
+[   83944ms] [ERROR] Error silencioso consultando notificaciones. @ http://localhost:8080/js/admin/notifications-simple.js:57
+[   92446ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login:0
+[   93198ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/admin:0
+[   93947ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/admin:0
+[   94619ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login:0
+[   95356ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/baker:0
+[   98491ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login:0
+[   99235ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/admin:0
+[  109258ms] [ERROR] Error silencioso consultando notificaciones. @ http://localhost:8080/js/admin/notifications-simple.js:57
+[  119258ms] [ERROR] Error silencioso consultando notificaciones. @ http://localhost:8080/js/admin/notifications-simple.js:57
+[  129251ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8080/api/orders:0
+[  129251ms] [ERROR] Error silencioso consultando notificaciones. @ http://localhost:8080/js/admin/notifications-simple.js:57
+[  139279ms] [ERROR] Error silencioso consultando notificaciones. @ http://localhost:8080/js/admin/notifications-simple.js:57
+[  149263ms] [ERROR] Error silencioso consultando notificaciones. @ http://localhost:8080/js/admin/notifications-simple.js:57
+[  153229ms] [ERROR] Failed to load resource: the server responded with a status of 400 () @ http://localhost:8080/api/orders:0
+[  153331ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login:0
+[  154231ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/admin:0
+[  156734ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login?logout:0

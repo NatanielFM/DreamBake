@@ -2,84 +2,155 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Armá tu Torta — DreamBake</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <!-- Color de la barra del navegador en el celular: el mismo fondo del header -->
+  <meta name="theme-color" content="#fef9f9" />
+  <link rel="icon" type="image/svg+xml" th:href="@{/img/favicon.svg}" />
+  <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
+  <script th:src="@{/js/csrf.js}"></script>
+  <title>Armá tu torta — Dulce Sueños Posadas</title>
+  <meta name="description" content="Elegí tamaño, cobertura, sabores y rellenos de tu torta y mirá el precio al instante.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Orden: base vieja compartida → tokens → componentes → header → CSS de la página → footer -->
   <link rel="stylesheet" th:href="@{/css/main.css}">
+  <link rel="stylesheet" th:href="@{/css/tokens.css}">
+  <link rel="stylesheet" th:href="@{/css/components.css}">
   <link rel="stylesheet" th:href="@{/css/header.css}">
-  <link rel="stylesheet" th:href="@{/css/footer.css}">
   <link rel="stylesheet" th:href="@{/css/public.css}">
+  <link rel="stylesheet" th:href="@{/css/builder.css}">
+  <link rel="stylesheet" th:href="@{/css/footer.css}">
 </head>
-<body>
+<body class="page-shop page-builder">
   <div th:replace="~{fragments/header :: header}"></div>
 
-  <main style="padding-top: 100px; min-height: 85vh; padding-bottom: 50px;">
-    <section id="cake-builder" class="section-builder">
-      <div class="container-wizard">
-        
-        <div class="wizard-header">
-          <h2 style="font-size: 2.2rem; color: var(--accent); margin-bottom: 10px;">Armá tu Torta Ideal 🎂</h2>
-          <p style="color: #666; font-size: 1.1rem;">Sigue los pasos y personaliza tu pedido al instante.</p>
-          <div class="progress-bar">
-            <div class="step active" id="step-indicator-1">1. Tamaño y Cobertura</div>
-            <div class="step" id="step-indicator-2">2. Sabores</div>
-            <div class="step" id="step-indicator-3">3. Detalles</div>
+  <main id="main" class="shop-main">
+    <!-- Encabezado -->
+    <section class="shop-hero">
+      <div class="site-container">
+        <h1 class="text-h1">Armá tu torta</h1>
+        <p class="text-lead">Elegí cada detalle y mirá el precio al instante. Pedila con 3 días de anticipación.</p>
+      </div>
+    </section>
+
+    <!-- El creador: pasos (store.js) + resumen en vivo -->
+    <section id="cake-builder" class="builder" aria-label="Creador de tortas">
+      <div class="site-container builder-grid">
+
+        <div class="builder-main">
+          <!-- Indicador de pasos: store.js usa la clase .step (no usar esta clase en otro lado de la página) -->
+          <ol class="progress-bar" aria-label="Pasos del creador">
+            <li class="step active is-current" id="step-indicator-1"><span class="step-dot">1</span><span class="step-label">Tamaño</span></li>
+            <li class="step" id="step-indicator-2"><span class="step-dot">2</span><span class="step-label">Bizcochuelo</span></li>
+            <li class="step" id="step-indicator-3"><span class="step-dot">3</span><span class="step-label">Rellenos</span></li>
+            <li class="step" id="step-indicator-4"><span class="step-dot">4</span><span class="step-label">Detalles</span></li>
+            <li class="step" id="step-indicator-5"><span class="step-dot">5</span><span class="step-label">Resumen</span></li>
+          </ol>
+
+          <div class="wizard-body">
+            <!-- Paso 1: tamaño y cobertura -->
+            <div id="wizard-step-1" class="wizard-step active">
+              <h2 class="step-heading" tabindex="-1">¿De qué tamaño?</h2>
+              <p class="step-help">El precio depende del tamaño.</p>
+              <div class="cards-grid size-grid" id="grid-sizes"></div>
+
+              <h2 class="step-heading step-heading--sub">¿Con qué cobertura?</h2>
+              <p class="step-help">Los rellenos disponibles cambian según la cobertura.</p>
+              <div class="cards-grid coverage-grid" id="grid-coverages">
+                <button type="button" class="select-card coverage-card" data-val="Crema" aria-pressed="false" onclick="selectCoverage('Crema')">
+                  <span class="option-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>
+                  <svg class="coverage-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                    <path d="M10 26c0-4 3-6 6-6 1-4 4-7 8-7s7 3 8 7c3 0 6 2 6 6"/><path d="M8 26h32v6a10 10 0 0 1-10 10H18A10 10 0 0 1 8 32v-6Z"/><path d="M16 26v4M24 26v5M32 26v4"/>
+                  </svg>
+                  <span class="coverage-name">Crema</span>
+                  <span class="coverage-desc">Liviana y suave</span>
+                </button>
+                <button type="button" class="select-card coverage-card" data-val="Fondant" aria-pressed="false" onclick="selectCoverage('Fondant')">
+                  <span class="option-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>
+                  <svg class="coverage-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                    <rect x="9" y="20" width="30" height="20" rx="4"/><path d="M9 28c4 3 7 3 10 0s7-3 10 0 7 3 10 0"/><path d="M24 20v-6M21 11l3 3 3-3"/>
+                  </svg>
+                  <span class="coverage-name">Fondant</span>
+                  <span class="coverage-desc">Ideal para diseños en 3D</span>
+                </button>
+              </div>
+              <p class="step-message" id="step-msg-1" role="alert" tabindex="-1" hidden></p>
+            </div>
+
+            <!-- Paso 2: bizcochuelo -->
+            <div id="wizard-step-2" class="wizard-step">
+              <h2 class="step-heading" tabindex="-1">Sabor del bizcochuelo</h2>
+              <p class="step-help"><span id="sponge-info">Elegí 1 sabor</span> · <span id="sponges-count">0 de 1</span></p>
+              <p class="step-message step-message--top" id="step-msg-2" role="alert" tabindex="-1" hidden></p>
+              <div id="grid-sponges" class="options-grid"></div>
+            </div>
+
+            <!-- Paso 3: rellenos -->
+            <div id="wizard-step-3" class="wizard-step">
+              <h2 class="step-heading" tabindex="-1">Rellenos</h2>
+              <p class="step-help"><span id="fillings-info">Elegí hasta 2</span> · <strong id="fillings-count">0 de 2</strong> · Opciones para cobertura de <strong id="lbl-cov"></strong></p>
+              <p class="step-message step-message--top" id="step-msg-3" role="alert" tabindex="-1" hidden></p>
+              <div class="options-grid" id="grid-fillings"></div>
+            </div>
+
+            <!-- Paso 4: detalles de diseño -->
+            <div id="wizard-step-4" class="wizard-step">
+              <h2 class="step-heading" tabindex="-1">Contanos tu idea</h2>
+              <div class="field">
+                <label class="field__label" for="cake-details">Temática, nombre o frase <span class="field__optional">(opcional)</span></label>
+                <textarea id="cake-details" class="input" rows="5" maxlength="600"
+                          placeholder="Ej: temática Bluey, que diga “Feliz cumple Martina” en dorado"
+                          aria-describedby="cake-details-hint"></textarea>
+                <p class="field__hint" id="cake-details-hint">Si tenés una foto de referencia, mandala por WhatsApp cuando confirmes el pedido.</p>
+              </div>
+            </div>
+
+            <!-- Paso 5: resumen -->
+            <div id="wizard-step-5" class="wizard-step">
+              <h2 class="step-heading" tabindex="-1">Así queda tu torta</h2>
+              <dl class="review-list">
+                <div><dt>Tamaño</dt><dd data-sum="size">Sin elegir</dd></div>
+                <div><dt>Cobertura</dt><dd data-sum="coverage">Sin elegir</dd></div>
+                <div><dt>Bizcochuelo</dt><dd data-sum="sponges">Sin elegir</dd></div>
+                <div><dt>Rellenos</dt><dd data-sum="fillings">Sin elegir</dd></div>
+                <div><dt>Detalles</dt><dd data-sum="details">Sin detalles</dd></div>
+              </dl>
+              <p class="review-total"><span>Precio</span><strong data-sum="price">—</strong></p>
+              <p class="step-help">Podés volver a cualquier paso tocando su número arriba.</p>
+            </div>
+          </div>
+
+          <!-- Navegación: en celular es una barra fija abajo con el precio -->
+          <div class="builder-nav">
+            <p class="builder-nav-price"><span id="step-counter">Paso 1 de 5</span><strong data-sum="price">—</strong></p>
+            <div class="builder-nav-buttons">
+              <button type="button" class="button button--secondary" id="btn-prev" hidden>Volver</button>
+              <button type="button" class="button button--primary" id="btn-next">Siguiente</button>
+              <button type="button" class="button button--ink" id="btn-add-cake" onclick="addCakeToCart()" hidden>Agregar al pedido</button>
+            </div>
           </div>
         </div>
 
-        <div class="wizard-body">
-          <div id="wizard-step-1" class="wizard-step active">
-            <h3>Elige el Tamaño</h3>
-            <div class="cards-grid" id="grid-sizes"></div>
-            
-            <h3 style="margin-top: 2rem;">Elige la Cobertura</h3>
-            <div class="cards-grid" id="grid-coverages">
-              <div class="select-card" data-val="Crema" onclick="selectCoverage('Crema')">☁️ Crema (Ligera y suave)</div>
-              <div class="select-card" data-val="Fondant" onclick="selectCoverage('Fondant')">🎨 Fondant (Ideal diseños 3D)</div>
-            </div>
-            
-            <button class="btn btn-pink btn-large wizard-next" onclick="goToStep(2)" id="btn-next-1" disabled>Siguiente Paso ➡️</button>
-          </div>
-
-          <div id="wizard-step-2" class="wizard-step">
-            <!-- Dentro de #wizard-step-2 en builder.html, asegúrate de que el bloque de Bizcochuelo tenga id="grid-sponges" -->
-            <h3>3. Sabor de Bizcochuelo (<span id="sponge-info">1 sabor</span>)</h3>
-            <div id="grid-sponges" class="options-grid">
-              <!-- Se llena dinámicamente desde store.js -->
-            </div>
-            
-            <h3 style="margin-top: 2rem;">Rellenos <span id="fillings-info" class="badge">Elige hasta 2</span></h3>
-            <p style="font-size:0.9rem; color:#666;">Mostrando opciones aptas para cobertura de <strong id="lbl-cov"></strong>.</p>
-            <div class="cards-grid" id="grid-fillings"></div>
-            
-            <div style="display:flex; justify-content:space-between; margin-top: 25px;">
-              <button class="btn btn-grey btn-large" onclick="goToStep(1)">⬅️ Volver</button>
-              <button class="btn btn-pink btn-large wizard-next" onclick="goToStep(3)" id="btn-next-2" disabled>Siguiente Paso ➡️</button>
-            </div>
-          </div>
-
-          <div id="wizard-step-3" class="wizard-step">
-            <h3>Detalles Adicionales</h3>
-            <p style="color:#666; font-size:0.95rem; margin-bottom:15px;">Cuéntanos la temática (ej: Boca Jrs, Bluey), si quieres una frase, nombre o cualquier detalle de diseño. (Opcional)</p>
-            <div class="form-group">
-              <textarea id="cake-details" class="public-input" rows="4" placeholder="Escribe aquí los detalles de diseño..."></textarea>
-            </div>
-            
-            <div style="display:flex; justify-content:space-between; margin-top: 25px;">
-              <button class="btn btn-grey btn-large" onclick="goToStep(2)">⬅️ Volver</button>
-              <button class="btn btn-pink btn-large" onclick="addCakeToCart()">🛒 Añadir al Carrito</button>
-            </div>
-          </div>
-        </div>
-
+        <!-- Resumen en vivo (escritorio) -->
+        <aside class="builder-summary" aria-label="Resumen de tu torta">
+          <h2 class="summary-title">Tu torta</h2>
+          <dl class="summary-list">
+            <div data-sum-row="size"><dt>Tamaño</dt><dd data-sum="size">Sin elegir</dd></div>
+            <div data-sum-row="coverage"><dt>Cobertura</dt><dd data-sum="coverage">Sin elegir</dd></div>
+            <div data-sum-row="sponges"><dt>Bizcochuelo</dt><dd data-sum="sponges">Sin elegir</dd></div>
+            <div data-sum-row="fillings"><dt>Rellenos</dt><dd data-sum="fillings">Sin elegir</dd></div>
+            <div data-sum-row="details"><dt>Detalles</dt><dd data-sum="details">Sin detalles</dd></div>
+          </dl>
+          <p class="summary-price"><span>Precio</span><strong data-sum="price">—</strong></p>
+          <p class="summary-note">Pedidos con 3 días de anticipación. El diseño final lo coordinamos por WhatsApp.</p>
+        </aside>
       </div>
     </section>
   </main>
 
-  <footer>
-    © <strong>Dulce Sueños Posadas</strong>
-  </footer>
-  
+  <div th:replace="~{fragments/footer :: footer}"></div>
+
   <script th:src="@{/js/header.js}"></script>
   <script th:src="@{/js/public/store.js}"></script>
 </body>

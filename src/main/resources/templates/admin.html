@@ -2,11 +2,17 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security6">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#ffffff" />
+  <link rel="icon" type="image/svg+xml" th:href="@{/img/favicon.svg}" />
+  <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
+  <script th:src="@{/js/csrf.js}"></script>
   <title>Administración — Dulce Sueños</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" th:href="@{/css/main.css}">
+  <link rel="stylesheet" th:href="@{/css/tokens.css}">
+  <link rel="stylesheet" th:href="@{/css/components.css}">
   <link rel="stylesheet" th:href="@{/css/admin.css}">
   <script>
     const savedTheme = localStorage.getItem('theme');
@@ -19,31 +25,38 @@
 
   <header class="site-header admin-header" role="banner">
     <div class="header-inner">
-      <div class="admin-left" style="display: flex; align-items: center; gap: 12px;">
-        <button id="sidebar-toggle" style="background: none; border: none; color: white; cursor: pointer; display: flex; align-items: center; padding: 0;">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      <div class="admin-left">
+        <button type="button" id="sidebar-toggle" class="header-icon-btn" aria-label="Abrir o cerrar el menú" aria-controls="admin-sidebar">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
         </button>
-        Panel de Administración
+        <a class="admin-brand" th:href="@{/admin}">
+          <svg viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+            <path class="bi-wrapper" d="M10.5 21h19l-2.6 11.3A2.6 2.6 0 0 1 24.4 34.4h-8.8a2.6 2.6 0 0 1-2.5-2.1L10.5 21Z"/>
+            <path class="bi-stripes" d="M16 22.5l.9 10.4M20 22.5v10.4M24 22.5l-.9 10.4" fill="none" stroke-width="1.6" stroke-linecap="round"/>
+            <path class="bi-frosting" d="M9.6 22.4c-2 0-3.6-1.6-3.6-3.6 0-1.8 1.3-3.3 3-3.6.4-4 3.8-7.1 7.8-7.1 1.2 0 2.4.3 3.4.8 1.2-.9 2.7-1.4 4.2-1.4 4 0 7.3 3.2 7.4 7.2 1.4.6 2.3 2 2.3 3.6 0 2.3-1.8 4.1-4.1 4.1H9.6Z"/>
+            <circle class="bi-cherry" cx="21.5" cy="5.6" r="3"/>
+          </svg>
+          <span class="admin-brand-text"><span class="admin-brand-name">Dulce Sueños</span><span class="admin-brand-role">Administración</span></span>
+        </a>
       </div>
 
-      <div class="admin-right" style="display: flex; align-items: center; gap: 15px;">
-        <button type="button" id="btn-theme-toggle" class="header-icon-btn" aria-label="Cambiar tema" title="Alternar Modo Oscuro">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+      <div class="admin-right">
+        <button type="button" id="btn-theme-toggle" class="header-icon-btn" aria-label="Cambiar entre modo claro y oscuro" title="Modo claro / oscuro">
+          <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
         </button>
-        <button type="button" id="btn-notifications" class="header-icon-btn btn-bell" aria-label="Notificaciones" style="position: relative;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-          <span id="notif-badge" style="display: none; position: absolute; top: -5px; right: -5px; background: #dc2626; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.7rem; font-weight: bold; border: 2px solid white;">0</span>
+        <button type="button" id="btn-notifications" class="header-icon-btn btn-bell" aria-label="Avisos de pedidos nuevos">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span id="notif-badge" style="display: none;">0</span>
         </button>
-        <!-- Contenedor del Menú Desplegable -->
+        <!-- Menú desplegable de avisos (lo llena notifications-simple.js) -->
         <div id="notif-dropdown" class="notification-dropdown" hidden>
-          <div style="padding: 12px 16px; background: #fafafa; border-bottom: 1px solid #eee; font-weight: 700; color: var(--accent);">
-            Avisos Recientes
-          </div>
-          <div id="notif-list" style="max-height: 300px; overflow-y: auto;"></div>
+          <div class="notif-title">Pedidos nuevos para confirmar</div>
+          <div id="notif-list"></div>
         </div>
-        <form id="logoutForm" th:action="@{/logout}" method="post" style="margin: 0; display:flex;">
-          <button type="button" id="btn-logout-header" class="header-icon-btn btn-logout" aria-label="Cerrar sesión">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        <form id="logoutForm" th:action="@{/logout}" method="post">
+          <button type="button" id="btn-logout-header" class="header-icon-btn btn-logout" aria-label="Cerrar sesión" title="Cerrar sesión">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           </button>
         </form>
         <div class="user-greeting">
@@ -54,21 +67,24 @@
   </header>
 
   <div class="admin-layout">
-    
+
     <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
-    
-    <aside class="sidebar">
+
+    <aside class="sidebar" id="admin-sidebar" aria-label="Secciones del panel">
       <nav>
         <div class="sidebar-top">
-          <button class="tab-btn active" data-tab="resumen">Resumen</button>
-          <button class="tab-btn" data-tab="pedidos">Pedidos</button>
-          <button class="tab-btn" data-tab="productos">Productos</button>
-          <button class="tab-btn" data-tab="inventario">Inventario</button>
-          <button class="tab-btn" data-tab="recetas">Recetas</button>
-          <button class="tab-btn" data-tab="clientes">Clientes</button>
-          <button class="tab-btn" data-tab="galeria">Galería</button>
-          <button class="tab-btn" data-tab="armador">Armador de Tortas</button>
-          <button class="tab-btn" data-tab="equipo">Equipo</button>
+          <button class="tab-btn active" data-tab="resumen"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Resumen</span></button>
+          <button class="tab-btn" data-tab="pedidos"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1Z"/><path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M8 12h8M8 16h5"/></svg><span>Pedidos</span></button>
+          <button class="tab-btn" data-tab="productos"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/><circle cx="8" cy="8" r="1.6"/></svg><span>Productos</span></button>
+          <button class="tab-btn" data-tab="inventario"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg><span>Inventario</span></button>
+          <button class="tab-btn" data-tab="recetas"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2Zm0 0A2 2 0 0 0 6 22h13"/><path d="M9 8h6M9 12h4"/></svg><span>Recetas</span></button>
+          <button class="tab-btn" data-tab="clientes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/></svg><span>Clientes</span></button>
+          <button class="tab-btn" data-tab="galeria"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg><span>Galería</span></button>
+          <button class="tab-btn" data-tab="armador"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 21h16M5 21v-7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7M5 16c1.5 0 1.5 1 3.5 1s2-1 3.5-1 1.5 1 3.5 1 2-1 3.5-1M12 12V8M12 5.5V5"/></svg><span>Armador de tortas</span></button>
+          <button class="tab-btn" data-tab="equipo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 13a4 4 0 0 1-1-7.9A4 4 0 0 1 12 3a4 4 0 0 1 7 2.1A4 4 0 0 1 18 13v7H6v-7Z"/><path d="M6 17h12"/></svg><span>Equipo</span></button>
+        </div>
+        <div class="sidebar-foot">
+          <a class="sidebar-link" th:href="@{/}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5Z"/></svg><span>Ver la tienda</span></a>
         </div>
       </nav>
     </aside>
@@ -77,22 +93,20 @@
       <!-- ==================== SECCIÓN RESUMEN (DASHBOARD ANALÍTICO) ==================== -->
       <section id="resumen" class="tab-content active">
         <div class="dashboard-header-bar">
-          <div>
-            <h2 style="margin: 0; color: #222; font-size: 1.6rem;">Centro de Control y Analítica</h2>
-            <p style="margin: 4px 0 0 0; color: #666; font-size: 0.92rem;">Métricas financieras, operativas y alertas estratégicas en tiempo real</p>
+          <div class="panel-head-text">
+            <h2 class="panel-title">Resumen</h2>
+            <p class="panel-sub">Cómo viene el año: ventas, pedidos, entregas y alertas de stock.</p>
           </div>
 
           <div class="dashboard-actions">
-            <select id="dash-year-filter" class="form-input" style="width: auto; min-width: 125px; height: 42px; font-weight: 600;"></select>
-            <button type="button" id="btn-refresh-dashboard" class="btn btn-grey btn-uniform" style="width: auto; padding: 0 14px;" title="Actualizar métricas">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:4px;"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Actualizar
+            <label class="visually-hidden" for="dash-year-filter">Año</label>
+            <select id="dash-year-filter" class="form-input"></select>
+            <button type="button" id="btn-refresh-dashboard" class="btn btn-grey" title="Actualizar los números">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Actualizar
             </button>
-            <button type="button" id="btn-export-dashboard-pdf" class="btn btn-pink btn-uniform" style="width: auto; padding: 0 18px;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle; margin-right:4px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Descargar Informe PDF
+            <button type="button" id="btn-export-dashboard-pdf" class="btn btn-grey">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg> Descargar informe
             </button>
-            <a th:href="@{/}" class="btn btn-grey btn-uniform" style="text-decoration:none; width: auto; padding: 0 16px;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle; margin-right:4px;"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> Ir a la Web
-            </a>
           </div>
         </div>
 
@@ -100,7 +114,7 @@
         <div class="kpi-grid">
           <div class="kpi-card kpi-accent">
             <div class="kpi-top">
-              <span class="kpi-label">Total Facturado (Anual)</span>
+              <span class="kpi-label">Facturado en el año</span>
               <div class="kpi-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></div>
             </div>
             <div class="kpi-value" id="kpi-total-revenue">$0</div>
@@ -109,16 +123,16 @@
 
           <div class="kpi-card">
             <div class="kpi-top">
-              <span class="kpi-label">Saldo Pendiente a Cobrar</span>
+              <span class="kpi-label">Falta cobrar</span>
               <div class="kpi-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-19V2H21.5z"></path><path d="M21.5 22v-6h-19v6H21.5z"></path><path d="M16 8l-4 4-4-4"></path><path d="M8 16l4-4 4 4"></path></svg></div>
             </div>
-            <div class="kpi-value" id="kpi-pending-balance" style="color: #d97706;">$0</div>
+            <div class="kpi-value is-warning" id="kpi-pending-balance">$0</div>
             <div class="kpi-sub" id="kpi-collected-deposits">Cobrado/Señas: $0</div>
           </div>
 
           <div class="kpi-card">
             <div class="kpi-top">
-              <span class="kpi-label">Pedidos del Mes</span>
+              <span class="kpi-label">Pedidos del mes</span>
               <div class="kpi-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg></div>
             </div>
             <div class="kpi-value" id="kpi-orders-month">0</div>
@@ -127,28 +141,28 @@
 
           <div class="kpi-card">
             <div class="kpi-top">
-              <span class="kpi-label">Tortas Vendidas</span>
+              <span class="kpi-label">Tortas vendidas</span>
               <div class="kpi-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"></path><path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2 1 2 1"></path><path d="M2 21h20"></path><path d="M7 8v2"></path><path d="M12 8v2"></path><path d="M17 8v2"></path><path d="M7 4h.01"></path><path d="M12 4h.01"></path><path d="M17 4h.01"></path></svg></div>
             </div>
             <div class="kpi-value" id="kpi-cakes-sold">0</div>
-            <div class="kpi-sub" id="kpi-avg-ticket">Ticket Promedio: $0</div>
+            <div class="kpi-sub" id="kpi-avg-ticket">Ticket promedio: $0</div>
           </div>
 
           <div class="kpi-card">
             <div class="kpi-top">
-              <span class="kpi-label">Entrega Más Próxima</span>
-              <div class="kpi-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle; margin-right:4px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></div>
+              <span class="kpi-label">Próxima entrega</span>
+              <div class="kpi-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></div>
             </div>
-            <div class="kpi-value" id="kpi-next-date" style="font-size: 1.45rem;">Sin entregas</div>
+            <div class="kpi-value kpi-value--date" id="kpi-next-date">Sin entregas</div>
             <div class="kpi-sub" id="kpi-next-client">No hay pedidos próximos</div>
           </div>
 
           <div class="kpi-card">
             <div class="kpi-top">
-              <span class="kpi-label">Alertas de Stock / Venc.</span>
+              <span class="kpi-label">Alertas de stock</span>
               <div class="kpi-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div>
             </div>
-            <div class="kpi-value" id="kpi-low-stock" style="color: #dc2626;">0</div>
+            <div class="kpi-value is-danger" id="kpi-low-stock">0</div>
             <div class="kpi-sub" id="kpi-pending-inbox">0 pedidos nuevos sin confirmar</div>
           </div>
         </div>
@@ -157,7 +171,7 @@
         <div class="charts-grid-main">
           <div class="chart-box">
             <div class="chart-box-header">
-              <h3>Evolución de Facturación y Pedidos Mensuales</h3>
+              <h3>Facturación y pedidos por mes</h3>
             </div>
             <div class="chart-canvas-wrap">
               <canvas id="chart-revenue-monthly"></canvas>
@@ -166,10 +180,11 @@
 
           <div class="chart-box">
             <div class="chart-box-header">
-              <h3>Estado General de Pedidos</h3>
+              <h3>Pedidos por estado</h3>
             </div>
             <div class="chart-canvas-wrap">
               <canvas id="chart-orders-status"></canvas>
+              <p class="chart-empty" data-empty-for="chart-orders-status" hidden>Todavía no hay datos para mostrar.</p>
             </div>
           </div>
         </div>
@@ -178,19 +193,21 @@
         <div class="charts-grid-secondary">
           <div class="chart-box">
             <div class="chart-box-header">
-              <h3>Top productos</h3>
+              <h3>Productos más vendidos</h3>
             </div>
             <div class="chart-canvas-wrap">
               <canvas id="chart-top-products"></canvas>
+              <p class="chart-empty" data-empty-for="chart-top-products" hidden>Todavía no hay datos para mostrar.</p>
             </div>
           </div>
 
           <div class="chart-box">
             <div class="chart-box-header">
-              <h3>Días de MayorCarga de Entregas</h3>
+              <h3>Días con más entregas</h3>
             </div>
             <div class="chart-canvas-wrap">
               <canvas id="chart-delivery-days"></canvas>
+              <p class="chart-empty" data-empty-for="chart-delivery-days" hidden>Todavía no hay datos para mostrar.</p>
             </div>
           </div>
         </div>
@@ -199,7 +216,7 @@
         <div class="dash-tables-grid">
           <div class="chart-box">
             <div class="chart-box-header">
-              <h3><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle; margin-right:4px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Próximas Entregas en Agenda</h3>
+              <h3><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Próximas entregas</h3>
             </div>
             <div class="table-responsive">
               <table class="admin-table">
@@ -208,7 +225,7 @@
                     <th>Pedido / Cliente</th>
                     <th>Entrega</th>
                     <th>Total</th>
-                    <th style="text-align:center;">Estado</th>
+                    <th>Estado</th>
                   </tr>
                 </thead>
                 <tbody id="dash-upcoming-tbody"></tbody>
@@ -218,7 +235,7 @@
 
           <div class="chart-box">
             <div class="chart-box-header">
-              <h3><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle; margin-right:4px;"><polygon points="2 16 22 16 19 2 12 10 5 2 2 16"></polygon><polygon points="2 18 22 18 22 22 2 22 2 18"></polygon></svg> Mejores Clientes (Ranking LTV)</h3>
+              <h3><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><polygon points="2 16 22 16 19 2 12 10 5 2 2 16"></polygon><polygon points="2 18 22 18 22 22 2 22 2 18"></polygon></svg> Mejores clientes</h3>
             </div>
             <div class="table-responsive">
               <table class="admin-table">
@@ -226,7 +243,7 @@
                   <tr>
                     <th>Cliente</th>
                     <th>Contacto</th>
-                    <th style="text-align:center;">Compras</th>
+                    <th>Compras</th>
                     <th>Invertido</th>
                   </tr>
                 </thead>
@@ -235,18 +252,18 @@
             </div>
           </div>
 
-          <div class="chart-box" style="grid-column: 1 / -1;">
+          <div class="chart-box chart-box--full">
             <div class="chart-box-header">
-              <h3><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle; margin-right:4px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> Insumos en Stock Crítico o Próximos a Vencer</h3>
+              <h3><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> Insumos con poco stock o por vencer</h3>
             </div>
             <div class="table-responsive">
               <table class="admin-table">
                 <thead>
                   <tr>
                     <th>Insumo</th>
-                    <th>Stock Actual</th>
-                    <th>Stock Mínimo</th>
-                    <th style="text-align:center;">Condición</th>
+                    <th>Stock actual</th>
+                    <th>Stock mínimo</th>
+                    <th>Condición</th>
                   </tr>
                 </thead>
                 <tbody id="dash-low-stock-tbody"></tbody>
@@ -258,183 +275,188 @@
 
       <!-- ==================== SECCIÓN PEDIDOS ==================== -->
       <section id="pedidos" class="tab-content">
-        <div class="product-module-container">
-          
-          <div class="calendar-wrapper">
-            <div class="calendar-header" style="display:flex; justify-content:space-between; align-items:center; padding-bottom:10px;">
-              <button id="cal-prev" class="btn btn-grey btn-sm" style="border-radius:50%; width:36px; height:36px; padding:0; display:flex; align-items:center; justify-content:center;">&lt;</button>
-              <div style="display:flex; gap:5px; align-items:center; background:#fafafa; border:1px solid #eee; border-radius:8px; padding:4px 10px;">
-                 <select id="cal-month-select" style="border:none; font-size:1.15rem; font-weight:700; color:var(--accent); background:transparent; outline:none; cursor:pointer;">
-                 </select>
-                 <select id="cal-year-select" style="border:none; font-size:1.15rem; font-weight:700; color:var(--accent); background:transparent; outline:none; cursor:pointer;">
-                 </select>
-              </div>
-              <button id="cal-next" class="btn btn-grey btn-sm" style="border-radius:50%; width:36px; height:36px; padding:0; display:flex; align-items:center; justify-content:center;">&gt;</button>
-            </div>
-            <div class="calendar-grid" id="calendar-grid"></div>
+        <div class="panel-head">
+          <div class="panel-head-text">
+            <h2 class="panel-title">Pedidos</h2>
+            <p class="panel-sub">Confirmá los pedidos nuevos, mirá la agenda de entregas y marcá los que ya se entregaron.</p>
           </div>
-
-          <div class="product-toolbar" style="padding-top: 0; border-bottom: none;">
-            <div class="order-tabs">
-              <button class="order-tab-btn active" data-tab="nuevos">
-                Nuevos Pedidos <span id="badge-new-orders" class="order-tab-badge" style="display:none;">0</span>
-              </button>
-              <button class="order-tab-btn" data-tab="agendados">Pedidos Agendados</button>
-              <button class="order-tab-btn" data-tab="completados">Pedidos Completados</button>
-            </div>
-
-            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: space-between;">
-              <input type="text" id="search-orders" class="form-input search-large" placeholder="🔍 Buscar por N° ref, teléfono o nombre..." style="max-width: 400px;">
-              <div style="display: flex; gap: 10px;">
-                <button class="btn btn-grey btn-uniform" id="btn-test-order">Generar Pedido de Prueba</button>
-                <button class="btn btn-pink btn-uniform" onclick="openManualOrderModal()">+ Nuevo Pedido</button>
-              </div>
-            </div>
+          <div class="panel-actions">
+            <button type="button" class="btn btn-pink" onclick="openManualOrderModal()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg> Nuevo pedido</button>
           </div>
+        </div>
 
-          <div class="product-catalog-section" style="padding-top: 0;">
-            <div class="table-responsive">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th>N° - Ref #</th>
-                    <th>Cliente</th>
-                    <th>Contacto</th>
-                    <th id="th-sort-order-date" style="cursor:pointer;">Fecha de entrega <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle; margin-left:4px;"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline><polyline points="5 12 12 5 19 12"></polyline></svg></th>
-                    <th>Total</th>
-                    <th>Estado</th>
-                    <th style="text-align: center;">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody id="orders-tbody"></tbody>
-              </table>
+        <!-- Agenda: al tocar un día se ven sus entregas -->
+        <div class="calendar-wrapper">
+          <div class="calendar-header">
+            <button type="button" id="cal-prev" aria-label="Mes anterior"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m15 18-6-6 6-6"/></svg></button>
+            <div class="calendar-selects">
+              <label class="visually-hidden" for="cal-month-select">Mes</label>
+              <select id="cal-month-select"></select>
+              <label class="visually-hidden" for="cal-year-select">Año</label>
+              <select id="cal-year-select"></select>
             </div>
+            <button type="button" id="cal-next" aria-label="Mes siguiente"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 18 6-6-6-6"/></svg></button>
           </div>
+          <div class="calendar-grid" id="calendar-grid"></div>
+          <p class="calendar-legend">
+            <span><i class="legend-dot legend-dot--scheduled"></i> Agendados</span>
+            <span><i class="legend-dot legend-dot--done"></i> Entregados</span>
+          </p>
+        </div>
+
+        <!-- Listas: nuevos (sin confirmar), agendados y completados -->
+        <div class="order-toolbar">
+          <div class="order-tabs" role="group" aria-label="Qué pedidos mostrar">
+            <button type="button" class="order-tab-btn active" data-tab="nuevos">
+              Nuevos <span id="badge-new-orders" class="order-tab-badge" style="display:none;">0</span>
+            </button>
+            <button type="button" class="order-tab-btn" data-tab="agendados">Agendados</button>
+            <button type="button" class="order-tab-btn" data-tab="completados">Completados</button>
+          </div>
+          <label class="visually-hidden" for="search-orders">Buscar pedidos</label>
+          <input type="search" id="search-orders" class="form-input search-large" placeholder="Buscar por número, nombre o teléfono" autocomplete="off">
+        </div>
+
+        <div class="table-responsive">
+          <table class="admin-table orders-table">
+            <thead>
+              <tr>
+                <th>N°</th>
+                <th>Cliente</th>
+                <th>Teléfono</th>
+                <th id="th-sort-order-date" class="sortable">Entrega <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></th>
+                <th>Total</th>
+                <th>Estado</th>
+                <th><span class="visually-hidden">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody id="orders-tbody"></tbody>
+          </table>
         </div>
       </section>
 
       <!-- ==================== SECCIÓN CLIENTES ==================== -->
       <section id="clientes" class="tab-content">
-        <div class="product-module-container">
-
-          <div class="product-toolbar" style="border-bottom: none;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px;">
-              
-              <div style="display: flex; gap: 10px; flex: 1; flex-direction: column;">
-                <input type="text" id="search-client" class="form-input search-large" placeholder="🔍 Buscar nombre, teléfono..." style="max-width: 400px;">
-                <div class="filter-chips" id="client-filters"></div>
-              </div>
-
-              <div style="display: flex; gap: 10px; align-self: flex-start;">
-                <button type="button" id="btn-open-tags-modal" class="btn btn-grey btn-uniform" style="width: auto; padding: 0 15px;" title="Configurar Etiquetas">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg> 
-                  Etiquetas
-                </button>
-                <button type="button" id="btn-open-coupons-modal" class="btn btn-grey btn-uniform" style="width: auto; padding: 0 15px;" title="Configurar Cupones">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;"><rect x="3" y="4" width="18" height="16" rx="2" ry="2"></rect><line x1="8" y1="4" x2="8" y2="20"></line></svg> 
-                  Cupones
-                </button>
-                <button type="button" id="btn-add-client" class="btn btn-pink btn-uniform" style="width: auto; padding: 0 15px;">
-                  + Nuevo Cliente
-                </button>
-              </div>
-
+        <div class="panel-block">
+          <div class="panel-head">
+            <div class="panel-head-text">
+              <h2 class="panel-title">Clientes</h2>
+              <p class="panel-sub">Se agregan solos al confirmar un pedido. Las etiquetas ayudan a encontrarlos; los cupones se usan en el carrito de la tienda.</p>
+            </div>
+            <div class="panel-actions">
+              <button type="button" id="btn-open-tags-modal" class="btn btn-grey">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                Etiquetas
+              </button>
+              <button type="button" id="btn-open-coupons-modal" class="btn btn-grey">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 8a2 2 0 0 0 0 4v4a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4a2 2 0 0 0 0-4V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2Z"/><path d="M13 5v2M13 11v2M13 17v1"/></svg>
+                Cupones
+              </button>
+              <button type="button" id="btn-add-client" class="btn btn-pink">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg> Nuevo cliente
+              </button>
             </div>
           </div>
 
-          <div class="product-catalog-section" style="padding-top: 0;">
-            <div class="table-responsive">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th id="th-sort-client-name" style="cursor: pointer; user-select: none;">Cliente</th>
-                    <th>Contacto</th>
-                    <th>Etiqueta</th>
-                    <th>Cumpleaños</th>
-                    <th id="th-sort-client-date" style="cursor: pointer; user-select: none;">Registro</th>
-                    <th>Compras Totales</th>
-                    <th style="text-align: center;">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody id="clients-tbody"></tbody>
-              </table>
-            </div>
+          <div class="toolbar-row">
+            <label class="visually-hidden" for="search-client">Buscar cliente</label>
+            <input type="search" id="search-client" class="form-input search-large" placeholder="Buscar por nombre o teléfono" autocomplete="off">
+            <div class="filter-chips" id="client-filters" role="group" aria-label="Filtrar por etiqueta"></div>
+          </div>
+        </div>
+
+        <div class="panel-block panel-block--table">
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th id="th-sort-client-name" class="sortable">Cliente</th>
+                  <th>Contacto</th>
+                  <th>Etiqueta</th>
+                  <th>Cumpleaños</th>
+                  <th id="th-sort-client-date" class="sortable">Registro</th>
+                  <th>Pedidos</th>
+                  <th><span class="visually-hidden">Acciones</span></th>
+                </tr>
+              </thead>
+              <tbody id="clients-tbody"></tbody>
+            </table>
           </div>
         </div>
       </section>
 
       <!-- ==================== SECCIÓN INVENTARIO ==================== -->
       <section id="inventario" class="tab-content">
-        <div class="product-module-container">
-
-          <div class="product-toolbar" style="border-bottom: none;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-              <div style="display: flex; gap: 10px; flex: 1; flex-direction: column;">
-                <input type="text" id="search-inventory" class="form-input search-large" placeholder="🔍 Buscar insumo..." style="max-width: 400px;">
-                <div class="filter-chips" id="inventory-filters">
-                  <button class="chip active" data-filter="all">Todos los insumos</button>
-                  <button class="chip" data-filter="low"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle; margin-right:4px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> Stock Bajo</button>
-                  <button class="chip" data-filter="expiring"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle; margin-right:4px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Vencimientos (7 días)</button>
-                </div>
-              </div>
-              <div style="display: flex; gap: 10px;">
-                <button type="button" id="btn-test-deduct" class="btn btn-grey btn-uniform" style="width: auto; padding: 0 15px;">
-                  Consumir por pedido
-                </button>
-                <button type="button" id="btn-generate-order" class="btn btn-grey btn-uniform" style="width: auto; padding: 0 15px;" title="Se generará un PDF listo para enviar o imprimir">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle; margin-right:4px;"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg> Generar Pedido
-                </button>
-                <button type="button" id="btn-add-inventory" class="btn btn-pink btn-uniform" style="width: auto; padding: 0 15px;">
-                  + Nuevo Lote/Insumo
-                </button>
-              </div>
+        <div class="panel-block">
+          <div class="panel-head">
+            <div class="panel-head-text">
+              <h2 class="panel-title">Inventario</h2>
+              <p class="panel-sub">Lo que hay en la cocina. Las filas marcadas tienen poco stock o están por vencer.</p>
             </div>
+          <div class="panel-actions">
+            <button type="button" id="btn-test-deduct" class="btn btn-grey">Consumir por pedido</button>
+            <button type="button" id="btn-generate-order" class="btn btn-grey" title="Arma un PDF con lo que conviene comprar">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg> Lista de compras
+            </button>
+            <button type="button" id="btn-add-inventory" class="btn btn-pink">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg> Nuevo insumo
+            </button>
+          </div>
           </div>
 
-          <div class="product-catalog-section" style="padding-top: 0;">
-            <div class="table-responsive">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th id="th-sort-name" style="cursor: pointer; user-select: none;" title="Haz clic para ordenar de A-Z">Insumo</th>
-                    <th>Stock Actual</th>
-                    <th>Stock Mínimo</th>
-                    <th id="th-sort-date" style="cursor: pointer; user-select: none;" title="Haz clic para ordenar por fecha">Última actualización</th>
-                    <th>Vencimiento</th>
-                    <th style="text-align: center;">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody id="inventory-tbody"></tbody>
-              </table>
+          <div class="toolbar-row">
+            <label class="visually-hidden" for="search-inventory">Buscar insumo</label>
+            <input type="search" id="search-inventory" class="form-input search-large" placeholder="Buscar insumo" autocomplete="off">
+            <div class="filter-chips" id="inventory-filters" role="group" aria-label="Filtrar insumos">
+              <button type="button" class="chip active" data-filter="all">Todos</button>
+              <button type="button" class="chip" data-filter="low"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg> Stock bajo</button>
+              <button type="button" class="chip" data-filter="expiring"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Vencen en 7 días</button>
             </div>
+          </div>
+        </div>
+
+        <div class="panel-block panel-block--table">
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th id="th-sort-name" class="sortable" title="Ordenar de la A a la Z">Insumo</th>
+                  <th>Stock actual</th>
+                  <th>Stock mínimo</th>
+                  <th id="th-sort-date" class="sortable" title="Ordenar por fecha">Última actualización</th>
+                  <th>Vencimiento</th>
+                  <th><span class="visually-hidden">Acciones</span></th>
+                </tr>
+              </thead>
+              <tbody id="inventory-tbody"></tbody>
+            </table>
           </div>
         </div>
       </section>
 
       <!-- ==================== SECCIÓN RECETAS ==================== -->
       <section id="recetas" class="tab-content">
-        <div class="product-module-container">
-          <div class="product-toolbar" style="border-bottom: none;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-              <h2 style="margin: 0; font-size: 1.25rem; color: #222;">Catálogo de Recetas</h2>
-              <button type="button" id="btn-add-recipe" class="btn btn-pink btn-uniform" style="width: auto; padding: 0 15px;">
-                + Nueva Receta
-              </button>
-            </div>
+        <div class="panel-head">
+          <div class="panel-head-text">
+            <h2 class="panel-title">Recetas</h2>
+            <p class="panel-sub">Cada receta dice qué insumos lleva. Al confirmar un pedido, se descuentan del inventario.</p>
           </div>
-          <div class="product-catalog-section" style="padding-top: 0;">
-            <div class="table-responsive">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th>Nombre de la Receta</th>
-                    <th style="text-align: center;">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody id="recipes-tbody"></tbody>
-              </table>
-            </div>
+          <div class="panel-actions">
+            <button type="button" id="btn-add-recipe" class="btn btn-pink">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg> Nueva receta
+            </button>
           </div>
+        </div>
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Receta</th>
+                <th><span class="visually-hidden">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody id="recipes-tbody"></tbody>
+          </table>
         </div>
       </section>
 
@@ -442,9 +464,16 @@
       <section id="productos" class="tab-content">
         <div class="product-module-container">
           <div class="product-viewer-section">
+            <div class="panel-head">
+              <div class="panel-head-text">
+                <h2 class="panel-title">Productos</h2>
+                <p class="panel-sub">Lo que se ve en la tienda: foto, nombre, precio y categoría. Tocá un producto de la lista para editarlo.</p>
+              </div>
+            </div>
+
             <div id="empty-viewer" class="empty-viewer-state">
-              <button id="btn-add-new-product" class="btn btn-pink btn-large">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <button type="button" id="btn-add-new-product" class="btn btn-pink">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>
                 Agregar producto
               </button>
             </div>
@@ -452,51 +481,64 @@
             <div id="active-viewer" class="active-viewer-state" style="display: none;">
               <form id="product-form" class="product-form">
                 <input type="hidden" id="prod-id">
-                
+
                 <div class="form-image-col">
                   <div class="image-preview" id="prod-image-preview">
-                    <span>Sin Imagen</span>
+                    <span>Sin foto</span>
                   </div>
                   <div class="image-actions">
-                    <button type="button" id="btn-upload-img" class="btn btn-grey btn-uniform-small">Subir</button>
-                    <button type="button" id="btn-gallery-img" class="btn btn-pink btn-uniform-small">Galería</button>
+                    <button type="button" id="btn-upload-img" class="btn btn-grey btn-uniform-small">Subir foto</button>
+                    <button type="button" id="btn-gallery-img" class="btn btn-grey btn-uniform-small">De la galería</button>
                   </div>
                 </div>
 
                 <div class="form-details-col">
                   <div class="form-row">
-                    <input type="text" id="prod-name" placeholder="Nombre del producto" class="form-input large-input" required>
+                    <div class="form-group product-name-field">
+                      <label for="prod-name">Nombre</label>
+                      <input type="text" id="prod-name" placeholder="Ej: Alfajores de maicena" class="form-input large-input" required>
+                    </div>
                     <label class="toggle-switch">
                       <input type="checkbox" id="prod-enabled" checked>
                       <span class="slider"></span>
-                      Habilitado
+                      Visible en la tienda
                     </label>
                   </div>
 
                   <div class="price-cat-row">
-                    <div class="input-group">
-                      <span>$</span>
-                      <input type="number" id="prod-price" placeholder="Precio" class="form-input price-input" step="0.01" required>
+                    <div class="form-group">
+                      <label for="prod-price">Precio</label>
+                      <div class="input-group">
+                        <span aria-hidden="true">$</span>
+                        <input type="number" id="prod-price" placeholder="0" class="form-input price-input" step="0.01" inputmode="decimal" required>
+                      </div>
                     </div>
-                    <div style="display: flex; gap: 8px; width: 100%;">
-                      <select id="prod-category" class="form-input cat-input"></select>
-                      <button type="button" id="btn-open-cat-modal" class="btn btn-grey" style="padding: 0 12px;" title="Configurar Tipos">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                      </button>
+                    <div class="form-group">
+                      <label for="prod-category">Categoría</label>
+                      <div class="input-with-action">
+                        <select id="prod-category" class="form-input cat-input"></select>
+                        <button type="button" id="btn-open-cat-modal" class="btn btn-grey btn-icon" aria-label="Editar las categorías" title="Editar las categorías">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
 
-                  <div class="form-row" style="margin-top: 5px;">
+                  <div class="form-group">
+                    <label for="prod-recipe">Receta <span class="label-hint">(para descontar insumos al confirmar)</span></label>
                     <select id="prod-recipe" class="form-input">
-                      <option value="">Sin receta asignada</option>
+                      <option value="">Sin receta</option>
                     </select>
                   </div>
 
-                  <textarea id="prod-desc" placeholder="Descripción del producto..." class="form-input textarea-input"></textarea>
+                  <div class="form-group">
+                    <label for="prod-desc">Descripción</label>
+                    <textarea id="prod-desc" placeholder="Qué incluye, para cuántas personas…" class="form-input textarea-input"></textarea>
+                  </div>
 
                   <div class="form-actions">
                     <button type="button" id="btn-delete" class="btn btn-red btn-uniform" disabled>Eliminar</button>
-                    <button type="button" id="btn-discard" class="btn btn-grey btn-uniform">Descartar</button>
+                    <button type="button" id="btn-discard" class="btn btn-grey btn-uniform">Cancelar</button>
                     <button type="submit" id="btn-save" class="btn btn-pink btn-uniform">Guardar</button>
                   </div>
                 </div>
@@ -505,8 +547,9 @@
           </div>
 
           <div class="product-toolbar">
-            <input type="text" id="search-product" class="form-input search-large" placeholder="🔍 Buscar por nombre...">
-            <div class="filter-chips" id="filter-container"></div>
+            <label class="visually-hidden" for="search-product">Buscar productos</label>
+            <input type="search" id="search-product" class="form-input search-large" placeholder="Buscar por nombre" autocomplete="off">
+            <div class="filter-chips" id="filter-container" role="group" aria-label="Filtrar por categoría"></div>
           </div>
 
           <div class="product-catalog-section">
@@ -518,110 +561,106 @@
 
       <!-- ==================== SECCIÓN GALERÍA ==================== -->
       <section id="galeria" class="tab-content">
-        <h2>Galería de Imágenes</h2>
-        <div class="gallery-grid" id="main-gallery-grid">
-          <div class="gallery-item upload-item" id="btn-gallery-upload-new">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            <span>Subir Imagen</span>
+        <div class="panel-head">
+          <div class="panel-head-text">
+            <h2 class="panel-title">Galería</h2>
+            <p class="panel-sub">Fotos de los trabajos. Aparecen en "Ideas para tu próxima torta" de la página de inicio y se pueden usar como foto de un producto.</p>
           </div>
+        </div>
+        <div class="gallery-grid" id="main-gallery-grid">
+          <button type="button" class="gallery-item upload-item" id="btn-gallery-upload-new">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+            <span>Subir foto</span>
+            <small>JPG, PNG o WEBP</small>
+          </button>
         </div>
       </section>
 
       <!-- ==================== SECCIÓN ARMADOR DE TORTAS ==================== -->
       <section id="armador" class="tab-content">
-        <!-- Sub-Módulo 1: Tamaños y Precios -->
-        <div class="product-module-container" style="margin-bottom: 2rem;">
-          <div class="product-toolbar" style="border-bottom: none;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-              <h2 style="margin: 0; font-size: 1.25rem; color: #222;">1. Tamaños y Precios de Tortas</h2>
-              <button type="button" id="btn-new-size" class="btn btn-pink btn-uniform" style="width: auto; padding: 0 15px;">
-                + Nuevo Tamaño
-              </button>
-            </div>
-          </div>
-          <div class="product-catalog-section" style="padding-top: 0;">
-            <div class="table-responsive">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th>Tamaño / Porciones</th>
-                    <th>Precio</th>
-                    <th style="text-align: center;">Máx. Rellenos</th>
-                    <th style="text-align: center;">¿2 Pisos (Mix)?</th>
-                    <th style="text-align: center;">Disponible</th>
-                    <th style="text-align: center;">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody id="cake-sizes-tbody"></tbody>
-              </table>
-            </div>
+        <div class="panel-head">
+          <div class="panel-head-text">
+            <h2 class="panel-title">Armador de tortas</h2>
+            <p class="panel-sub">Lo que el cliente puede elegir en "Armá tu torta": tamaños con su precio, bizcochuelos y rellenos. Lo que apagues deja de verse en la tienda.</p>
           </div>
         </div>
 
-        <!-- Sub-Módulo 2: Sabores de Bizcochuelo y Rellenos -->
-        <div class="product-module-container">
-          <div class="product-toolbar" style="border-bottom: none;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px;">
-              <div style="display: flex; gap: 10px; flex: 1; flex-direction: column;">
-                <h2 style="margin: 0; font-size: 1.25rem; color: #222;">2. Sabores de Bizcochuelo y Rellenos</h2>
-                <div class="filter-chips" id="cake-option-chips">
-                  <button class="chip active" data-cat="all">Todos</button>
-                  <button class="chip" data-cat="Sponge">Bizcochuelos</button>
-                  <button class="chip" data-cat="Crema">Rellenos (Crema)</button>
-                  <button class="chip" data-cat="Fondant">Rellenos (Fondant)</button>
-                </div>
-              </div>
-              <div style="display: flex; gap: 10px; align-self: flex-start;">
-                <button type="button" id="btn-new-option" class="btn btn-pink btn-uniform" style="width: auto; padding: 0 15px;">
-                  + Nuevo Sabor / Relleno
-                </button>
-              </div>
-            </div>
+        <!-- 1. Tamaños y precios -->
+        <div class="config-block">
+          <div class="config-block-head">
+            <h3 class="section-label">Tamaños y precios</h3>
+            <button type="button" id="btn-new-size" class="btn btn-pink"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg> Nuevo tamaño</button>
           </div>
-          <div class="product-catalog-section" style="padding-top: 0;">
-            <div class="table-responsive">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th>Nombre del Sabor / Relleno</th>
-                    <th style="text-align: center;">Categoría</th>
-                    <th style="text-align: center;">Disponible</th>
-                    <th style="text-align: center;">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody id="cake-options-tbody"></tbody>
-              </table>
-            </div>
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Tamaño</th>
+                  <th>Precio</th>
+                  <th>Rellenos</th>
+                  <th>Bizcochuelos</th>
+                  <th>En la tienda</th>
+                  <th><span class="visually-hidden">Acciones</span></th>
+                </tr>
+              </thead>
+              <tbody id="cake-sizes-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 2. Bizcochuelos y rellenos -->
+        <div class="config-block">
+          <div class="config-block-head">
+            <h3 class="section-label">Bizcochuelos y rellenos</h3>
+            <button type="button" id="btn-new-option" class="btn btn-pink"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg> Nuevo sabor</button>
+          </div>
+          <div class="filter-chips" id="cake-option-chips" role="group" aria-label="Filtrar sabores">
+            <button type="button" class="chip active" data-cat="all">Todos</button>
+            <button type="button" class="chip" data-cat="Sponge">Bizcochuelos</button>
+            <button type="button" class="chip" data-cat="Crema">Rellenos para crema</button>
+            <button type="button" class="chip" data-cat="Fondant">Rellenos para fondant</button>
+          </div>
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Sabor</th>
+                  <th>Tipo</th>
+                  <th>En la tienda</th>
+                  <th><span class="visually-hidden">Acciones</span></th>
+                </tr>
+              </thead>
+              <tbody id="cake-options-tbody"></tbody>
+            </table>
           </div>
         </div>
       </section>
 
       <!-- ==================== SECCIÓN EQUIPO ==================== -->
       <section id="equipo" class="tab-content">
-        <div class="product-module-container">
-          <div class="product-toolbar" style="border-bottom: none;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-              <h2 style="margin: 0; font-size: 1.25rem; color: #222;">Gestión de Equipo</h2>
-              <button type="button" id="btn-add-team-member" class="btn btn-pink btn-uniform" style="width: auto; padding: 0 15px;">
-                + Nuevo Pastelero
-              </button>
-            </div>
+        <div class="panel-head">
+          <div class="panel-head-text">
+            <h2 class="panel-title">Equipo</h2>
+            <p class="panel-sub">Las personas de la cocina. Entran con su email y contraseña al panel del pastelero, donde ven pedidos, inventario y recetas (sin precios).</p>
           </div>
-          <div class="product-catalog-section" style="padding-top: 0;">
-            <div class="table-responsive">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th>Nombre</th>
-                    <th>Email</th>
-                    <th>Teléfono</th>
-                    <th style="text-align: center;">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody id="team-tbody"></tbody>
-              </table>
-            </div>
+          <div class="panel-actions">
+            <button type="button" id="btn-add-team-member" class="btn btn-pink">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg> Agregar pastelero
+            </button>
           </div>
+        </div>
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Teléfono</th>
+                <th><span class="visually-hidden">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody id="team-tbody"></tbody>
+          </table>
         </div>
       </section>
 
@@ -632,94 +671,98 @@
   <div id="modal-manual-order" class="modal-overlay" hidden style="z-index: 2100;">
     <div class="modal-card modal-large">
       <div class="modal-header">
-        <h3 style="color: var(--accent);">Crear Pedido Manual</h3>
-        <button class="close-modal" onclick="document.getElementById('modal-manual-order').hidden = true">&times;</button>
+        <h3>Nuevo pedido</h3>
+        <button type="button" class="close-modal" aria-label="Cerrar" onclick="document.getElementById('modal-manual-order').hidden = true">&times;</button>
       </div>
       <div class="modal-body">
         <form id="form-manual-order">
-          <div class="form-grid">
-            <div class="form-group"><label>Nombre del Cliente</label><input type="text" id="mo-name" class="form-input" required></div>
-            <div class="form-group"><label>Teléfono</label><input type="text" id="mo-phone" class="form-input" required></div>
-            <div class="form-group"><label>Fecha de Entrega</label><input type="date" id="mo-date" class="form-input" required></div>
+          <div class="form-grid form-grid-2">
+            <div class="form-group"><label for="mo-name">Nombre del cliente</label><input type="text" id="mo-name" class="form-input" autocomplete="off" required></div>
+            <div class="form-group"><label for="mo-phone">Teléfono</label><input type="tel" id="mo-phone" class="form-input" inputmode="tel" required></div>
+            <div class="form-group"><label for="mo-date">Fecha de entrega</label><input type="date" id="mo-date" class="form-input" required></div>
             <div class="form-group">
-              <label>Estado Inicial</label>
+              <label for="mo-status">Estado</label>
               <select id="mo-status" class="form-input" required>
                 <option value="CONFIRMED">Agendado</option>
-                <option value="COMPLETED">Completado (Histórico)</option>
+                <option value="COMPLETED">Completado (pedido viejo)</option>
               </select>
             </div>
-            <div class="form-group"><label>Total ($)</label><input type="number" id="mo-total" class="form-input" required></div>
-            <div class="form-group"><label>Seña Abonada ($)</label><input type="number" id="mo-deposit" class="form-input" value="0" required></div>
+            <div class="form-group"><label for="mo-total">Total ($)</label><input type="number" id="mo-total" class="form-input" inputmode="numeric" required></div>
+            <div class="form-group"><label for="mo-deposit">Seña cobrada ($)</label><input type="number" id="mo-deposit" class="form-input" inputmode="numeric" value="0" required></div>
           </div>
-          <div class="form-group" style="margin-top: 15px;">
-            <label style="display:flex; justify-content:space-between; align-items:center;">
-              <span>Ítems del Pedido</span>
-              <button type="button" class="btn btn-grey btn-sm" onclick="addManualOrderItem()">+ Añadir Ítem</button>
-            </label>
-            <div id="mo-items-container" style="margin-top: 10px; display:flex; flex-direction:column; gap:10px;">
-              <!-- Los ítems se agregarán dinámicamente aquí -->
+          <div class="form-group mo-items">
+            <div class="mo-items-head">
+              <span class="form-label">Productos del pedido</span>
+              <button type="button" class="btn btn-grey btn-sm" onclick="addManualOrderItem()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg> Agregar producto</button>
+            </div>
+            <div id="mo-items-container" class="mo-items-list">
+              <!-- Los productos se agregan acá (orders.js) -->
             </div>
           </div>
-          <button type="submit" class="btn btn-pink btn-large" style="width: 100%; margin-top: 20px;">Guardar Pedido</button>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-pink btn-large btn-block">Guardar pedido</button>
+          </div>
         </form>
       </div>
     </div>
   </div>
 
   <div id="modal-reject-order" class="modal-overlay" hidden style="z-index: 2400;">
-    <div class="modal-card confirm-card" style="text-align: center;">
-      <div class="modal-header" style="background: #fff; border:none; justify-content: center;">
-        <h3 style="color: var(--danger);">Rechazar Pedido</h3>
+    <div class="modal-card confirm-card">
+      <div class="modal-header">
+        <h3>¿Rechazar este pedido?</h3>
       </div>
-      <div class="modal-body" style="padding-top: 0;">
-        <p style="color: #555; margin-bottom: 20px;">¿Estás seguro de que deseas rechazar este pedido? Pasará a la papelera (Cancelados).</p>
-        <div style="display:flex; gap:10px; justify-content:center;">
-          <button class="btn btn-grey" onclick="document.getElementById('modal-reject-order').hidden = true">Cancelar</button>
-          <button class="btn btn-red" id="btn-confirm-reject">Sí, Rechazar</button>
+      <div class="modal-body">
+        <p class="modal-message">El pedido pasa a "Cancelados". El cliente no recibe ningún aviso automático.</p>
+        <div class="form-actions">
+          <button type="button" class="btn btn-grey" onclick="document.getElementById('modal-reject-order').hidden = true">Volver</button>
+          <button type="button" class="btn btn-red" id="btn-confirm-reject">Sí, rechazar</button>
         </div>
       </div>
     </div>
   </div>
 
   <div id="modal-past-date" class="modal-overlay" hidden style="z-index: 2500;">
-    <div class="modal-card confirm-card" style="text-align: center;">
-      <div class="modal-header" style="background: #fff; border:none; justify-content: center;">
-        <h3 style="color: #f59e0b;">Atención: Fecha Antigua</h3>
+    <div class="modal-card confirm-card">
+      <div class="modal-header">
+        <h3>La fecha ya pasó</h3>
       </div>
-      <div class="modal-body" style="padding-top: 0;">
-        <p style="color: #555; margin-bottom: 20px;">Se ingresó una fecha de entrega que ya pasó. ¿Desea continuar igualmente?</p>
-        <div style="display:flex; gap:10px; justify-content:center;">
-          <button class="btn btn-grey" onclick="document.getElementById('modal-past-date').hidden = true">Cancelar</button>
-          <button class="btn btn-pink" id="btn-confirm-past-date" style="background:#f59e0b;">Sí, continuar</button>
+      <div class="modal-body">
+        <p class="modal-message">La fecha de entrega que pusiste es anterior a hoy. ¿Querés guardarla igual?</p>
+        <div class="form-actions">
+          <button type="button" class="btn btn-grey" onclick="document.getElementById('modal-past-date').hidden = true">Cambiar la fecha</button>
+          <button type="button" class="btn btn-pink" id="btn-confirm-past-date">Sí, guardar</button>
         </div>
       </div>
     </div>
   </div>
 
   <div id="modal-confirm-order" class="modal-overlay" hidden style="z-index: 2300;">
-    <div class="modal-card" style="max-width: 420px;">
-      <div class="modal-header" style="background: #fff; border-bottom: none;">
-        <h3 style="color: var(--accent);">Confirmar Pedido - N° Ref #<span id="co-id-label"></span></h3>
-        <button class="close-modal" onclick="document.getElementById('modal-confirm-order').hidden = true">&times;</button>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Confirmar pedido #<span id="co-id-label"></span></h3>
+        <button type="button" class="close-modal" aria-label="Cerrar" onclick="document.getElementById('modal-confirm-order').hidden = true">&times;</button>
       </div>
-      <div class="modal-body" style="padding-top: 5px;">
-        <p style="color: #666; font-size: 0.95rem; margin-bottom: 20px;">Verifica la fecha de entrega e ingresa el detalle del pago.</p>
-        
-        <div class="form-group mb-3"><label>Fecha de entrega pactada:</label><input type="date" id="co-date" class="form-input"></div>
-        <div class="form-group mb-3" style="margin-top: 15px;">
-          <label>El cliente abonó:</label>
-          <select id="co-payment-type" class="form-input" onchange="toggleDepositInput()">
-            <option value="total">El Total del Pedido</option>
-            <option value="sena">Una Seña (Adelanto)</option>
-          </select>
+      <div class="modal-body">
+        <p class="modal-message">Revisá la fecha de entrega y anotá cuánto pagó el cliente.</p>
+        <div class="form-grid">
+          <div class="form-group"><label for="co-date">Fecha de entrega</label><input type="date" id="co-date" class="form-input"></div>
+          <div class="form-group">
+            <label for="co-payment-type">El cliente pagó</label>
+            <select id="co-payment-type" class="form-input" onchange="toggleDepositInput()">
+              <option value="total">El total del pedido</option>
+              <option value="sena">Una seña (adelanto)</option>
+            </select>
+          </div>
+          <div class="form-group" id="co-deposit-group" style="display: none;">
+            <label for="co-deposit">Monto de la seña ($)</label>
+            <input type="number" id="co-deposit" class="form-input" inputmode="numeric" placeholder="Ej: 15000">
+          </div>
         </div>
-        <div class="form-group mb-3" id="co-deposit-group" style="display: none; margin-top: 15px;">
-          <label>Monto de la Seña Registrada ($)</label>
-          <input type="number" id="co-deposit" class="form-input" placeholder="Ej: 15000">
-        </div>
-        
         <input type="hidden" id="co-hidden-total">
-        <button class="btn btn-pink btn-large" style="width: 100%; margin-top: 25px;" id="btn-submit-confirm">✅ Guardar y Agendar</button>
+        <div class="form-actions">
+          <button type="button" class="btn btn-pink btn-large btn-block" id="btn-submit-confirm">Confirmar y agendar</button>
+        </div>
       </div>
     </div>
   </div>
@@ -727,45 +770,49 @@
   <div id="modal-view-order" class="modal-overlay" hidden style="z-index: 2200;">
     <div class="modal-card modal-large">
       <div class="modal-header">
-        <h3 id="view-order-title" style="color: var(--accent); font-size: 1.4rem;">Pedido - N° Ref #X</h3>
-        <div style="display: flex; gap: 10px; align-items: center;">
-          <button class="btn btn-red btn-sm" id="btn-cancel-view-order" style="display: none;" onclick="actionCancelViewingOrder()">🚫 Cancelar Pedido</button>
-          <button class="btn btn-pink btn-sm" id="btn-complete-view-order" style="display: none;" onclick="actionToggleCompleteViewingOrder()"></button>
-          <button class="btn btn-grey btn-sm" id="btn-print-receipt" style="display: none; align-items: center; gap: 4px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-            Imprimir Recibo
-          </button>
-          <button class="btn btn-grey btn-sm" id="btn-enable-edit" onclick="enableEditMode()">✏️ Editar Pedido</button>
-          <button class="close-modal" onclick="document.getElementById('modal-view-order').hidden = true">&times;</button>
-        </div>
+        <h3 id="view-order-title">Pedido #</h3>
+        <button type="button" class="close-modal" aria-label="Cerrar" onclick="document.getElementById('modal-view-order').hidden = true">&times;</button>
       </div>
-      <div class="modal-body" style="background: #fafafa; padding: 2rem;">
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-          <div class="order-details-box">
-            <h4 style="color: var(--accent); margin-top:0; margin-bottom:15px;">👤 Datos del Cliente</h4>
-            <div class="form-group mb-3"><label>Nombre:</label><input type="text" id="vo-name" class="form-input readonly-mode" readonly></div>
-            <div class="form-group mb-3"><label>Teléfono:</label><input type="text" id="vo-phone" class="form-input readonly-mode" readonly></div>
-          </div>
-          
-          <div class="order-details-box">
-            <h4 style="color: var(--accent); margin-top:0; margin-bottom:15px;">🚚 Logística y Finanzas</h4>
-            <div class="form-group mb-3"><label>Fecha de Entrega:</label><input type="date" id="vo-date-input" class="form-input readonly-mode" readonly></div>
-            <div class="form-group mb-3"><label>Total ($):</label><input type="number" id="vo-total" class="form-input readonly-mode" readonly></div>
-            <div class="form-group mb-3"><label>Seña Registrada ($):</label><input type="number" id="vo-deposit" class="form-input readonly-mode" readonly></div>
-          </div>
-        </div>
-        
-        <h4 style="color: var(--accent); margin-bottom: 10px; padding: 0 10px;">Detalle de Artículos</h4>
-        <div class="order-details-box" style="padding: 10px 20px;">
-          <textarea id="vo-items-details" class="form-input readonly-mode" rows="6" readonly style="width:100%;"></textarea>
-        </div>
-        
-        <div style="text-align: right; margin-top: 20px;" id="vo-save-container" hidden>
-          <button class="btn btn-grey" onclick="disableEditMode()">Cancelar</button>
-          <button class="btn btn-pink" onclick="saveEditedOrder()" style="margin-left: 10px;">💾 Guardar Cambios</button>
+      <div class="modal-body">
+        <!-- Acciones del pedido (orders.js muestra u oculta cada una según el estado) -->
+        <div class="order-actions-bar">
+          <button type="button" class="btn btn-pink btn-sm" id="btn-complete-view-order" style="display: none;" onclick="actionToggleCompleteViewingOrder()"></button>
+          <button type="button" class="btn btn-grey btn-sm" id="btn-print-receipt" style="display: none;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+            Imprimir recibo
+          </button>
+          <button type="button" class="btn btn-grey btn-sm" id="btn-enable-edit" onclick="enableEditMode()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            Editar
+          </button>
+          <button type="button" class="btn btn-red btn-sm" id="btn-cancel-view-order" style="display: none;" onclick="actionCancelViewingOrder()">Cancelar pedido</button>
         </div>
 
+        <!-- Las dos cajas van en este orden: baker.html oculta la segunda (dinero) -->
+        <div class="order-details-grid">
+          <div class="order-details-box">
+            <h4>Cliente</h4>
+            <div class="form-group"><label for="vo-name">Nombre</label><input type="text" id="vo-name" class="form-input readonly-mode" readonly></div>
+            <div class="form-group"><label for="vo-phone">Teléfono</label><input type="text" id="vo-phone" class="form-input readonly-mode" readonly></div>
+          </div>
+
+          <div class="order-details-box">
+            <h4>Entrega y pago</h4>
+            <div class="form-group"><label for="vo-date-input">Fecha de entrega</label><input type="date" id="vo-date-input" class="form-input readonly-mode" readonly></div>
+            <div class="form-group"><label for="vo-total">Total ($)</label><input type="number" id="vo-total" class="form-input readonly-mode" readonly></div>
+            <div class="form-group"><label for="vo-deposit">Seña cobrada ($)</label><input type="number" id="vo-deposit" class="form-input readonly-mode" readonly></div>
+          </div>
+        </div>
+
+        <div class="order-details-box order-items-box">
+          <h4><label for="vo-items-details">Productos y detalles</label></h4>
+          <textarea id="vo-items-details" class="form-input readonly-mode" rows="6" readonly></textarea>
+        </div>
+
+        <div class="form-actions" id="vo-save-container" hidden>
+          <button type="button" class="btn btn-grey" onclick="disableEditMode()">Descartar cambios</button>
+          <button type="button" class="btn btn-pink" onclick="saveEditedOrder()">Guardar cambios</button>
+        </div>
       </div>
     </div>
   </div>
@@ -773,13 +820,13 @@
   <div id="modal-day-orders" class="modal-overlay" hidden style="z-index: 2000;">
     <div class="modal-card modal-large">
       <div class="modal-header">
-        <h3 id="day-orders-title" style="color: var(--accent);">Entregas para el xx/xx/xxxx</h3>
-        <button class="close-modal" onclick="document.getElementById('modal-day-orders').hidden = true">&times;</button>
+        <h3 id="day-orders-title">Entregas del día</h3>
+        <button type="button" class="close-modal" aria-label="Cerrar" onclick="document.getElementById('modal-day-orders').hidden = true">&times;</button>
       </div>
       <div class="modal-body">
         <div class="table-responsive">
           <table class="admin-table">
-            <thead><tr><th>N° - Ref #</th><th>Cliente</th><th>Total</th><th>Estado</th><th style="text-align:center;">Acciones</th></tr></thead>
+            <thead><tr><th>N°</th><th>Cliente</th><th>Total</th><th>Estado</th><th><span class="visually-hidden">Acciones</span></th></tr></thead>
             <tbody id="day-orders-tbody"></tbody>
           </table>
         </div>
@@ -788,16 +835,17 @@
   </div>
 
   <div id="modal-custom-prompt" class="modal-overlay" hidden style="z-index: 3000;">
-    <div class="modal-card confirm-card" style="max-width: 400px; text-align: center;">
+    <div class="modal-card confirm-card">
       <div class="modal-header">
-        <h3 id="custom-prompt-title" style="color: var(--accent);"></h3>
+        <h3 id="custom-prompt-title"></h3>
       </div>
-      <div class="modal-body text-center" style="padding-top: 10px;">
-        <p id="custom-prompt-message" style="margin-bottom: 15px; font-size: 1.1rem; color: #444;"></p>
-        <input type="text" id="custom-prompt-input" class="form-input" style="width: 100%; margin-bottom: 20px; text-align: center;">
-        <div style="display: flex; gap: 10px; justify-content: center;">
-          <button class="btn btn-grey btn-uniform" id="btn-custom-prompt-cancel">Cancelar</button>
-          <button class="btn btn-pink btn-uniform" id="btn-custom-prompt-confirm">Aceptar</button>
+      <div class="modal-body">
+        <p id="custom-prompt-message" class="modal-message"></p>
+        <label class="visually-hidden" for="custom-prompt-input">Respuesta</label>
+        <input type="text" id="custom-prompt-input" class="form-input">
+        <div class="form-actions">
+          <button type="button" class="btn btn-grey" id="btn-custom-prompt-cancel">Cancelar</button>
+          <button type="button" class="btn btn-pink" id="btn-custom-prompt-confirm">Aceptar</button>
         </div>
       </div>
     </div>
@@ -809,9 +857,9 @@
       <div class="modal-header">
         <h3 id="confirm-title">Confirmar</h3>
       </div>
-      <div class="modal-body text-center">
-        <p id="confirm-message" style="margin-bottom: 20px; font-size: 1.1rem; color: #444;"></p>
-        <div class="form-actions justify-center">
+      <div class="modal-body">
+        <p id="confirm-message" class="modal-message"></p>
+        <div class="form-actions">
           <button type="button" id="btn-confirm-cancel" class="btn btn-grey btn-uniform">Cancelar</button>
           <button type="button" id="btn-confirm-ok" class="btn btn-uniform">Aceptar</button>
         </div>
@@ -822,17 +870,16 @@
   <div id="modal-view-recipe" class="modal-overlay" hidden>
     <div class="modal-card">
       <div class="modal-header">
-        <h3 id="view-recipe-title">Detalles de la Receta</h3>
-        <button class="close-modal" onclick="document.getElementById('modal-view-recipe').hidden=true">&times;</button>
+        <h3 id="view-recipe-title">Receta</h3>
+        <button type="button" class="close-modal" aria-label="Cerrar" onclick="document.getElementById('modal-view-recipe').hidden=true">&times;</button>
       </div>
-      <div class="modal-body" style="padding-top: 10px;">
-        <p style="font-weight: bold; margin-bottom: 5px;">Detalles:</p>
-        <p id="view-recipe-details" style="margin-bottom: 15px; color: #555; white-space: pre-wrap;"></p>
-        <p style="font-weight: bold; margin-bottom: 5px;">Ingredientes:</p>
-        <ul id="view-recipe-ingredients" style="list-style-type: disc; margin-left: 20px; color: #555;">
-        </ul>
-        <div class="form-actions justify-center" style="margin-top: 20px;">
-          <button type="button" class="btn btn-uniform" onclick="document.getElementById('modal-view-recipe').hidden=true">Cerrar</button>
+      <div class="modal-body recipe-view">
+        <h4 class="section-label">Ingredientes</h4>
+        <ul id="view-recipe-ingredients" class="recipe-ingredients"></ul>
+        <h4 class="section-label">Preparación</h4>
+        <p id="view-recipe-details" class="recipe-details"></p>
+        <div class="form-actions">
+          <button type="button" class="btn btn-grey btn-uniform" onclick="document.getElementById('modal-view-recipe').hidden=true">Cerrar</button>
         </div>
       </div>
     </div>
@@ -841,13 +888,13 @@
   <div id="modal-alert" class="modal-overlay" hidden>
     <div class="modal-card confirm-card">
       <div class="modal-header">
-        <h3>Atención</h3>
-        <button class="close-modal">&times;</button>
+        <h3>Revisá esto</h3>
+        <button type="button" class="close-modal" aria-label="Cerrar">&times;</button>
       </div>
-      <div class="modal-body text-center">
-        <p id="alert-message" style="margin-bottom: 20px; font-size: 1.1rem; color: #444; white-space: pre-wrap;"></p>
-        <div class="form-actions justify-center">
-          <button type="button" class="btn btn-red btn-uniform close-modal">Entiendo</button>
+      <div class="modal-body">
+        <p id="alert-message" class="modal-message"></p>
+        <div class="form-actions">
+          <button type="button" class="btn btn-pink btn-uniform close-modal">Entendido</button>
         </div>
       </div>
     </div>
@@ -856,23 +903,23 @@
   <div id="modal-inventory-form" class="modal-overlay" hidden>
     <div class="modal-card confirm-card">
       <div class="modal-header">
-        <h3 id="inv-modal-title">Agregar Insumo</h3>
-        <button class="close-modal">&times;</button>
+        <h3 id="inv-modal-title">Nuevo insumo</h3>
+        <button type="button" class="close-modal" aria-label="Cerrar">&times;</button>
       </div>
       <div class="modal-body">
-        <form id="inventory-form">
+        <form id="inventory-form" class="form-grid">
           <input type="hidden" id="inv-id">
-          <div style="margin-bottom: 15px;">
-            <label class="form-label">Nombre del insumo</label>
-            <input type="text" id="inv-name" class="form-input" required>
+          <div class="form-group">
+            <label for="inv-name">Nombre del insumo</label>
+            <input type="text" id="inv-name" class="form-input" placeholder="Ej: Harina 0000" required>
           </div>
-          <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-            <div style="flex: 1;">
-              <label class="form-label">Stock Actual</label>
-              <input type="number" id="inv-current" class="form-input" step="0.01" required>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="inv-current">Cantidad que hay</label>
+              <input type="number" id="inv-current" class="form-input" step="0.01" inputmode="decimal" required>
             </div>
-            <div style="flex: 1;">
-              <label class="form-label">Unidad (ej: Kg)</label>
+            <div class="form-group">
+              <label for="inv-unit">Unidad</label>
               <select id="inv-unit" class="form-input" required>
                 <option value="Kg">Kg</option>
                 <option value="Gramos">Gramos</option>
@@ -883,17 +930,17 @@
               </select>
             </div>
           </div>
-          <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-            <div style="flex: 1;">
-              <label class="form-label">Stock Mínimo (Opcional)</label>
-              <input type="number" id="inv-min" class="form-input" step="0.01">
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="inv-min">Avisar cuando quede <span class="label-hint">(opcional)</span></label>
+              <input type="number" id="inv-min" class="form-input" step="0.01" inputmode="decimal">
             </div>
-            <div style="flex: 1;">
-              <label class="form-label">Vencimiento (Opcional)</label>
+            <div class="form-group">
+              <label for="inv-exp">Vence el <span class="label-hint">(opcional)</span></label>
               <input type="date" id="inv-exp" class="form-input">
             </div>
           </div>
-          <div class="form-actions justify-center">
+          <div class="form-actions">
             <button type="button" class="btn btn-grey btn-uniform close-modal">Cancelar</button>
             <button type="submit" class="btn btn-pink btn-uniform">Guardar</button>
           </div>
@@ -905,14 +952,15 @@
   <div id="modal-category" class="modal-overlay" hidden>
     <div class="modal-card">
       <div class="modal-header">
-        <h3>Tipos de Productos</h3>
-        <button class="close-modal">&times;</button>
+        <h3>Categorías de productos</h3>
+        <button type="button" class="close-modal" aria-label="Cerrar">&times;</button>
       </div>
-      <div class="modal-body" style="padding-top: 10px;">
-        <button id="btn-show-add-cat" class="btn btn-pink" style="width: 100%; margin-bottom: 15px; padding: 10px;">+ Crear nuevo tipo</button>
+      <div class="modal-body">
+        <button type="button" id="btn-show-add-cat" class="btn btn-pink btn-block">+ Nueva categoría</button>
         <div id="add-cat-container" class="add-cat-row" style="display: none;">
-          <input type="text" id="new-cat-name" class="form-input" placeholder="Nombre del tipo...">
-          <button id="btn-add-cat" class="btn btn-pink btn-uniform" style="width: auto;">Guardar</button>
+          <label class="visually-hidden" for="new-cat-name">Nombre de la categoría</label>
+          <input type="text" id="new-cat-name" class="form-input" placeholder="Ej: Souvenirs">
+          <button type="button" id="btn-add-cat" class="btn btn-pink">Guardar</button>
         </div>
         <ul id="category-list" class="category-list"></ul>
       </div>
@@ -922,8 +970,8 @@
   <div id="modal-gallery-picker" class="modal-overlay" hidden>
     <div class="modal-card modal-large">
       <div class="modal-header">
-        <h3>Seleccionar de la Galería</h3>
-        <button class="close-modal">&times;</button>
+        <h3>Elegir una foto de la galería</h3>
+        <button type="button" class="close-modal" aria-label="Cerrar">&times;</button>
       </div>
       <div class="modal-body">
         <div class="gallery-grid" id="picker-gallery-grid"></div>
@@ -932,48 +980,43 @@
   </div>
 
   <div id="modal-client-form" class="modal-overlay" hidden>
-    <div class="modal-card confirm-card">
+    <div class="modal-card">
       <div class="modal-header">
-        <h3 id="client-modal-title">Agregar Cliente</h3>
-        <button class="close-modal">&times;</button>
+        <h3 id="client-modal-title">Nuevo cliente</h3>
+        <button type="button" class="close-modal" aria-label="Cerrar">&times;</button>
       </div>
       <div class="modal-body">
-        <form id="client-form">
+        <form id="client-form" class="form-grid">
           <input type="hidden" id="client-id">
-          
-          <div style="margin-bottom: 15px;">
-            <label class="form-label">Nombre del Cliente</label>
-            <input type="text" id="client-name" class="form-input" required>
+          <div class="form-group">
+            <label for="client-name">Nombre y apellido</label>
+            <input type="text" id="client-name" class="form-input" autocomplete="off" required>
           </div>
-          
-          <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-            <div style="flex: 1;">
-              <label class="form-label">Teléfono (Opcional)</label>
-              <input type="text" id="client-phone" class="form-input">
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="client-phone">Teléfono <span class="label-hint">(opcional)</span></label>
+              <input type="tel" id="client-phone" class="form-input" inputmode="tel">
             </div>
-            <div style="flex: 1;">
-              <label class="form-label">Email (Opcional)</label>
-              <input type="email" id="client-email" class="form-input">
+            <div class="form-group">
+              <label for="client-email">Email <span class="label-hint">(opcional)</span></label>
+              <input type="email" id="client-email" class="form-input" inputmode="email">
             </div>
           </div>
-
-          <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-            <div style="flex: 1;">
-              <label class="form-label">Dirección (Opcional)</label>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="client-address">Dirección <span class="label-hint">(opcional)</span></label>
               <input type="text" id="client-address" class="form-input">
             </div>
-            <div style="flex: 1;">
-              <label class="form-label">Cumpleaños (Opcional)</label>
+            <div class="form-group">
+              <label for="client-birthdate">Cumpleaños <span class="label-hint">(opcional)</span></label>
               <input type="date" id="client-birthdate" class="form-input">
             </div>
           </div>
-
-          <div style="margin-bottom: 20px;">
-            <label class="form-label">Etiqueta</label>
+          <div class="form-group">
+            <label for="client-tag">Etiqueta</label>
             <select id="client-tag" class="form-input" required></select>
           </div>
-
-          <div class="form-actions justify-center">
+          <div class="form-actions">
             <button type="button" class="btn btn-grey btn-uniform close-modal">Cancelar</button>
             <button type="submit" class="btn btn-pink btn-uniform">Guardar</button>
           </div>
@@ -985,14 +1028,15 @@
   <div id="modal-tags" class="modal-overlay" hidden>
     <div class="modal-card">
       <div class="modal-header">
-        <h3>Etiquetas de Clientes</h3>
-        <button class="close-modal">&times;</button>
+        <h3>Etiquetas de clientes</h3>
+        <button type="button" class="close-modal" aria-label="Cerrar">&times;</button>
       </div>
-      <div class="modal-body" style="padding-top: 10px;">
-        <button id="btn-show-add-tag" class="btn btn-pink" style="width: 100%; margin-bottom: 15px; padding: 10px;">+ Crear nueva etiqueta</button>
+      <div class="modal-body">
+        <button type="button" id="btn-show-add-tag" class="btn btn-pink btn-block">+ Nueva etiqueta</button>
         <div id="add-tag-container" class="add-cat-row" style="display: none;">
-          <input type="text" id="new-tag-name" class="form-input" placeholder="Nombre de la etiqueta...">
-          <button id="btn-add-tag" class="btn btn-pink btn-uniform" style="width: auto;">Guardar</button>
+          <label class="visually-hidden" for="new-tag-name">Nombre de la etiqueta</label>
+          <input type="text" id="new-tag-name" class="form-input" placeholder="Ej: Cliente frecuente">
+          <button type="button" id="btn-add-tag" class="btn btn-pink">Guardar</button>
         </div>
         <ul id="tags-list" class="category-list"></ul>
       </div>
@@ -1003,33 +1047,47 @@
     <div class="modal-card">
       <div class="modal-header">
         <h3>Cupones</h3>
-        <button class="close-modal" onclick="document.getElementById('modal-coupons').hidden = true">&times;</button>
+        <button type="button" class="close-modal" aria-label="Cerrar" onclick="document.getElementById('modal-coupons').hidden = true">&times;</button>
       </div>
-      <div class="modal-body" style="padding-top: 10px;">
-        <button id="btn-show-add-coupon" class="btn btn-pink" style="width: 100%; margin-bottom: 15px; padding: 10px;">+ Crear nuevo cupón</button>
-        <div id="add-coupon-container" class="add-cat-row" style="display: none; flex-direction: column;">
+      <div class="modal-body">
+        <button type="button" id="btn-show-add-coupon" class="btn btn-pink btn-block">+ Nuevo cupón</button>
+        <div id="add-coupon-container" class="add-cat-row coupon-form" style="display: none;">
           <input type="hidden" id="coupon-id" value="">
-          <div style="display:flex; gap:10px;">
-            <input type="text" id="new-coupon-code" class="form-input" placeholder="Código (ej. DESC10)...">
-            <select id="new-coupon-type" class="form-input">
-              <option value="DESCUENTO">Descuento</option>
-              <option value="ENVIO_GRATIS">Envío Gratis</option>
-              <option value="REGALO">Regalo</option>
-              <option value="OTROS">Otros</option>
-            </select>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="new-coupon-code">Código</label>
+              <input type="text" id="new-coupon-code" class="form-input" placeholder="Ej: DULCE10" autocapitalize="characters">
+            </div>
+            <div class="form-group">
+              <label for="new-coupon-type">Tipo</label>
+              <select id="new-coupon-type" class="form-input">
+                <option value="DESCUENTO">Descuento</option>
+                <option value="ENVIO_GRATIS">Envío gratis</option>
+                <option value="REGALO">Regalo</option>
+                <option value="OTROS">Otros</option>
+              </select>
+            </div>
           </div>
-          <input type="text" id="new-coupon-desc" class="form-input" placeholder="Descripción..." style="margin-top:10px;">
-          <div id="coupon-dynamic-inputs" style="margin-top:10px;">
-             <input type="number" id="new-coupon-discount" class="form-input" placeholder="Porcentaje (1-100%)" min="1" max="100">
-             <input type="text" id="new-coupon-custom" class="form-input" placeholder="Texto Personalizado" style="display: none;">
+          <div class="form-group">
+            <label for="new-coupon-desc">Descripción</label>
+            <input type="text" id="new-coupon-desc" class="form-input" placeholder="Ej: 10% en tortas personalizadas">
           </div>
-          <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
-              <input type="number" id="new-coupon-limit" class="form-input" placeholder="Límite de usos" min="1">
-              <label style="white-space: nowrap; display:flex; align-items:center; gap:5px;">
-                  <input type="checkbox" id="new-coupon-unlimited"> Ilimitado
-              </label>
+          <div id="coupon-dynamic-inputs" class="form-group">
+            <label class="visually-hidden" for="new-coupon-discount">Porcentaje de descuento</label>
+            <input type="number" id="new-coupon-discount" class="form-input" placeholder="Porcentaje (1 a 100)" min="1" max="100" inputmode="numeric">
+            <label class="visually-hidden" for="new-coupon-custom">Texto del beneficio</label>
+            <input type="text" id="new-coupon-custom" class="form-input" placeholder="Texto del beneficio" style="display: none;">
           </div>
-          <button id="btn-add-coupon" class="btn btn-pink btn-uniform" style="width: 100%; margin-top: 10px;">Guardar</button>
+          <div class="coupon-limit-row">
+            <div class="form-group">
+              <label for="new-coupon-limit">Límite de usos</label>
+              <input type="number" id="new-coupon-limit" class="form-input" placeholder="Ej: 50" min="1" inputmode="numeric">
+            </div>
+            <label class="checkbox-label">
+              <input type="checkbox" id="new-coupon-unlimited"> Sin límite
+            </label>
+          </div>
+          <button type="button" id="btn-add-coupon" class="btn btn-pink btn-block">Guardar cupón</button>
         </div>
         <ul id="coupons-list" class="category-list"></ul>
       </div>
@@ -1038,37 +1096,35 @@
 
   <!-- ==================== MODALES DEL ARMADOR DE TORTAS (Alerta v1) ==================== -->
   <div id="modal-cake-size" class="modal-overlay" hidden>
-    <div class="modal-card confirm-card">
+    <div class="modal-card">
       <div class="modal-header">
-        <h3 id="modal-size-title">Nuevo Tamaño de Torta</h3>
-        <button type="button" class="close-modal" onclick="document.getElementById('modal-cake-size').hidden=true">&times;</button>
+        <h3 id="modal-size-title">Nuevo tamaño</h3>
+        <button type="button" class="close-modal" aria-label="Cerrar" onclick="document.getElementById('modal-cake-size').hidden=true">&times;</button>
       </div>
       <div class="modal-body">
-        <form id="form-cake-size">
+        <form id="form-cake-size" class="form-grid">
           <input type="hidden" id="size-id">
-          <div style="margin-bottom: 15px;">
-            <label class="form-label">Descripción (ej: 10 porciones 14x12cm)</label>
-            <input type="text" id="size-name" class="form-input" required>
+          <div class="form-group">
+            <label for="size-name">Nombre del tamaño</label>
+            <input type="text" id="size-name" class="form-input" placeholder="Ej: 20 porciones (16x15cm)" required>
           </div>
-          <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-            <div style="flex: 1;">
-              <label class="form-label">Precio ($)</label>
-              <input type="number" id="size-price" class="form-input" required min="1" step="1">
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="size-price">Precio ($)</label>
+              <input type="number" id="size-price" class="form-input" required min="1" step="1" inputmode="numeric">
             </div>
-            <div style="flex: 1;">
-              <label class="form-label">Máx. Rellenos</label>
-              <input type="number" id="size-max" class="form-input" required min="1" max="6" value="2">
+            <div class="form-group">
+              <label for="size-max">Rellenos que se pueden elegir</label>
+              <input type="number" id="size-max" class="form-input" required min="1" max="6" value="2" inputmode="numeric">
             </div>
           </div>
-          <div style="display: flex; gap: 20px; margin-bottom: 20px;">
-            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem;">
-              <input type="checkbox" id="size-mix"> ¿Permite 2 Bizcochuelos?
-            </label>
-            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem;">
-              <input type="checkbox" id="size-enabled" checked> Disponible
-            </label>
-          </div>
-          <div class="form-actions justify-center">
+          <label class="checkbox-label">
+            <input type="checkbox" id="size-mix"> Se pueden combinar 2 bizcochuelos (tortas de 2 pisos)
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="size-enabled" checked> Mostrar en la tienda
+          </label>
+          <div class="form-actions">
             <button type="button" class="btn btn-grey btn-uniform" onclick="document.getElementById('modal-cake-size').hidden=true">Cancelar</button>
             <button type="submit" class="btn btn-pink btn-uniform">Guardar</button>
           </div>
@@ -1078,32 +1134,30 @@
   </div>
 
   <div id="modal-cake-option" class="modal-overlay" hidden>
-    <div class="modal-card confirm-card">
+    <div class="modal-card">
       <div class="modal-header">
-        <h3 id="modal-option-title">Nuevo Sabor / Relleno</h3>
-        <button type="button" class="close-modal" onclick="document.getElementById('modal-cake-option').hidden=true">&times;</button>
+        <h3 id="modal-option-title">Nuevo sabor</h3>
+        <button type="button" class="close-modal" aria-label="Cerrar" onclick="document.getElementById('modal-cake-option').hidden=true">&times;</button>
       </div>
       <div class="modal-body">
-        <form id="form-cake-option">
+        <form id="form-cake-option" class="form-grid">
           <input type="hidden" id="option-id">
-          <div style="margin-bottom: 15px;">
-            <label class="form-label">Nombre (ej: Red Velvet, Ganache Pistacho)</label>
-            <input type="text" id="option-name" class="form-input" required>
+          <div class="form-group">
+            <label for="option-name">Nombre</label>
+            <input type="text" id="option-name" class="form-input" placeholder="Ej: Red velvet, Ganache de pistacho" required>
           </div>
-          <div style="margin-bottom: 15px;">
-            <label class="form-label">Categoría</label>
+          <div class="form-group">
+            <label for="option-category">Tipo</label>
             <select id="option-category" class="form-input" required>
               <option value="Sponge">Bizcochuelo</option>
-              <option value="Crema">Relleno para Cobertura en Crema</option>
-              <option value="Fondant">Relleno para Cobertura en Fondant</option>
+              <option value="Crema">Relleno para tortas con crema</option>
+              <option value="Fondant">Relleno para tortas con fondant</option>
             </select>
           </div>
-          <div style="margin-bottom: 20px;">
-            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem;">
-              <input type="checkbox" id="option-enabled" checked> Disponible en la web
-            </label>
-          </div>
-          <div class="form-actions justify-center">
+          <label class="checkbox-label">
+            <input type="checkbox" id="option-enabled" checked> Mostrar en la tienda
+          </label>
+          <div class="form-actions">
             <button type="button" class="btn btn-grey btn-uniform" onclick="document.getElementById('modal-cake-option').hidden=true">Cancelar</button>
             <button type="submit" class="btn btn-pink btn-uniform">Guardar</button>
           </div>
@@ -1115,34 +1169,30 @@
   <div id="modal-recipe-form" class="modal-overlay" hidden>
     <div class="modal-card modal-large">
       <div class="modal-header">
-        <h3 id="recipe-modal-title">Agregar Receta</h3>
-        <button class="close-modal">&times;</button>
+        <h3 id="recipe-modal-title">Nueva receta</h3>
+        <button type="button" class="close-modal" aria-label="Cerrar">&times;</button>
       </div>
       <div class="modal-body">
-        <form id="recipe-form">
+        <form id="recipe-form" class="form-grid">
           <input type="hidden" id="recipe-id">
-          
-          <div style="margin-bottom: 15px;">
-            <label class="form-label">Nombre de la Receta</label>
-            <input type="text" id="recipe-name" class="form-input" required>
+          <div class="form-group">
+            <label for="recipe-name">Nombre de la receta</label>
+            <input type="text" id="recipe-name" class="form-input" placeholder="Ej: Bizcochuelo de vainilla" required>
           </div>
-          
-          <div style="margin-bottom: 15px;">
-            <label class="form-label">Detalles / Preparación (Opcional)</label>
+          <div class="form-group">
+            <label for="recipe-details">Preparación <span class="label-hint">(opcional)</span></label>
             <textarea id="recipe-details" class="form-input textarea-input" rows="3"></textarea>
           </div>
-
-          <div style="margin-bottom: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-              <label class="form-label" style="margin: 0;">Ingredientes (Insumos)</label>
-              <button type="button" id="btn-add-recipe-item" class="btn btn-grey btn-sm">+ Agregar Insumo</button>
+          <div class="form-group">
+            <div class="mo-items-head">
+              <span class="form-label">Insumos que lleva</span>
+              <button type="button" id="btn-add-recipe-item" class="btn btn-grey btn-sm">+ Agregar insumo</button>
             </div>
-            <div id="recipe-items-container" style="display: flex; flex-direction: column; gap: 10px;">
-              <!-- Dynamic rows will go here -->
+            <div id="recipe-items-container" class="recipe-items-list">
+              <!-- Una fila por insumo (recipes.js) -->
             </div>
           </div>
-
-          <div class="form-actions justify-center">
+          <div class="form-actions">
             <button type="button" class="btn btn-grey btn-uniform close-modal">Cancelar</button>
             <button type="submit" class="btn btn-pink btn-uniform">Guardar</button>
           </div>
@@ -1152,32 +1202,34 @@
   </div>
 
   <div id="modal-team" class="modal-overlay" hidden>
-    <div class="modal-card confirm-card">
+    <div class="modal-card">
       <div class="modal-header">
-        <h3 id="modal-team-title">Nuevo Pastelero</h3>
-        <button type="button" class="close-modal" onclick="document.getElementById('modal-team').hidden=true">&times;</button>
+        <h3 id="modal-team-title">Agregar pastelero</h3>
+        <button type="button" class="close-modal" aria-label="Cerrar" onclick="document.getElementById('modal-team').hidden=true">&times;</button>
       </div>
       <div class="modal-body">
-        <form id="form-team">
+        <form id="form-team" class="form-grid">
           <input type="hidden" id="team-id">
-          <div style="margin-bottom: 15px;">
-            <label class="form-label">Nombre</label>
-            <input type="text" id="team-name" class="form-input" required>
+          <div class="form-group">
+            <label for="team-name">Nombre y apellido</label>
+            <input type="text" id="team-name" class="form-input" autocomplete="off" required>
           </div>
-          <div style="margin-bottom: 15px;">
-            <label class="form-label">Email</label>
-            <input type="email" id="team-email" class="form-input" required>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="team-email">Email (para entrar)</label>
+              <input type="email" id="team-email" class="form-input" autocomplete="off" inputmode="email" required>
+            </div>
+            <div class="form-group">
+              <label for="team-phone">Teléfono <span class="label-hint">(opcional)</span></label>
+              <input type="tel" id="team-phone" class="form-input" inputmode="tel">
+            </div>
           </div>
-          <div style="margin-bottom: 15px;">
-            <label class="form-label">Teléfono</label>
-            <input type="text" id="team-phone" class="form-input">
+          <div class="form-group">
+            <label for="team-password">Contraseña</label>
+            <input type="password" id="team-password" class="form-input" placeholder="Al menos 6 caracteres" autocomplete="new-password" aria-describedby="team-password-hint">
+            <p class="form-hint" id="team-password-hint">Si estás editando, dejala vacía para no cambiarla.</p>
           </div>
-          <div style="margin-bottom: 20px;">
-            <label class="form-label">Contraseña</label>
-            <input type="password" id="team-password" class="form-input" placeholder="Mínimo 6 caracteres">
-            <small style="color: #666; font-size: 0.8rem;">Dejar en blanco para no modificar si estás editando.</small>
-          </div>
-          <div class="form-actions justify-center">
+          <div class="form-actions">
             <button type="button" class="btn btn-grey btn-uniform" onclick="document.getElementById('modal-team').hidden=true">Cancelar</button>
             <button type="submit" class="btn btn-pink btn-uniform">Guardar</button>
           </div>
@@ -1215,6 +1267,7 @@
                   document.documentElement.setAttribute('data-theme', 'dark');
                   localStorage.setItem('theme', 'dark');
               }
+              document.dispatchEvent(new Event('themechange')); // los gráficos se redibujan
           });
       }
     });

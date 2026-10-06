@@ -1,99 +1,161 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security6">
 <body>
-  <header th:fragment="header" class="site-header">
-    <div class="header-inner">
-      <button id="menuButton" class="menu-button" aria-expanded="false" aria-label="Abrir menú" type="button">
-        <svg width="22" height="16" viewBox="0 0 22 16" aria-hidden="true" focusable="false">
-          <rect y="0" width="22" height="2" rx="1" fill="currentColor"></rect>
-          <rect y="7" width="22" height="2" rx="1" fill="currentColor"></rect>
-          <rect y="14" width="22" height="2" rx="1" fill="currentColor"></rect>
-        </svg>
-      </button>
+  <!--
+    Header compartido del sitio público.
+    Se incluye en cada página con: <div th:replace="~{fragments/header :: header}"></div>
+    Contratos con JS (no renombrar):
+      - header.js: #siteHeader, #menuButton, #mobileMenu, #accountBtn, #userMenu
+      - store.js:  .btn-cart (el primero de la página) y .cart-count / .header-cart-count
+  -->
+  <header th:fragment="header" class="site-header" id="siteHeader">
+    <!-- Primer elemento enfocable: permite saltear el menú con el teclado -->
+    <a class="skip-link" href="#main">Saltar al contenido</a>
 
-      <a class="brand" th:href="@{/}">
-        <svg class="brand-icon" width="36" height="36" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <circle cx="12" cy="12" r="10" fill="#e0487f"/>
-          <path d="M7 12c1.5-2 4-2 5 0 1-2 3.5-2 5 0" stroke="#fff" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+    <div class="header-inner">
+      <!-- Marca: isotipo (cupcake) + nombre -->
+      <a class="brand" th:href="@{/}" aria-label="Dulce Sueños Posadas, ir al inicio">
+        <svg class="brand-icon" width="34" height="34" viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+          <path class="bi-wrapper" d="M10.5 21h19l-2.6 11.3A2.6 2.6 0 0 1 24.4 34.4h-8.8a2.6 2.6 0 0 1-2.5-2.1L10.5 21Z"/>
+          <path class="bi-stripes" d="M16 22.5l.9 10.4M20 22.5v10.4M24 22.5l-.9 10.4" fill="none" stroke-width="1.6" stroke-linecap="round"/>
+          <path class="bi-frosting" d="M9.6 22.4c-2 0-3.6-1.6-3.6-3.6 0-1.8 1.3-3.3 3-3.6.4-4 3.8-7.1 7.8-7.1 1.2 0 2.4.3 3.4.8 1.2-.9 2.7-1.4 4.2-1.4 4 0 7.3 3.2 7.4 7.2 1.4.6 2.3 2 2.3 3.6 0 2.3-1.8 4.1-4.1 4.1H9.6Z"/>
+          <circle class="bi-cherry" cx="21.5" cy="5.6" r="3"/>
         </svg>
         <span class="brand-text">Dulce Sueños</span>
       </a>
 
-      <nav class="main-nav">
+      <!-- Navegación de escritorio (desde 1024 px) -->
+      <nav class="main-nav" aria-label="Principal">
         <ul class="nav-list">
-          <li><a th:href="@{/}">Inicio</a></li>
-          <li><a th:href="@{/products}">Productos</a></li>
-          <li><a th:href="@{/about}">Nosotros</a></li>
-          <li><a th:href="@{/contact}">Contacto</a></li>
+          <li><a th:href="@{/}" data-nav="/">Inicio</a></li>
+          <li><a th:href="@{/products}" data-nav="/products">Productos</a></li>
+          <li><a th:href="@{/builder}" data-nav="/builder">Armá tu torta</a></li>
+          <li><a th:href="@{/#nosotros}">Nosotros</a></li>
+          <li><a th:href="@{/#contacto}">Contacto</a></li>
         </ul>
       </nav>
 
       <div class="header-actions">
-        <a class="btn-icon btn-whatsapp" href="https://wa.me/549XXXXXXXXXX" target="_blank" rel="noopener" aria-label="WhatsApp">
-          <img th:src="@{/img/icons/whatsapp.png}" alt="WA" width="20" height="20" loading="lazy">
-        </a>
-        <a class="btn-icon btn-ig" href="https://www.instagram.com/dulcessuenos_posadas/" target="_blank" rel="noopener" aria-label="Instagram">
-          <img th:src="@{/img/icons/instagram.png}" alt="IG" width="20" height="20" loading="lazy">
-        </a>
-        
-        <a th:href="@{/cart}" class="btn-icon btn-cart" aria-label="Ver carrito">
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M6 2a1 1 0 0 1 .993 .883l.007 .117v1.068l13.071 .935a1 1 0 0 1 .929 1.024l-.01 .114l-1 7a1 1 0 0 1 -.877 .853l-.113 .006h-12v2h10a3 3 0 1 1 -2.995 3.176l-.005 -.176l.005 -.176c.017 -.288 .074 -.564 .166 -.824h-5.342a3 3 0 1 1 -5.824 1.176l-.005 -.176l.005 -.176a3.002 3.002 0 0 1 1.995 -2.654v-12.17h-1a1 1 0 0 1 -.993 -.883l-.007 -.117a1 1 0 0 1 .883 -.993l.117 -.007h2zm0 16a1 1 0 1 0 0 2a1 1 0 0 0 0 -2zm11 0a1 1 0 1 0 0 2a1 1 0 0 0 0 -2z" />
+        <!-- Cuenta: sin sesión lleva al login -->
+        <a sec:authorize="isAnonymous()" th:href="@{/login}" class="header-icon-btn btn-login" aria-label="Ingresar a mi cuenta">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="8" r="4"></circle>
+            <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"></path>
           </svg>
-          <span class="cart-count header-cart-count">0</span>
         </a>
 
-        <a sec:authorize="isAnonymous()" th:href="@{/login}" class="btn-icon btn-login" aria-label="Iniciar sesión">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-4.418 0-8 2.239-8 5v1h16v-1c0-2.761-3.582-5-8-5z"></path></svg>
-        </a>
-
+        <!-- Cuenta: con sesión abre un menú desplegable -->
         <div sec:authorize="isAuthenticated()" class="user-wrapper">
-          <button id="accountBtn" class="btn-icon btn-login" aria-label="Mi cuenta" type="button">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-4.418 0-8 2.239-8 5v1h16v-1c0-2.761-3.582-5-8-5z"></path></svg>
+          <button id="accountBtn" class="header-icon-btn btn-login" type="button"
+                  aria-label="Mi cuenta" aria-haspopup="true" aria-expanded="false" aria-controls="userMenu">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <circle cx="12" cy="8" r="4"></circle>
+              <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"></path>
+            </svg>
           </button>
 
           <div id="userMenu" class="user-menu" hidden>
             <div class="user-menu-title">
-                Hola, <span th:if="${currentUser != null}" th:text="${currentUser.name.split(' ')[0]}">Usuario</span>
+              Hola, <span th:if="${currentUser != null}" th:text="${currentUser.name.split(' ')[0]}">Usuario</span>
             </div>
-            <hr>
-            
-            <!-- Botón exclusivo para Administradores (Punto 3) -->
-            <a sec:authorize="hasAuthority('ADMIN')" th:href="@{/admin}" class="user-menu-item" style="color: var(--accent); font-weight: 600;">
-                <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="3" width="7" height="7"></rect>
-                    <rect x="14" y="3" width="7" height="7"></rect>
-                    <rect x="14" y="14" width="7" height="7"></rect>
-                    <rect x="3" y="14" width="7" height="7"></rect>
-                </svg>
-                <span>Panel de administrador</span>
+
+            <!-- Solo administradores -->
+            <a sec:authorize="hasAuthority('ADMIN')" th:href="@{/admin}" class="user-menu-item user-menu-item--accent">
+              <svg class="icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+                <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+                <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+                <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+              </svg>
+              <span>Panel de administración</span>
+            </a>
+
+            <!-- Solo pasteleros: acceso directo a su panel -->
+            <a sec:authorize="hasAuthority('PASTELERO')" th:href="@{/baker}" class="user-menu-item user-menu-item--accent">
+              <svg class="icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <rect x="5" y="4" width="14" height="17" rx="2"></rect>
+                <path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"></path>
+              </svg>
+              <span>Panel del pastelero</span>
             </a>
 
             <a th:href="@{/profile}" class="user-menu-item">
-                <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                </svg>
-                <span>Ajustes</span>
+              <svg class="icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <circle cx="12" cy="8" r="4"></circle>
+                <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"></path>
+              </svg>
+              <span>Mi cuenta</span>
             </a>
+
             <form th:action="@{/logout}" method="post">
               <button type="submit" class="user-menu-item logout-btn">
-                <svg class="icon" width="18" height="18" viewBox="0 0 24 24"><path d="M16 13v-2H7V8l-5 4 5 4v-3zM20 3h-8v2h8v14h-8v2h8a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"></path></svg>
+                <svg class="icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"></path>
+                </svg>
                 <span>Cerrar sesión</span>
               </button>
             </form>
           </div>
         </div>
+
+        <!-- Carrito: siempre visible. store.js intercepta el click para abrir el mini-carrito -->
+        <a th:href="@{/cart}" class="btn-cart" aria-label="Ver carrito" data-count="0">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <path d="M5 8h14l-1.2 11.1a2 2 0 0 1-2 1.9H8.2a2 2 0 0 1-2-1.9L5 8Z"></path>
+            <path d="M9 10V7a3 3 0 0 1 6 0v3"></path>
+          </svg>
+          <span class="btn-cart-label">Carrito</span>
+          <span class="cart-count header-cart-count count-badge" aria-hidden="true">0</span>
+        </a>
+
+        <!-- Botón del menú móvil (hasta 1023 px). Las tres barras se transforman en una X -->
+        <button id="menuButton" class="header-icon-btn menu-button" type="button"
+                aria-expanded="false" aria-controls="mobileMenu" aria-label="Abrir menú">
+          <span class="menu-bars" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </span>
+        </button>
       </div>
     </div>
 
-    <div id="mobileMenu" class="mobile-menu" hidden>
-      <ul>
-        <li><a th:href="@{/}">Inicio</a></li>
-        <li><a th:href="@{/products}">Productos</a></li>
-        <li><a th:href="@{/about}">Nosotros</a></li>
-        <li><a th:href="@{/contact}">Contacto</a></li>
-      </ul>
+    <!-- Menú móvil de pantalla completa (debajo de la barra del header) -->
+    <div id="mobileMenu" class="mobile-menu" role="dialog" aria-modal="true" aria-label="Menú" hidden>
+      <div class="mobile-menu-panel">
+        <nav aria-label="Menú principal">
+          <ul class="mobile-menu-list">
+            <li><a th:href="@{/}" data-nav="/">Inicio</a></li>
+            <li><a th:href="@{/products}" data-nav="/products">Productos</a></li>
+            <li><a th:href="@{/builder}" data-nav="/builder">Armá tu torta</a></li>
+            <li><a th:href="@{/#nosotros}">Nosotros</a></li>
+            <li><a th:href="@{/#contacto}">Contacto</a></li>
+          </ul>
+        </nav>
+
+        <a class="button button--primary button--lg button--block mobile-menu-cta" th:href="@{/builder}">Armá tu torta</a>
+
+        <div class="mobile-menu-contact">
+          <a class="button button--secondary button--block" href="https://wa.me/5493764159312" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3Z"></path>
+              <path d="M9.2 8.6c.2 2.9 3.3 6 6.2 6.2l1.1-1.4-1.9-1-.9.8c-1-.4-2-1.4-2.4-2.4l.8-.9-1-1.9-1.9.6Z" fill="currentColor" stroke="none"></path>
+            </svg>
+            WhatsApp
+          </a>
+          <a class="button button--secondary button--block" href="https://www.instagram.com/dulcessuenos_posadas/" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <rect x="3" y="3" width="18" height="18" rx="5"></rect>
+              <circle cx="12" cy="12" r="4"></circle>
+              <circle cx="17.5" cy="6.5" r="1.1" fill="currentColor" stroke="none"></circle>
+            </svg>
+            Instagram
+          </a>
+        </div>
+
+        <div class="mobile-menu-account">
+          <a sec:authorize="isAnonymous()" th:href="@{/login}" class="mobile-menu-account-link">Ingresar a mi cuenta</a>
+          <a sec:authorize="isAuthenticated()" th:href="@{/profile}" class="mobile-menu-account-link">Mi cuenta</a>
+        </div>
+      </div>
     </div>
   </header>
 </body>

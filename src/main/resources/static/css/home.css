@@ -1,0 +1,1028 @@
+/* =========================================================
+   home.css — Página de inicio (Fase 2)
+   ---------------------------------------------------------
+   Requiere tokens.css y components.css.
+   Secciones en orden: hero, cinta (marquee), lo que hacemos,
+   vitrina, creador en 3 pasos, nosotros, galería, promociones
+   y contacto. Usa nombres con prefijo propio (home-, tile-,
+   showcase-, gallery-…) para no chocar con las clases viejas
+   de main.css (.product-card, .products-grid…).
+   ========================================================= */
+
+.page-home {
+  background: var(--surface-page);
+  line-height: var(--lh-body);
+}
+
+.page-home main {
+  overflow-x: clip;   /* nada de lo decorativo genera scroll horizontal */
+}
+
+/* Encabezado de cada sección: título grande + bajada */
+.section-head {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 44rem;
+  margin-bottom: var(--space-7);
+}
+.section-head .text-h2,
+.section-head .text-lead { margin: 0; }
+.section-head .text-lead { color: var(--rose-800); }
+
+.section-head--row {
+  max-width: none;
+  align-items: end;
+}
+/* Link suelto al lado del título ("Ver todos los productos"): área táctil de 44 px */
+.section-head--row .link {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  min-height: 44px;
+}
+@media (min-width: 48rem) {
+  .section-head--row {
+    grid-template-columns: 1fr auto;
+    gap: var(--space-6);
+  }
+}
+
+
+/* =========================================================
+   1. HERO
+   ========================================================= */
+.home-hero {
+  position: relative;
+  padding-top: calc(var(--header-height) + var(--space-6));
+  padding-bottom: var(--space-8);
+  background: var(--blush-50);
+}
+
+.hero-grid {
+  display: grid;
+  gap: var(--space-7);
+  align-items: center;
+}
+
+.hero-title {
+  max-width: 10ch;
+  margin: 0 0 var(--space-5);
+  color: var(--ink);
+  font-size: var(--fs-display);
+  font-weight: var(--fw-black);
+  line-height: 0.95;
+  letter-spacing: var(--ls-display);
+  text-wrap: balance;
+}
+
+.hero-lead {
+  max-width: 30ch;
+  margin: 0 0 var(--space-6);
+  color: var(--rose-800);
+  font-size: var(--fs-lead);
+  line-height: 1.5;
+}
+
+.hero-actions {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.hero-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  margin: var(--space-6) 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--rose-800);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-medium);
+}
+.hero-facts li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.hero-facts svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--rose-600);
+}
+
+/* Foto en un "plato" rosa redondeado */
+.hero-media {
+  position: relative;
+  isolation: isolate;
+  justify-self: center;
+  width: min(100%, 30rem);
+}
+
+/* Círculo rosa decorativo detrás de la foto */
+.hero-media::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  right: -14%;
+  bottom: -8%;
+  width: 72%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--rose-200);
+}
+
+.hero-plate {
+  overflow: hidden;
+  aspect-ratio: 4 / 5;   /* reserva el lugar de la foto: no hay saltos al cargar */
+  border-radius: var(--radius-xl);
+  background: var(--rose-200);
+}
+.hero-plate img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform-origin: 50% 60%;
+}
+
+.hero-sticker {
+  position: absolute;
+  z-index: 1;
+}
+.hero-sticker--bottom { top: 18px; right: -8px; font-size: 0.9375rem; padding: 10px 16px; }
+@media (min-width: 48rem) {
+  .hero-sticker--bottom { top: auto; bottom: 10%; right: -10px; }
+}
+
+/* Movimiento de entrada (una sola vez al cargar) y "respiración" lenta de la foto.
+   Es el único movimiento continuo de la página; se apaga con movimiento reducido. */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-copy > * {
+    animation: hero-rise 700ms var(--ease-out) both;
+  }
+  .hero-copy > :nth-child(2) { animation-delay: 70ms; }
+  .hero-copy > :nth-child(3) { animation-delay: 140ms; }
+  .hero-copy > :nth-child(4) { animation-delay: 210ms; }
+
+  .hero-plate {
+    animation: hero-rise 800ms var(--ease-out) 120ms both;
+  }
+  .hero-plate img {
+    animation: hero-breathe 14s var(--ease-in-out) 1s infinite alternate;
+  }
+  .hero-sticker {
+    animation: sticker-in 520ms var(--ease-out) 600ms both;
+  }
+}
+
+@keyframes hero-rise {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes hero-breathe {
+  from { transform: scale(1); }
+  to   { transform: scale(1.06); }
+}
+@keyframes sticker-in {
+  from { opacity: 0; transform: rotate(var(--sticker-tilt)) scale(0.9); }
+  to   { opacity: 1; transform: rotate(var(--sticker-tilt)) scale(1); }
+}
+
+@media (min-width: 30rem) {
+  .hero-actions {
+    grid-template-columns: auto auto;
+    justify-content: start;
+  }
+}
+
+@media (min-width: 64rem) {
+  .home-hero {
+    display: flex;
+    align-items: center;
+    min-height: min(100svh, 920px);
+    padding-top: calc(var(--header-height) + var(--space-7));
+    padding-bottom: var(--space-9);
+  }
+  .home-hero > .site-container { width: 100%; }
+  .hero-grid {
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: var(--space-8);
+  }
+  .hero-media { justify-self: end; }
+}
+
+
+/* =========================================================
+   2. CINTA (MARQUEE)
+   ---------------------------------------------------------
+   Dos grupos iguales uno al lado del otro; la pista se mueve
+   hasta la mitad (-50 %) y vuelve a empezar: así el corte no se ve.
+   ========================================================= */
+.home-marquee {
+  position: relative;
+  overflow: hidden;
+  padding-block: var(--space-5);
+  background: var(--rose-500);
+  color: var(--white);
+}
+
+/* Festoneado arriba y abajo, como una cinta de papel de torta */
+.home-marquee::before,
+.home-marquee::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background-size: 24px 12px;
+  background-repeat: repeat-x;
+  pointer-events: none;
+}
+.home-marquee::before {
+  top: 0;
+  background-image: radial-gradient(circle 12px at 50% 0, var(--blush-50) 96%, transparent 100%);
+}
+.home-marquee::after {
+  bottom: 0;
+  background-image: radial-gradient(circle 12px at 50% 100%, var(--blush-50) 96%, transparent 100%);
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+}
+
+.marquee-group {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-5);
+  margin: 0;
+  padding: var(--space-2) var(--space-5) var(--space-2) 0;
+  list-style: none;
+  font-size: clamp(1.375rem, 1.1rem + 1.2vw, 2rem);
+  font-weight: var(--fw-black);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.marquee-sep svg {
+  display: block;
+  width: 0.7em;
+  height: 0.7em;
+  fill: var(--rose-200);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .marquee-track {
+    animation: marquee var(--dur-marquee) linear infinite;
+  }
+  /* Se detiene al pasar el mouse (para poder leer) */
+  .home-marquee:hover .marquee-track {
+    animation-play-state: paused;
+  }
+}
+
+@keyframes marquee {
+  to { transform: translateX(-50%); }
+}
+
+/* Movimiento reducido: la cinta queda quieta y el texto se acomoda en líneas */
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track { width: auto; justify-content: center; }
+  .marquee-group { flex-wrap: wrap; justify-content: center; white-space: normal; padding-inline: var(--gutter); text-align: center; }
+  .marquee-group[aria-hidden="true"] { display: none; }
+}
+
+
+/* =========================================================
+   3. LO QUE HACEMOS (categorías + creador)
+   ========================================================= */
+.category-grid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.category-cell { display: grid; }
+
+.category-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-3);
+  border-radius: var(--radius-xl);
+  color: var(--ink);
+  text-decoration: none;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.category-tile:active { transform: scale(0.98); transition-duration: var(--dur-press); }
+
+.category-tile--rose   { background: var(--rose-200); }
+.category-tile--peach  { background: var(--blush-300); }
+.category-tile--cherry { background: var(--cherry-100); }
+
+/* Foto dentro del "plato" de color */
+.tile-plate {
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  border-radius: calc(var(--radius-xl) - var(--space-3));
+  background: var(--rose-50);
+}
+.tile-plate img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+
+.tile-body {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-3) var(--space-3);
+}
+
+.tile-title {
+  margin: 0;
+  color: inherit;
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-black);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.tile-title--xl {
+  font-size: clamp(2rem, 1.5rem + 2vw, 3rem);
+  line-height: 1;
+}
+
+.tile-text {
+  max-width: 34ch;
+  color: var(--rose-800);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+}
+
+.tile-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+  font-weight: var(--fw-bold);
+}
+.tile-cta svg {
+  width: 20px;
+  height: 20px;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+
+.tile-sticker {
+  position: absolute;
+  top: var(--space-5);
+  left: var(--space-5);
+}
+
+/* Tarjeta del creador: bloque de tinta con el isotipo grande */
+.category-tile--builder {
+  justify-content: space-between;
+  gap: var(--space-6);
+  min-height: 22rem;
+  padding: var(--space-6);
+  overflow: hidden;
+  background: var(--ink);
+  color: var(--white);
+}
+.category-tile--builder .tile-text { color: var(--rose-200); }
+.category-tile--builder .tile-body { padding: 0; gap: var(--space-3); }
+.category-tile--builder .tile-sticker {
+  top: var(--space-6);
+  right: var(--space-6);
+  left: auto;
+}
+
+/* Círculo de fondo para el isotipo: llena la tarjeta sin sumar otra foto */
+.builder-plate {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 148px;
+  height: 148px;
+  border-radius: 50%;
+  background: rgb(251 233 240 / 0.1);
+}
+
+/* Los tres pasos del creador como chips claros */
+.builder-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+.builder-steps span {
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: rgb(251 233 240 / 0.14);
+  color: var(--rose-100);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-semibold);
+}
+
+.builder-mark {
+  width: 104px;
+  height: 104px;
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+.builder-mark .bi-frosting { fill: var(--rose-400); }
+.builder-mark .bi-wrapper  { fill: var(--rose-100); }
+.builder-mark .bi-stripes  { stroke: var(--rose-300); }
+.builder-mark .bi-cherry   { fill: var(--cherry-500); }
+
+.tile-cta--button {
+  justify-self: start;
+  min-height: 48px;
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-pill);
+  background: var(--white);
+  color: var(--ink);
+}
+
+.category-tile:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 4px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .category-tile:hover { transform: translateY(-4px); }
+  /* Con mouse, el :hover le ganaba al :active y presionar no se notaba */
+  .category-tile:hover:active { transform: translateY(-4px) scale(0.98); }
+  .category-tile:hover .tile-plate img { transform: scale(1.04); }
+  .category-tile:hover .tile-cta svg { transform: translateX(4px); }
+  .category-tile--builder:hover .builder-mark { transform: rotate(-6deg) scale(1.04); }
+}
+
+/* Tablet: dos columnas */
+@media (min-width: 48rem) {
+  .category-grid { grid-template-columns: 1fr 1fr; }
+  .category-cell--tortas { grid-column: 1 / -1; }
+  .category-cell--tortas .category-tile { flex-direction: row; align-items: stretch; }
+  .category-cell--tortas .tile-plate { flex: 1.2; aspect-ratio: auto; min-height: 18rem; }
+  .category-cell--tortas .tile-body { flex: 1; align-content: center; padding: var(--space-6); }
+  .category-cell--builder { grid-column: 1 / -1; }
+}
+
+/* Desde tablet la tarjeta del creador es ancha, así que va en fila (ícono a la izquierda) */
+@media (min-width: 48rem) {
+  .category-tile--builder {
+    flex-direction: row;
+    align-items: center;
+    min-height: auto;
+    gap: var(--space-7);
+  }
+  .category-tile--builder .builder-plate { width: 200px; height: 200px; }
+  .category-tile--builder .builder-mark { width: 136px; height: 136px; }
+}
+
+/* Escritorio: Tortas ancha arriba, creador alto a la derecha */
+@media (min-width: 64rem) {
+  .category-grid {
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: auto auto;
+    gap: var(--space-5);
+  }
+  /* Fila 1: Tortas (ancha) + Dulces. Fila 2: Creador (ancho, en tinta) + Souvenirs */
+  .category-cell--tortas  { grid-column: 1 / 3; grid-row: 1; }
+  .category-cell--dulces  { grid-column: 3; grid-row: 1; }
+  .category-cell--builder { grid-column: 1 / 3; grid-row: 2; }
+  .category-cell--souvenirs { grid-column: 3; grid-row: 2; }
+  .category-tile--builder { min-height: 100%; padding: var(--space-7); }
+  .category-tile--builder .builder-plate { width: 240px; height: 240px; }
+  .category-tile--builder .builder-mark { width: 168px; height: 168px; }
+  /* Dulces y Souvenirs se estiran a la altura de su fila: la foto ocupa el espacio extra */
+  .category-cell--dulces .tile-plate,
+  .category-cell--souvenirs .tile-plate { flex: 1; aspect-ratio: auto; min-height: 12rem; }
+  .category-cell--tortas .tile-title { font-size: clamp(2rem, 1.4rem + 1.6vw, 2.75rem); }
+}
+
+
+/* =========================================================
+   4. VITRINA (productos destacados)
+   ========================================================= */
+/* Categorías y vitrina tienen el mismo fondo: sin el padding de arriba,
+   el espacio entre las dos es el de una sola sección y no el doble */
+.home-categories + .home-showcase { padding-top: 0; }
+.showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.showcase-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: var(--space-2);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+}
+
+.showcase-plate {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  aspect-ratio: 1;
+  border-radius: calc(var(--radius-lg) - var(--space-2));
+  background: var(--rose-200);
+}
+.showcase-card:nth-child(3n + 2) .showcase-plate { background: var(--blush-300); }
+.showcase-card:nth-child(3n + 3) .showcase-plate { background: var(--cherry-100); }
+
+.showcase-plate img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+
+.showcase-fallback { width: 44%; height: auto; }
+.showcase-fallback .bi-frosting { fill: var(--rose-500); }
+.showcase-fallback .bi-wrapper  { fill: var(--ink); }
+.showcase-fallback .bi-cherry   { fill: var(--cherry-500); }
+
+.showcase-sticker {
+  display: block;   /* igual que en /products: el "…" de un nombre largo queda al final */
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+  max-width: calc(100% - var(--space-6));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.showcase-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-2) var(--space-2);
+}
+
+.showcase-name {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1rem, 0.95rem + 0.3vw, 1.1875rem);
+  font-weight: var(--fw-bold);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.showcase-desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-small);
+  line-height: 1.5;
+}
+
+/* Precio y botón siempre al pie de la tarjeta, alineados entre tarjetas */
+.showcase-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-2);
+}
+
+.showcase-price {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
+  font-weight: var(--fw-black);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.showcase-currency {
+  margin-right: 1px;
+  font-size: 0.7em;
+  vertical-align: 0.15em;
+}
+
+/* Botón "Agregar": al tocarlo pasa a "Agregado" con un tilde por un momento */
+.showcase-add {
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  gap: 6px;
+}
+.showcase-add .showcase-added-icon { display: none; }
+.showcase-add.is-added {
+  background: var(--ink);
+}
+.showcase-add.is-added .showcase-add-icon { display: none; }
+.showcase-add.is-added .showcase-added-icon {
+  display: block;
+  animation: check-in var(--dur-base) var(--ease-out);
+}
+@keyframes check-in {
+  from { opacity: 0; transform: scale(0.6); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .showcase-card:hover .showcase-plate img { transform: scale(1.04); }
+}
+
+@media (min-width: 48rem) {
+  .showcase-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-5); }
+}
+@media (min-width: 80rem) {
+  .showcase-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+
+/* =========================================================
+   5. EL CREADOR EN 3 PASOS
+   ========================================================= */
+.steps-grid {
+  display: grid;
+  gap: var(--space-7);
+}
+
+.steps-intro .text-h2 { margin: 0 0 var(--space-4); color: var(--white); }
+.steps-intro .text-lead { margin: 0 0 var(--space-6); color: var(--white); }
+
+/* "Tortas desde $44.000": el dato más fuerte de la página, en tipografía grande */
+.steps-price {
+  margin: 0 0 var(--space-6);
+  color: var(--white);
+  font-size: var(--fs-lead);
+  font-weight: var(--fw-semibold);
+  line-height: 1.1;
+}
+.steps-price strong {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: clamp(2.75rem, 2rem + 3vw, 4.5rem);
+  font-weight: var(--fw-black);
+  letter-spacing: var(--ls-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.steps-list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+}
+
+/* Número grande del paso: la secuencia sí es información (orden del creador) */
+.step-number {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--rose-500);
+  color: var(--white);
+  font-size: 1.75rem;
+  font-weight: var(--fw-black);
+  line-height: 1;
+}
+.step-item:nth-child(2) .step-number { background: var(--rose-600); }
+.step-item:nth-child(3) .step-number { background: var(--ink); }
+
+.step-title {
+  margin: var(--space-1) 0 var(--space-1);
+  color: var(--ink);
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-bold);
+}
+.step-text {
+  margin: 0;
+  color: var(--text-strong);
+  line-height: 1.5;
+}
+
+@media (min-width: 64rem) {
+  .steps-grid {
+    grid-template-columns: 0.9fr 1.1fr;
+    align-items: center;
+    gap: var(--space-9);
+  }
+}
+
+
+/* =========================================================
+   6. NOSOTROS
+   ========================================================= */
+.about-grid {
+  display: grid;
+  gap: var(--space-7);
+  align-items: center;
+}
+
+.about-media {
+  position: relative;
+  margin: 0;
+  width: min(100%, 28rem);
+}
+.about-media img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: var(--radius-xl);
+}
+
+.about-copy .text-h2 { margin: 0 0 var(--space-4); }
+.about-copy .text-lead { margin: 0 0 var(--space-4); color: var(--ink); }
+.about-text {
+  max-width: 56ch;
+  margin: 0 0 var(--space-6);
+  color: var(--rose-800);
+}
+
+@media (min-width: 64rem) {
+  .about-grid {
+    grid-template-columns: 0.85fr 1.15fr;
+    gap: var(--space-9);
+  }
+  .about-media { justify-self: center; }
+}
+
+
+/* =========================================================
+   7. GALERÍA (carrusel con snap)
+   ---------------------------------------------------------
+   El carrusel ocupa todo el ancho pero las fotos arrancan
+   alineadas con el contenido (--carousel-pad).
+   ========================================================= */
+.home-gallery .section-head { margin-bottom: var(--space-6); }
+/* Título y bajada van envueltos en un <div> (al lado están las flechas): mismo aire que el resto de las secciones */
+.home-gallery .section-head > div:first-child { display: grid; gap: var(--space-3); }
+
+.carousel-controls {
+  display: flex;
+  gap: var(--space-2);
+}
+.carousel-btn {
+  border: 2px solid var(--ink);
+}
+.carousel-btn:disabled {
+  border-color: var(--rose-200);
+  background: transparent;
+  color: var(--rose-300);
+}
+
+.gallery-carousel {
+  --carousel-pad: max(var(--gutter), calc((100% - var(--container)) / 2));   /* mismo borde izquierdo que .site-container */
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--carousel-pad);
+  scrollbar-width: none;            /* la barra se reemplaza por la línea de progreso */
+  cursor: grab;
+  padding-block: var(--space-1) var(--space-5);
+}
+.gallery-carousel::-webkit-scrollbar { display: none; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .gallery-carousel { scroll-behavior: smooth; }
+}
+
+/* Mientras se arrastra con el mouse se desactiva el snap (vuelve al soltar) */
+.gallery-carousel.is-dragging {
+  cursor: grabbing;
+  scroll-snap-type: none;
+  scroll-behavior: auto;
+}
+.gallery-carousel:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: -3px;
+}
+
+.gallery-track {
+  display: flex;
+  gap: var(--space-4);
+  width: max-content;
+  margin: 0;
+  padding: 0 var(--carousel-pad);
+  list-style: none;
+}
+
+.gallery-slide {
+  flex: none;
+  width: clamp(15rem, 72vw, 21rem);
+  overflow: hidden;
+  aspect-ratio: 4 / 5;
+  border-radius: var(--radius-lg);
+  background: var(--rose-100);
+  scroll-snap-align: start;
+  user-select: none;
+}
+.gallery-slide img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+/* Línea de progreso: muestra cuánto del carrusel se recorrió */
+.carousel-progress {
+  height: 4px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--rose-100);
+}
+.carousel-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ink);
+  transform: scaleX(var(--progress, 0.25));
+  transform-origin: left center;
+  transition: transform var(--dur-fast) linear;
+}
+
+
+/* =========================================================
+   8. PROMOCIONES
+   ========================================================= */
+.promo-grid {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.promo-tile {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-2);
+  border-radius: var(--radius-xl);
+  background: var(--white);
+}
+
+.promo-media {
+  position: relative;
+  margin: 0;
+}
+.promo-media img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: calc(var(--radius-xl) - var(--space-2));
+}
+
+
+.promo-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-4) var(--space-4);
+}
+.promo-title {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1.5rem, 1.3rem + 0.8vw, 2rem);
+  font-weight: var(--fw-black);
+  letter-spacing: -0.02em;
+}
+.promo-text {
+  margin: 0 0 var(--space-2);
+  color: var(--rose-800);
+  line-height: 1.5;
+}
+.promo-body .button { margin-top: auto; }
+
+@media (min-width: 48rem) {
+  .promo-grid { grid-template-columns: 1fr 1fr; gap: var(--space-6); }
+}
+
+
+/* =========================================================
+   9. CONTACTO
+   ========================================================= */
+.contact-grid {
+  display: grid;
+  gap: var(--space-7);
+}
+
+.contact-title {
+  max-width: 14ch;
+  margin: 0 0 var(--space-4);
+  color: var(--white);
+  font-size: var(--fs-h1);
+  font-weight: var(--fw-black);
+  line-height: 1;
+  letter-spacing: var(--ls-heading);
+}
+
+.contact-lead {
+  max-width: 40ch;
+  margin: 0 0 var(--space-6);
+  color: var(--white);
+  font-size: var(--fs-lead);
+  line-height: 1.5;
+}
+
+.contact-actions {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.contact-facts {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.contact-facts li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
+  border-top: 1px solid rgb(255 255 255 / 0.28);
+}
+.contact-facts svg {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  margin-top: 2px;
+  color: var(--rose-200);
+}
+.contact-facts span {
+  display: grid;
+  min-width: 0;
+  overflow-wrap: anywhere;   /* "@dulcessuenos_posadas" puede cortarse si no entra */
+  color: var(--white);
+  line-height: 1.45;
+}
+.contact-facts strong {
+  font-size: 1.125rem;
+  font-weight: var(--fw-bold);
+}
+
+/* Botones lado a lado cuando entran; si no entran (por ejemplo a 1024 px) bajan de renglón */
+@media (min-width: 30rem) {
+  .contact-actions { display: flex; flex-wrap: wrap; }
+}
+@media (min-width: 64rem) {
+  .contact-grid {
+    /* minmax(0, …): las columnas no se agrandan por el contenido y no se salen de la pantalla */
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+    align-items: center;
+    gap: var(--space-9);
+  }
+}
+
+/* El footer festoneado toca la sección de contacto: el aire de abajo es menor */
+.home-contact { padding-bottom: calc(var(--section-y) * 0.9); }
+
+
+/* =========================================================
+   MOVIMIENTO REDUCIDO (complementa los bloques de arriba)
+   ========================================================= */
+@media (prefers-reduced-motion: reduce) {
+  .category-tile,
+  .tile-plate img,
+  .tile-cta svg,
+  .builder-mark,
+  .showcase-plate img {
+    transition: none;
+  }
+  .category-tile:active { transform: none; }
+  /* Sin transición, el zoom y la elevación al pasar el mouse serían saltos: se quitan */
+  .category-tile:hover,
+  .category-tile:hover:active,
+  .category-tile:hover .tile-plate img,
+  .category-tile:hover .tile-cta svg,
+  .category-tile--builder:hover .builder-mark,
+  .showcase-card:hover .showcase-plate img { transform: none; }
+  .carousel-progress span { transition: none; }
+  .showcase-add.is-added .showcase-added-icon { animation-name: fade-in; }
+}

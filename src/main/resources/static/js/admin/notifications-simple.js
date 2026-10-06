@@ -37,26 +37,33 @@ document.addEventListener('DOMContentLoaded', () => {
                     badge.style.display = pendingOrders.length > 0 ? 'inline-flex' : 'none';
                 }
 
-                // Llenar la lista del menú desplegable
+                // Cada aviso es un botón: al tocarlo se abre la pestaña Pedidos (estilos en admin.css)
                 if (list) {
                     if (pendingOrders.length > 0) {
+                        const esc = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
                         list.innerHTML = pendingOrders.map(o => `
-                            <div style="padding: 12px 16px; border-bottom: 1px solid #f5f5f5; cursor: pointer; transition: background 0.2s;" 
-                                 onmouseover="this.style.background='#fdf2f6'" 
-                                 onmouseout="this.style.background='transparent'"
-                                 onclick="document.querySelector('.tab-btn[data-tab=\\'pedidos\\']').click(); document.getElementById('notif-dropdown').hidden = true;">
-                                <div style="font-weight: 600; color: #222; font-size: 0.9rem;">Nuevo Pedido Web #${o.id}</div>
-                                <div style="color: #666; font-size: 0.8rem; margin-top: 4px;">${o.customerName || 'Cliente'} - $${o.totalPrice}</div>
-                            </div>
+                            <button type="button" class="notif-item" data-open-orders>
+                                <strong>Pedido web #${o.id}</strong>
+                                <span>${esc(o.customerName || 'Cliente')} · $${Number(o.totalPrice || 0).toLocaleString('es-AR')}</span>
+                            </button>
                         `).join('');
                     } else {
-                        list.innerHTML = `<div style="padding: 20px; text-align: center; color: #888; font-size: 0.9rem;">No hay pedidos pendientes de confirmación.</div>`;
+                        list.innerHTML = `<p class="notif-empty">No hay pedidos nuevos para confirmar.</p>`;
                     }
                 }
             }
         } catch (error) {
             console.error("Error silencioso consultando notificaciones.");
         }
+    }
+
+    // Tocar un aviso abre la pestaña Pedidos y cierra el menú
+    if (list) {
+        list.addEventListener('click', (e) => {
+            if (!e.target.closest('[data-open-orders]')) return;
+            document.querySelector('.tab-btn[data-tab="pedidos"]')?.click();
+            if (dropdown) dropdown.hidden = true;
+        });
     }
 
     checkNewOrders();

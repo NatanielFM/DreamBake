@@ -1,0 +1,112 @@
+[     120ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/media/banner.jpg:0
+[  116288ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/media/banner.jpg:0
+[  117211ms] [LOG] %clow-contrast%c 3.9:1 (need 4.5:1) — text #ffffff on #e0487f color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  117211ms] [LOG] %cgpt-thin-border-wide-shadow%c 1px border + 24px shadow blur color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  117211ms] [LOG] %clow-contrast%c 2.4:1 (need 4.5:1) — text #ffffff on #ff7aa8 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  117211ms] [LOG] %clow-contrast%c 2.7:1 (need 3:1) — text #e0487f on #f8cece color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  117212ms] [LOG] %clow-contrast%c 2.3:1 (need 3:1) — text #e0487f on #f6b6b6 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  117212ms] [LOG] %cgray-on-color%c text #666666 on bg #f6b6b6 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  117212ms] [LOG] %clow-contrast%c 2.4:1 (need 4.5:1) — text #ffffff on #ff7aa8 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  117212ms] [LOG] %clow-contrast%c 2.7:1 (need 3:1) — text #e0487f on #f8cece color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  117212ms] [LOG] %clow-contrast%c 2.3:1 (need 3:1) — text #e0487f on #f6b6b6 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  117212ms] [LOG] %cgray-on-color%c text #777777 on bg #f6b6b6 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  117212ms] [LOG] %clow-contrast%c 2.6:1 (need 4.5:1) — text #777777 on #f6b6b6 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  117212ms] [LOG] %clow-contrast%c placeholder "Ingresá tu email" 2.8:1 (need 4.5:1) — text #9b9b9b on #ffffff color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  117212ms] [LOG] %cgray-on-color%c text #8a8a8a on bg #f6b6b6 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  117212ms] [LOG] %clow-contrast%c 2.0:1 (need 4.5:1) — text #8a8a8a on #f6b6b6 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  117212ms] [LOG] %clow-contrast%c 2.4:1 (need 4.5:1) — text #ffffff on #ff7aa8 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  121192ms] [LOG] %clow-contrast%c 3.9:1 (need 4.5:1) — text #ffffff on #e0487f color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  121192ms] [LOG] %cgpt-thin-border-wide-shadow%c 1px border + 24px shadow blur color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  121192ms] [LOG] %clow-contrast%c 2.7:1 (need 3:1) — text #e0487f on #f8cccc color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  121192ms] [LOG] %cgray-on-color%c text #555555 on bg gradient(#f8cccc, #f8cece) color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  121192ms] [LOG] %clow-contrast%c 3.9:1 (need 4.5:1) — text #ffffff on #e0487f color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  125296ms] [LOG] %clow-contrast%c 3.9:1 (need 4.5:1) — text #ffffff on #e0487f color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  125296ms] [LOG] %cgpt-thin-border-wide-shadow%c 1px border + 24px shadow blur color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  125296ms] [LOG] %clow-contrast%c 3.9:1 (need 4.5:1) — text #e0487f on #ffffff color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  125296ms] [LOG] %clow-contrast%c 2.3:1 (need 4.5:1) — text #aaaaaa on #ffffff color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  125296ms] [LOG] %clow-contrast%c 2.3:1 (need 4.5:1) — text #aaaaaa on #ffffff color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  125296ms] [LOG] %clow-contrast%c 1.6:1 (need 4.5:1) — text #ffffff on #f5c2c7 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  129357ms] [LOG] %clow-contrast%c 3.9:1 (need 4.5:1) — text #ffffff on #e0487f color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  129358ms] [LOG] %cgpt-thin-border-wide-shadow%c 1px border + 24px shadow blur color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  129358ms] [LOG] %clow-contrast%c 1.6:1 (need 4.5:1) — text #ffffff on #f5c2c7 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  132698ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login:0
+[  133416ms] [LOG] %clow-contrast%c 3.9:1 (need 4.5:1) — text #ffffff on #e0487f color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  133416ms] [LOG] %cgpt-thin-border-wide-shadow%c 1px border + 24px shadow blur color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  133416ms] [LOG] %clow-contrast%c 2.6:1 (need 3:1) — text #e0487f on #f7caca color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  133416ms] [LOG] %cgray-on-color%c text #666666 on bg gradient(#f7caca, #f8cece) color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  133416ms] [LOG] %clow-contrast%c 3.9:1 (need 4.5:1) — text #666666 on #f7caca color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  145885ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/media/banner.jpg:0
+[  146773ms] [LOG] %clow-contrast%c 3.9:1 (need 4.5:1) — text #ffffff on #e0487f color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  146773ms] [LOG] %cgpt-thin-border-wide-shadow%c 1px border + 24px shadow blur color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  146773ms] [LOG] %clow-contrast%c 2.4:1 (need 4.5:1) — text #ffffff on #ff7aa8 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  146774ms] [LOG] %clow-contrast%c 2.7:1 (need 3:1) — text #e0487f on #f8cece color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  146774ms] [LOG] %clow-contrast%c 2.3:1 (need 3:1) — text #e0487f on #f6b6b6 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  146774ms] [LOG] %cgray-on-color%c text #666666 on bg #f6b6b6 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  146774ms] [LOG] %clow-contrast%c 2.4:1 (need 4.5:1) — text #ffffff on #ff7aa8 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  146774ms] [LOG] %clow-contrast%c 2.7:1 (need 3:1) — text #e0487f on #f8cece color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  146774ms] [LOG] %clow-contrast%c 2.3:1 (need 3:1) — text #e0487f on #f6b6b6 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  146774ms] [LOG] %cgray-on-color%c text #777777 on bg #f6b6b6 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  146774ms] [LOG] %clow-contrast%c 2.6:1 (need 4.5:1) — text #777777 on #f6b6b6 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  146774ms] [LOG] %clow-contrast%c placeholder "Ingresá tu email" 2.8:1 (need 4.5:1) — text #9b9b9b on #ffffff color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  146774ms] [LOG] %cgray-on-color%c text #8a8a8a on bg #f6b6b6 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  146774ms] [LOG] %clow-contrast%c 2.0:1 (need 4.5:1) — text #8a8a8a on #f6b6b6 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  146774ms] [LOG] %clow-contrast%c 2.4:1 (need 4.5:1) — text #ffffff on #ff7aa8 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  150790ms] [LOG] %clow-contrast%c 3.9:1 (need 4.5:1) — text #ffffff on #e0487f color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  150791ms] [LOG] %cgpt-thin-border-wide-shadow%c 1px border + 24px shadow blur color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  150791ms] [LOG] %clow-contrast%c 2.7:1 (need 3:1) — text #e0487f on #f8cccc color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  150791ms] [LOG] %cgray-on-color%c text #555555 on bg gradient(#f8cccc, #f8cece) color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  150791ms] [LOG] %clow-contrast%c 3.9:1 (need 4.5:1) — text #ffffff on #e0487f color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  154844ms] [LOG] %clow-contrast%c 3.9:1 (need 4.5:1) — text #ffffff on #e0487f color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  154844ms] [LOG] %cgpt-thin-border-wide-shadow%c 1px border + 24px shadow blur color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  154844ms] [LOG] %clow-contrast%c 3.9:1 (need 4.5:1) — text #e0487f on #ffffff color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  154844ms] [LOG] %clow-contrast%c 2.3:1 (need 4.5:1) — text #aaaaaa on #ffffff color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  154844ms] [LOG] %clow-contrast%c 2.3:1 (need 4.5:1) — text #aaaaaa on #ffffff color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  154844ms] [LOG] %clow-contrast%c 1.6:1 (need 4.5:1) — text #ffffff on #f5c2c7 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  158880ms] [LOG] %clow-contrast%c 3.9:1 (need 4.5:1) — text #ffffff on #e0487f color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  158880ms] [LOG] %cgpt-thin-border-wide-shadow%c 1px border + 24px shadow blur color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  158880ms] [LOG] %clow-contrast%c 1.6:1 (need 4.5:1) — text #ffffff on #f5c2c7 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  162204ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login:0
+[  162915ms] [LOG] %clow-contrast%c 3.9:1 (need 4.5:1) — text #ffffff on #e0487f color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  162915ms] [LOG] %cgpt-thin-border-wide-shadow%c 1px border + 24px shadow blur color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  162915ms] [LOG] %clow-contrast%c 2.6:1 (need 3:1) — text #e0487f on #f7caca color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  162915ms] [LOG] %cgray-on-color%c text #666666 on bg gradient(#f7caca, #f8cece) color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  162915ms] [LOG] %clow-contrast%c 3.9:1 (need 4.5:1) — text #666666 on #f7caca color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  178961ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/media/banner.jpg:0
+[  179865ms] [LOG] %clow-contrast%c 3.9:1 (need 4.5:1) — text #ffffff on #e0487f color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  179865ms] [LOG] %cgpt-thin-border-wide-shadow%c 1px border + 24px shadow blur color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  179865ms] [LOG] %clow-contrast%c 2.4:1 (need 4.5:1) — text #ffffff on #ff7aa8 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  179866ms] [LOG] %clow-contrast%c 2.7:1 (need 3:1) — text #e0487f on #f8cece color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  179866ms] [LOG] %clow-contrast%c 2.3:1 (need 3:1) — text #e0487f on #f6b6b6 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  179866ms] [LOG] %cgray-on-color%c text #666666 on bg #f6b6b6 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  179866ms] [LOG] %clow-contrast%c 2.4:1 (need 4.5:1) — text #ffffff on #ff7aa8 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  179866ms] [LOG] %clow-contrast%c 2.7:1 (need 3:1) — text #e0487f on #f8cece color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  179866ms] [LOG] %clow-contrast%c 2.3:1 (need 3:1) — text #e0487f on #f6b6b6 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  179866ms] [LOG] %cgray-on-color%c text #777777 on bg #f6b6b6 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  179866ms] [LOG] %clow-contrast%c 2.6:1 (need 4.5:1) — text #777777 on #f6b6b6 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  179866ms] [LOG] %clow-contrast%c placeholder "Ingresá tu email" 2.8:1 (need 4.5:1) — text #9b9b9b on #ffffff color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  179866ms] [LOG] %cgray-on-color%c text #8a8a8a on bg #f6b6b6 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  179866ms] [LOG] %clow-contrast%c 2.0:1 (need 4.5:1) — text #8a8a8a on #f6b6b6 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  179866ms] [LOG] %clow-contrast%c 2.4:1 (need 4.5:1) — text #ffffff on #ff7aa8 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  183872ms] [LOG] %clow-contrast%c 3.9:1 (need 4.5:1) — text #ffffff on #e0487f color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  183872ms] [LOG] %cgpt-thin-border-wide-shadow%c 1px border + 24px shadow blur color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  183872ms] [LOG] %clow-contrast%c 2.7:1 (need 3:1) — text #e0487f on #f8cccc color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  183872ms] [LOG] %cgray-on-color%c text #555555 on bg gradient(#f8cccc, #f8cece) color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  183872ms] [LOG] %clow-contrast%c 3.9:1 (need 4.5:1) — text #ffffff on #e0487f color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  187913ms] [LOG] %clow-contrast%c 3.9:1 (need 4.5:1) — text #ffffff on #e0487f color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  187913ms] [LOG] %cgpt-thin-border-wide-shadow%c 1px border + 24px shadow blur color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  187913ms] [LOG] %clow-contrast%c 3.9:1 (need 4.5:1) — text #e0487f on #ffffff color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  187913ms] [LOG] %clow-contrast%c 2.3:1 (need 4.5:1) — text #aaaaaa on #ffffff color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  187913ms] [LOG] %clow-contrast%c 2.3:1 (need 4.5:1) — text #aaaaaa on #ffffff color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  187913ms] [LOG] %clow-contrast%c 1.6:1 (need 4.5:1) — text #ffffff on #f5c2c7 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  191968ms] [LOG] %clow-contrast%c 3.9:1 (need 4.5:1) — text #ffffff on #e0487f color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  191968ms] [LOG] %cgpt-thin-border-wide-shadow%c 1px border + 24px shadow blur color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  191968ms] [LOG] %clow-contrast%c 1.6:1 (need 4.5:1) — text #ffffff on #f5c2c7 color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  195310ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login:0
+[  196041ms] [LOG] %clow-contrast%c 3.9:1 (need 4.5:1) — text #ffffff on #e0487f color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  196041ms] [LOG] %cgpt-thin-border-wide-shadow%c 1px border + 24px shadow blur color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  196041ms] [LOG] %clow-contrast%c 2.6:1 (need 3:1) — text #e0487f on #f7caca color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  196041ms] [LOG] %cgray-on-color%c text #666666 on bg gradient(#f7caca, #f8cece) color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  196041ms] [LOG] %clow-contrast%c 3.9:1 (need 4.5:1) — text #666666 on #f7caca color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node @ http://localhost:8400/detect.js:3556
+[  209355ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/media/banner.jpg:0
+[  213671ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8080/login:0
+[  219364ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/media/banner.jpg:0

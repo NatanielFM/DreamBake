@@ -20,7 +20,11 @@ public class UserService {
         String encodedPassword = passwordEncoder.encode(user.getPassword());
         user.setPassword(encodedPassword);
 
-        // Por defecto le asignamos el rol de usuario
+        // Por defecto le asignamos el rol de usuario. Además se fuerza un usuario NUEVO
+        // (sin id) y habilitado, aunque el formulario mande otra cosa
+        user.setId(null);
+        user.setEnabled(true);
+        user.setEmail(user.getEmail().trim());
         user.setRoles("ROLE_USER");
         // Guardamos en la base de datos
         userRepository.save(user);

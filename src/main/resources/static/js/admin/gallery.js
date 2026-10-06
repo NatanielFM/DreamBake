@@ -25,13 +25,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (uploadBtn) container.appendChild(uploadBtn);
 
     dbGallery.forEach(img => {
-      const div = document.createElement('div');
+      // En el selector cada foto es un botón (se puede elegir con el teclado); en la galería, solo una foto
+      const div = document.createElement(isPicker ? 'button' : 'div');
       div.className = 'gallery-item';
-      div.innerHTML = `<img src="${img.url}">`;
+      if (isPicker) { div.type = 'button'; div.setAttribute('aria-label', 'Usar esta foto'); }
+      div.innerHTML = `<img src="${img.url}" alt="" loading="lazy">`;
       
       if (isPicker) {
         div.addEventListener('click', () => {
-          document.getElementById('prod-image-preview').innerHTML = `<img src="${img.url}">`;
+          document.getElementById('prod-image-preview').innerHTML = `<img src="${img.url}" alt="">`;
           document.getElementById('modal-gallery-picker').hidden = true;
         });
       }
@@ -59,6 +61,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const file = e.target.files[0];
         const formData = new FormData();
         formData.append("file", file);
+        // Mientras sube, la tarjeta "Subir foto" muestra que está trabajando
+        const uploadTile = document.getElementById('btn-gallery-upload-new');
+        if (uploadTile) uploadTile.setAttribute('aria-busy', 'true');
 
         try {
           const res = await fetch('/api/gallery', { method: 'POST', body: formData });
@@ -68,10 +73,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if(preview) preview.innerHTML = `<img src="${newImage.url}">`;
             window.loadGalleryFromServer();
           } else {
-            window.showErrorAlert("No se pudo subir la imagen.");
+            window.showErrorAlert("No se pudo subir la foto. Probá con una imagen JPG, PNG o WEBP.");
           }
         } catch (e) {
-          window.showErrorAlert("Fallo en la conexión al servidor de imágenes.");
+          window.showErrorAlert("No se pudo conectar con el servidor para subir la foto.");
+        } finally {
+          if (uploadTile) uploadTile.removeAttribute('aria-busy');
+          fileInput.value = '';   // permite volver a elegir la misma foto
         }
       }
     });

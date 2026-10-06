@@ -129,7 +129,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (filtered.length === 0) {
-      inventoryTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:2rem; color:#666;">No se encontraron insumos.</td></tr>`;
+      const hasQuery = searchInventory && searchInventory.value.trim() !== '';
+      const emptyText = hasQuery ? 'Ningún insumo coincide con la búsqueda.'
+        : currentInvFilter === 'low' ? 'Ningún insumo tiene stock bajo.'
+        : currentInvFilter === 'expiring' ? 'Ningún insumo vence en los próximos 7 días.'
+        : 'Todavía no hay insumos cargados.';
+      inventoryTbody.innerHTML = `<tr><td colspan="6" class="cell-empty">${emptyText}</td></tr>`;
       return;
     }
 
@@ -147,18 +152,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
       let expClass = (expiring || expired) ? 'text-danger' : '';
       let dateAddText = formatDateToLatam(item.dateAdded);
-      let expText = item.expirationDate ? formatDateToLatam(item.expirationDate) : 'No especificado';
+      let expText = item.expirationDate ? formatDateToLatam(item.expirationDate) : 'Sin fecha';
 
+      // El estado va escrito (no solo con el color de la fila)
+      let stateBadge = '';
+      if (expired) stateBadge = '<span class="status-badge is-small status-cancelled">Vencido</span>';
+      else if (expiring) stateBadge = '<span class="status-badge is-small status-pending">Vence pronto</span>';
+      if (isLowStock) stateBadge += '<span class="status-badge is-small status-pending">Stock bajo</span>';
+
+      // data-label: en el celular cada fila se ve como tarjeta con "Etiqueta: valor"
       tr.innerHTML = `
-        <td style="font-weight: 600;">${item.name}</td>
-        <td class="${isLowStock ? 'text-danger' : ''}">${item.currentStock} ${item.unit}</td>
-        <td>${item.minimumStock} ${item.unit}</td>
-        <td style="color: #666; font-size:0.9em;">${dateAddText}</td>
-        <td class="${expClass}">${expText} ${expired ? '(Vencido)' : ''}</td>
-        <td style="text-align: center; display:flex; gap:8px; justify-content:center;">
-          <button class="btn btn-pink btn-sm btn-edit" title="Modificar" style="display:flex; align-items:center; gap:6px;">${iconEdit} Editar</button>
-          <button class="btn btn-red btn-sm btn-delete" title="Eliminar" style="display:flex; align-items:center; gap:6px;">${iconDelete} Eliminar</button>
-        </td>
+        <td class="cell-title"><span class="cell-strong">${item.name}</span>${stateBadge ? `<div class="status-stack">${stateBadge}</div>` : ''}</td>
+        <td data-label="Stock actual" class="${isLowStock ? 'text-danger' : ''}">${item.currentStock} ${item.unit}</td>
+        <td data-label="Stock mínimo">${item.minimumStock} ${item.unit}</td>
+        <td data-label="Actualizado" class="cell-soft">${dateAddText}</td>
+        <td data-label="Vence" class="${expClass}">${expText}</td>
+        <td class="cell-actions"><div class="action-buttons-container">
+          <button type="button" class="btn btn-grey btn-sm btn-edit">${iconEdit} Editar</button>
+          <button type="button" class="btn btn-red btn-sm btn-delete">${iconDelete} Eliminar</button>
+        </div></td>
       `;
 
       tr.querySelector('.btn-edit').addEventListener('click', () => openInventoryForm(item));
@@ -173,8 +185,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('#inventory-filters .chip').forEach(chip => {
     chip.addEventListener('click', (e) => {
       document.querySelectorAll('#inventory-filters .chip').forEach(c => c.classList.remove('active'));
-      e.target.classList.add('active');
-      currentInvFilter = e.target.dataset.filter;
+      e.currentTarget.classList.add('active');
+      currentInvFilter = e.currentTarget.dataset.filter;
       renderInventory();
     });
   });
@@ -205,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnAddInv.addEventListener('click', () => {
       inventoryForm.reset();
       document.getElementById('inv-id').value = '';
-      document.getElementById('inv-modal-title').innerText = "Agregar Insumo / Lote";
+      document.getElementById('inv-modal-title').innerText = "Nuevo insumo";
       updateStepBasedOnUnit(); 
       document.getElementById('modal-inventory-form').hidden = false;
     });
@@ -222,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     updateStepBasedOnUnit(); 
     
-    document.getElementById('inv-modal-title').innerText = "Modificar Insumo";
+    document.getElementById('inv-modal-title').innerText = "Editar insumo";
     document.getElementById('modal-inventory-form').hidden = false;
   }
 
@@ -281,7 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnTestDeduct = document.getElementById('btn-test-deduct');
   if(btnTestDeduct) {
     btnTestDeduct.addEventListener('click', async () => {
-      const orderId = await window.showCustomPrompt("Ingrese el ID del pedido para depurar deducción:");
+      const orderId = await window.showCustomPrompt("¿De qué pedido querés descontar los insumos? Escribí su número:");
       if (!orderId) return;
       
       fetch(`/api/inventory/test-deduct/${orderId}`, { method: 'POST' })

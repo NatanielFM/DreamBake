@@ -1,83 +1,181 @@
-/* Variables locales para footer si necesitás sobrescribir */
-:root {
-  --footer-accent: #cf191043;
-  --footer-text: var(--text, #222);
+/* =========================================================
+   footer.css — Footer compartido del sitio público (Fase 1)
+   ---------------------------------------------------------
+   Requiere tokens.css y components.css.
+   Bloque de color tinta con un borde festoneado arriba
+   (como el borde de un papel de torta).
+   ========================================================= */
+
+.site-footer {
+  --scallop-size: 14px;
+  position: relative;
+  margin-top: var(--scallop-size);   /* deja lugar para el festoneado que sobresale arriba */
+  background: var(--ink);
+  color: var(--rose-100);
+  font-size: var(--fs-small);
+  line-height: 1.6;
 }
 
-/* Contenedor principal del footer */
-footer {
-  background: var(--footer-accent);
-  text-align: center;
-  padding: 2rem 1rem;
-  color: var(--footer-text);
-  box-sizing: border-box;
+/* Festoneado: fila de semicírculos del mismo color que el footer,
+   dibujada con un degradado radial que se repite a lo ancho */
+.site-footer::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: var(--scallop-size);
+  background:
+    radial-gradient(circle var(--scallop-size) at 50% 100%, var(--ink) 96%, transparent 100%)
+    0 0 / calc(var(--scallop-size) * 2) var(--scallop-size) repeat-x;
+  pointer-events: none;
 }
 
-/* Inner wrapper para controlar ancho y layout */
-footer .footer-inner {
-  max-width: var(--container-max, 1100px);
+.site-footer-inner {
+  display: grid;
+  gap: var(--space-7);
+  max-width: calc(var(--container) + var(--gutter) * 2);
   margin: 0 auto;
-  padding: 0 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  align-items: center;
-  justify-content: center;
+  padding: var(--space-8) var(--gutter) var(--space-7);
 }
 
-/* Links y créditos */
-footer .footer-links {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  font-size: 0.95rem;
-  color: inherit;
+/* Foco visible sobre el fondo oscuro */
+.site-footer a:focus-visible {
+  outline: 3px solid var(--white);
+  outline-offset: 3px;
+}
+.site-footer a:focus:not(:focus-visible) {
+  outline: none;   /* sin el contorno pálido de main.css al hacer click */
 }
 
-footer .footer-links a {
-  color: inherit;
+
+/* ---------- Marca ---------- */
+.footer-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  color: var(--white);
   text-decoration: none;
-  opacity: 0.95;
-  transition: opacity 160ms ease, transform 160ms ease;
+  border-radius: var(--radius-sm);
+}
+.footer-logo .brand-icon { width: 40px; height: 40px; flex: none; }
+.footer-logo .bi-frosting { fill: var(--rose-400); }
+.footer-logo .bi-wrapper  { fill: var(--rose-100); }
+.footer-logo .bi-stripes  { stroke: var(--rose-300); }
+.footer-logo .bi-cherry   { fill: var(--cherry-500); }
+
+.footer-logo-text {
+  font-size: 1.375rem;
+  font-weight: var(--fw-black);
+  letter-spacing: -0.02em;
+}
+
+.footer-tagline {
+  margin: var(--space-4) 0 var(--space-2);
+  color: var(--white);
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--ls-tight);
+  line-height: 1.2;
+}
+
+.footer-description {
+  max-width: 34ch;
+  margin: 0;
+  color: var(--rose-200);
+  font-size: var(--fs-body);
+}
+
+
+/* ---------- Columnas ---------- */
+.footer-title {
+  margin: 0 0 var(--space-3);
+  color: var(--white);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0;
+  line-height: 1.3;
+}
+
+.footer-links,
+.footer-contact {
+  display: grid;
+  gap: var(--space-2);   /* WhatsApp e Instagram tienen dos renglones: un poco de aire entre ítems */
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Links con área táctil de 44 px de alto */
+.footer-links a,
+.footer-contact a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  min-width: 44px;
+  color: var(--rose-100);
+  font-size: var(--fs-body);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  transition: color var(--dur-fast) var(--ease-out);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  footer .footer-links a:hover {
-    opacity: 1;
-    transform: translateY(-2px);
+  .footer-links a:hover,
+  .footer-contact a:hover {
+    color: var(--white);
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 0.25em;
   }
 }
 
-/* Social row */
-footer .footer-social {
+.footer-contact svg {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  color: var(--rose-300);
+}
+
+.footer-contact-detail {
+  display: block;
+  color: var(--rose-200);
+  font-size: var(--fs-small);
+}
+
+/* Datos que no son links (ciudad, anticipación) */
+.footer-contact-info {
   display: flex;
-  gap: 0.6rem;
   align-items: center;
-  justify-content: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  color: var(--rose-100);
+  font-size: var(--fs-body);
 }
 
-/* Copyright / small print */
-footer .footer-copy {
-  font-size: 0.85rem;
-  color: rgba(0,0,0,0.55);
-  margin-top: 0.25rem;
+
+/* ---------- Franja final ---------- */
+.site-footer-bottom {
+  max-width: calc(var(--container) + var(--gutter) * 2);
+  margin: 0 auto;
+  padding: 0 var(--gutter) env(safe-area-inset-bottom);
+  color: var(--rose-200);
+}
+/* La línea va en el párrafo para que quede alineada con el contenido */
+.site-footer-bottom p {
+  margin: 0;
+  padding-block: var(--space-5);
+  border-top: 1px solid rgb(251 233 240 / 0.16);
 }
 
-/* Responsive: en pantallas pequeñas apilar y reducir espacios */
-@media (max-width: 720px) {
-  footer {
-    padding: 1.25rem 0.75rem;
+
+/* ---------- Tablet y escritorio ---------- */
+@media (min-width: 48rem) {
+  .site-footer-inner {
+    grid-template-columns: 1.4fr 1fr 1.2fr;
+    gap: var(--space-6);
+    padding-top: var(--space-9);
   }
-  footer .footer-inner {
-    gap: 0.6rem;
-  }
-  footer .footer-links { gap: 0.6rem; font-size: 0.9rem; }
-}
-
-/* Utility: si querés un footer con fondo sólido y mayor contraste */
-footer.footer-solid {
-  background: #cf1910;
-  color: #fff;
 }

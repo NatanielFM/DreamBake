@@ -33,19 +33,19 @@ document.addEventListener('DOMContentLoaded', () => {
     tbody.innerHTML = '';
     
     if (dbRecipes.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="2" style="text-align:center;">No hay recetas registradas.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="2" class="cell-empty">Todavía no hay recetas cargadas.</td></tr>';
       return;
     }
 
     dbRecipes.forEach(r => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td style="font-weight: bold;">${r.name}</td>
-        <td class="action-buttons-container" style="justify-content: center; display: flex; gap: 8px;">
-          <button class="btn btn-grey btn-sm btn-view">Ver receta</button>
-          <button class="btn btn-grey btn-sm btn-edit">Editar</button>
-          <button class="btn btn-red btn-sm btn-delete">Eliminar</button>
-        </td>
+        <td class="cell-title cell-strong">${r.name}<span class="cell-soft recipe-count">${(r.items || []).length} ${(r.items || []).length === 1 ? 'insumo' : 'insumos'}</span></td>
+        <td class="cell-actions"><div class="action-buttons-container">
+          <button type="button" class="btn btn-grey btn-sm btn-view">Ver receta</button>
+          <button type="button" class="btn btn-grey btn-sm btn-edit">Editar</button>
+          <button type="button" class="btn btn-red btn-sm btn-delete">Eliminar</button>
+        </div></td>
       `;
       tr.querySelector('.btn-view').addEventListener('click', () => viewRecipe(r));
       tr.querySelector('.btn-edit').addEventListener('click', () => openRecipeModal(r));
@@ -56,11 +56,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function createItemRow(item = null) {
     const row = document.createElement('div');
-    row.style.display = 'flex';
-    row.style.gap = '10px';
-    row.style.alignItems = 'center';
+    row.className = 'recipe-item-row';   // estilos en admin.css
     
-    let options = '<option value="">Seleccione insumo...</option>';
+    let options = '<option value="">Elegí un insumo…</option>';
     dbInventory.forEach(inv => {
       const selected = item && item.inventoryItem && item.inventoryItem.id === inv.id ? 'selected' : '';
       options += `<option value="${inv.id}" ${selected}>${inv.name} (${inv.unit})</option>`;
@@ -69,11 +67,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const qty = item ? item.quantityRequired : '';
 
     row.innerHTML = `
-      <select class="form-input recipe-inv-select" required style="flex: 2;">
+      <select class="form-input recipe-inv-select" required aria-label="Insumo">
         ${options}
       </select>
-      <input type="number" class="form-input recipe-qty-input" required step="0.01" min="0.01" placeholder="Cantidad" value="${qty}" style="flex: 1;">
-      <button type="button" class="btn btn-red btn-sm btn-remove-row" style="height: 42px;">&times;</button>
+      <input type="number" class="form-input recipe-qty-input" required step="0.01" min="0.01" placeholder="Cantidad" aria-label="Cantidad" inputmode="decimal" value="${qty}">
+      <button type="button" class="btn btn-grey btn-icon btn-remove-row" aria-label="Quitar este insumo" title="Quitar">&times;</button>
     `;
     
     row.querySelector('.btn-remove-row').addEventListener('click', () => row.remove());
@@ -84,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
     form.reset();
     itemsContainer.innerHTML = '';
     if (r) {
-      document.getElementById('recipe-modal-title').innerText = 'Editar Receta';
+      document.getElementById('recipe-modal-title').innerText = 'Editar receta';
       document.getElementById('recipe-id').value = r.id;
       document.getElementById('recipe-name').value = r.name;
       document.getElementById('recipe-details').value = r.details || '';
@@ -95,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
         createItemRow();
       }
     } else {
-      document.getElementById('recipe-modal-title').innerText = 'Agregar Receta';
+      document.getElementById('recipe-modal-title').innerText = 'Nueva receta';
       document.getElementById('recipe-id').value = '';
       createItemRow();
     }
@@ -104,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.viewRecipe = function(r) {
     document.getElementById('view-recipe-title').innerText = r.name;
-    document.getElementById('view-recipe-details').innerText = r.details || 'Sin detalles adicionales.';
+    document.getElementById('view-recipe-details').innerText = r.details || 'Sin preparación cargada.';
     
     const list = document.getElementById('view-recipe-ingredients');
     list.innerHTML = '';
@@ -118,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
         list.appendChild(li);
       });
     } else {
-      list.innerHTML = '<li>Sin ingredientes registrados.</li>';
+      list.innerHTML = '<li>Todavía no tiene insumos cargados.</li>';
     }
     
     document.getElementById('modal-view-recipe').hidden = false;
@@ -203,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const selects = itemsContainer.querySelectorAll('.recipe-inv-select');
     selects.forEach(select => {
       const currentValue = select.value;
-      let options = '<option value="">Seleccione insumo...</option>';
+      let options = '<option value="">Elegí un insumo…</option>';
       dbInventory.forEach(inv => {
         const selected = currentValue == inv.id ? 'selected' : '';
         options += `<option value="${inv.id}" ${selected}>${inv.name} (${inv.unit})</option>`;

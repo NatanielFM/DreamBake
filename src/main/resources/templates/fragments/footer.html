@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+  <!--
+    Footer compartido del sitio público (el mismo en todas las páginas).
+    Se incluye con: <div th:replace="~{fragments/footer :: footer}"></div>
+    El link "Contacto" lleva a la sección #contacto de la home.
+  -->
+  <footer th:fragment="footer" class="site-footer on-dark">
+    <div class="site-footer-inner">
+
+      <!-- Marca y descripción -->
+      <div class="footer-brand">
+        <a class="footer-logo" th:href="@{/}" aria-label="Dulce Sueños Posadas, ir al inicio">
+          <svg class="brand-icon" width="40" height="40" viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+            <path class="bi-wrapper" d="M10.5 21h19l-2.6 11.3A2.6 2.6 0 0 1 24.4 34.4h-8.8a2.6 2.6 0 0 1-2.5-2.1L10.5 21Z"/>
+            <path class="bi-stripes" d="M16 22.5l.9 10.4M20 22.5v10.4M24 22.5l-.9 10.4" fill="none" stroke-width="1.6" stroke-linecap="round"/>
+            <path class="bi-frosting" d="M9.6 22.4c-2 0-3.6-1.6-3.6-3.6 0-1.8 1.3-3.3 3-3.6.4-4 3.8-7.1 7.8-7.1 1.2 0 2.4.3 3.4.8 1.2-.9 2.7-1.4 4.2-1.4 4 0 7.3 3.2 7.4 7.2 1.4.6 2.3 2 2.3 3.6 0 2.3-1.8 4.1-4.1 4.1H9.6Z"/>
+            <circle class="bi-cherry" cx="21.5" cy="5.6" r="3"/>
+          </svg>
+          <span class="footer-logo-text">Dulce Sueños</span>
+        </a>
+        <p class="footer-tagline">Porque soñar es lindo.</p>
+        <p class="footer-description">
+          Tortas personalizadas, mesas dulces y souvenirs hechos a mano en Posadas, Misiones.
+        </p>
+      </div>
+
+      <!-- Navegación -->
+      <nav class="footer-col" aria-labelledby="footer-nav-title">
+        <h2 class="footer-title" id="footer-nav-title">Navegá</h2>
+        <ul class="footer-links">
+          <li><a th:href="@{/}">Inicio</a></li>
+          <li><a th:href="@{/products}">Productos</a></li>
+          <li><a th:href="@{/builder}">Armá tu torta</a></li>
+          <li><a th:href="@{/#nosotros}">Nosotros</a></li>
+          <li><a th:href="@{/#contacto}">Contacto</a></li>
+        </ul>
+      </nav>
+
+      <!-- Contacto -->
+      <div class="footer-col">
+        <h2 class="footer-title">Contacto</h2>
+        <ul class="footer-contact">
+          <li>
+            <a href="https://wa.me/5493764159312" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                <path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3Z"></path>
+                <path d="M9.2 8.6c.2 2.9 3.3 6 6.2 6.2l1.1-1.4-1.9-1-.9.8c-1-.4-2-1.4-2.4-2.4l.8-.9-1-1.9-1.9.6Z" fill="currentColor" stroke="none"></path>
+              </svg>
+              <span>WhatsApp <span class="footer-contact-detail">+54 9 376 415-9312</span></span>
+            </a>
+          </li>
+          <li>
+            <a href="https://www.instagram.com/dulcessuenos_posadas/" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                <rect x="3" y="3" width="18" height="18" rx="5"></rect>
+                <circle cx="12" cy="12" r="4"></circle>
+                <circle cx="17.5" cy="6.5" r="1.1" fill="currentColor" stroke="none"></circle>
+              </svg>
+              <span>Instagram <span class="footer-contact-detail">@dulcessuenos_posadas</span></span>
+            </a>
+          </li>
+          <li class="footer-contact-info">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z"></path>
+              <circle cx="12" cy="9.5" r="2.5"></circle>
+            </svg>
+            <span>Posadas, Misiones · Retiro y envío</span>
+          </li>
+          <li class="footer-contact-info">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <rect x="3" y="5" width="18" height="16" rx="3"></rect>
+              <path d="M3 10h18M8 3v4M16 3v4"></path>
+            </svg>
+            <span>Pedidos con 3 días de anticipación</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="site-footer-bottom">
+      <p>© <span th:text="${#dates.year(#dates.createNow())}">2026</span> Dulce Sueños Posadas</p>
+    </div>
+  </footer>
+</body>
+</html>

@@ -2,126 +2,206 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Tu Carrito — DreamBake</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <!-- Color de la barra del navegador en el celular: el mismo fondo del header -->
+  <meta name="theme-color" content="#fef9f9" />
+  <link rel="icon" type="image/svg+xml" th:href="@{/img/favicon.svg}" />
+  <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
+  <script th:src="@{/js/csrf.js}"></script>
+  <title>Tu pedido — Dulce Sueños Posadas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Orden: base vieja compartida → tokens → componentes → header → CSS de la página → footer -->
   <link rel="stylesheet" th:href="@{/css/main.css}">
+  <link rel="stylesheet" th:href="@{/css/tokens.css}">
+  <link rel="stylesheet" th:href="@{/css/components.css}">
   <link rel="stylesheet" th:href="@{/css/header.css}">
-  <link rel="stylesheet" th:href="@{/css/footer.css}">
   <link rel="stylesheet" th:href="@{/css/public.css}">
+  <link rel="stylesheet" th:href="@{/css/cart.css}">
+  <link rel="stylesheet" th:href="@{/css/footer.css}">
 </head>
-<body>
+<body class="page-shop page-cart">
   <div th:replace="~{fragments/header :: header}"></div>
 
-  <main style="padding-top: 100px; min-height: 85vh; padding-bottom: 50px;">
-    <div class="container-wizard">
-      <h2 style="font-size: 2.2rem; color: var(--accent); margin-bottom: 20px; text-align:center;">Finalizar Pedido 🛒</h2>
-      
-      <div class="cart-layout" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
-        
-        <div class="cart-summary">
-          <h3>Resumen de Compra</h3>
-          <div id="full-cart-items" style="margin-top: 15px;"></div>
-          
-          <div style="margin-top: 15px; padding-top:15px; border-top: 2px dashed #eee;">
-            <div class="form-group">
-              <label>Cupón de Descuento (Opcional)</label>
-              <div style="display:flex; gap:10px;">
-                <input type="text" id="cart-coupon" class="public-input" placeholder="Ej: DREAM10">
-                <button type="button" class="btn btn-grey" id="btn-apply-coupon">Aplicar</button>
-              </div>
-              <div id="coupon-message" style="margin-top:5px; font-size:0.9em; font-weight:600;"></div>
+  <main id="main" class="shop-main">
+    <section class="shop-hero">
+      <div class="site-container">
+        <h1 class="text-h1">Tu pedido</h1>
+        <p class="text-lead">Revisá lo que elegiste, completá tus datos y lo enviamos por WhatsApp.</p>
+      </div>
+    </section>
+
+    <div class="site-container cart-page">
+
+      <!-- Carrito vacío (store.js lo muestra u oculta) -->
+      <div id="cart-empty" class="cart-empty cart-empty--page" hidden>
+        <svg class="cart-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 8h14l-1.2 11.1a2 2 0 0 1-2 1.9H8.2a2 2 0 0 1-2-1.9L5 8Z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/></svg>
+        <h2 class="text-h3">Tu pedido está vacío</h2>
+        <p>Armá una torta a tu gusto o elegí algo del catálogo.</p>
+        <div class="cart-empty-actions">
+          <a class="button button--primary button--lg" th:href="@{/builder}">Armá tu torta</a>
+          <a class="button button--secondary button--lg" th:href="@{/products}">Ver productos</a>
+        </div>
+      </div>
+
+      <!-- Pedido enviado (store.js lo muestra después de guardar) -->
+      <div id="checkout-success" class="checkout-success" hidden>
+        <span class="success-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+        </span>
+        <h2 class="text-h2" tabindex="-1">¡Listo! Tu pedido quedó registrado</h2>
+        <p class="text-lead">Número de pedido <strong id="success-order-id">#0</strong>. Para confirmarlo, mandanos el mensaje por WhatsApp: ya está escrito con todo el detalle.</p>
+        <div class="success-actions">
+          <a id="success-whatsapp" class="button button--ink button--lg" href="#" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3Z"></path>
+              <path d="M9.2 8.6c.2 2.9 3.3 6 6.2 6.2l1.1-1.4-1.9-1-.9.8c-1-.4-2-1.4-2.4-2.4l.8-.9-1-1.9-1.9.6Z" fill="currentColor" stroke="none"></path>
+            </svg>
+            Enviar pedido por WhatsApp
+          </a>
+          <a class="button button--secondary button--lg" th:href="@{/}">Volver al inicio</a>
+        </div>
+      </div>
+
+      <!-- Carrito + formulario -->
+      <div class="cart-layout" data-cart-layout>
+        <form id="final-checkout-form" class="checkout-form" novalidate>
+
+          <section class="cart-block" aria-labelledby="items-title">
+            <div class="block-head">
+              <h2 id="items-title" class="block-title">Productos</h2>
+              <span class="block-meta" id="cart-items-count">0 productos</span>
             </div>
-            <h2 style="text-align:right; color:var(--accent); margin-top:20px;">Total: $<span id="full-cart-total">0</span></h2>
+            <ul id="full-cart-items" class="cart-lines" role="list"></ul>
+            <a class="link add-more" th:href="@{/products}">Agregar más productos</a>
+          </section>
+
+          <section class="cart-block" aria-labelledby="data-title">
+            <h2 id="data-title" class="block-title">Tus datos</h2>
+            <div class="field-stack">
+              <div class="field">
+                <label class="field__label" for="chk-name">Nombre y apellido</label>
+                <input type="text" id="chk-name" class="input" autocomplete="name" required
+                       aria-describedby="chk-name-error" th:value="${currentUser != null ? currentUser.name : ''}">
+                <p class="field__error" id="chk-name-error" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span></span></p>
+              </div>
+
+              <div class="field-row">
+                <div class="field">
+                  <label class="field__label" for="chk-phone">Celular / WhatsApp</label>
+                  <input type="tel" id="chk-phone" class="input" inputmode="tel" autocomplete="tel" required placeholder="Ej: 3764 123456"
+                         aria-describedby="chk-phone-hint chk-phone-error" th:value="${currentUser != null ? currentUser.phone : ''}">
+                  <p class="field__hint" id="chk-phone-hint">Te escribimos a este número para coordinar.</p>
+                  <p class="field__error" id="chk-phone-error" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span></span></p>
+                </div>
+
+                <div class="field">
+                  <label class="field__label" for="chk-email">Email <span class="field__optional">(opcional)</span></label>
+                  <input type="email" id="chk-email" class="input" autocomplete="email" inputmode="email"
+                         aria-describedby="chk-email-hint chk-email-error" th:value="${currentUser != null ? currentUser.email : ''}">
+                  <p class="field__hint" id="chk-email-hint">Solo para avisarte de promociones.</p>
+                  <p class="field__error" id="chk-email-error" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span></span></p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="cart-block" aria-labelledby="delivery-title">
+            <h2 id="delivery-title" class="block-title">Entrega y pago</h2>
+            <div class="field-stack">
+              <div class="field">
+                <label class="field__label" for="chk-date">¿Para qué día?</label>
+                <input type="date" id="chk-date" class="input" required aria-describedby="chk-date-hint chk-date-error">
+                <p class="field__hint" id="chk-date-hint">Pedidos con 3 días de anticipación.</p>
+                <p class="field__error" id="chk-date-error" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span></span></p>
+              </div>
+
+              <fieldset class="field choice-group">
+                <legend class="field__label">Turno</legend>
+                <div class="choice-grid">
+                  <label class="choice-card">
+                    <input type="radio" name="shift" value="Por la mañana">
+                    <span class="choice-title">Por la mañana</span>
+                  </label>
+                  <label class="choice-card">
+                    <input type="radio" name="shift" value="Por la tarde">
+                    <span class="choice-title">Por la tarde</span>
+                  </label>
+                </div>
+                <p class="field__error" id="chk-shift-error" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span></span></p>
+              </fieldset>
+
+              <fieldset class="field choice-group">
+                <legend class="field__label">Medio de pago</legend>
+                <div class="choice-grid">
+                  <label class="choice-card">
+                    <input type="radio" name="payment" value="Transferencia" checked>
+                    <span class="choice-title">Transferencia</span>
+                    <span class="choice-desc">Te pasamos los datos por WhatsApp</span>
+                  </label>
+                  <label class="choice-card">
+                    <input type="radio" name="payment" value="Efectivo">
+                    <span class="choice-title">Efectivo</span>
+                    <span class="choice-desc">Al retirar o recibir el pedido</span>
+                  </label>
+                </div>
+              </fieldset>
+
+              <div class="field">
+                <label class="field__label" for="chk-general-details">Aclaraciones <span class="field__optional">(opcional)</span></label>
+                <textarea id="chk-general-details" class="input" rows="3" maxlength="500" placeholder="Alergias, dirección de envío, a qué hora pasás a retirar…"></textarea>
+              </div>
+            </div>
+          </section>
+        </form>
+
+        <!-- Resumen del pedido: fijo a la derecha en escritorio -->
+        <aside class="order-summary" aria-labelledby="summary-title">
+          <h2 id="summary-title" class="block-title">Resumen</h2>
+
+          <div class="field coupon">
+            <label class="field__label" for="cart-coupon">¿Tenés un cupón?</label>
+            <div class="coupon-row">
+              <input type="text" id="cart-coupon" class="input" autocomplete="off" autocapitalize="characters" placeholder="Ej: DULCE10" aria-describedby="coupon-message">
+              <button type="button" class="button button--soft" id="btn-apply-coupon">Aplicar</button>
+            </div>
+            <p id="coupon-message" class="coupon-message" role="status" hidden></p>
           </div>
-        </div>
 
-        <div class="cart-checkout">
-          <h3>Tus Datos</h3>
-          <form id="final-checkout-form">
-            <div class="form-group" style="margin-top: 15px;">
-              <label>1. Nombre Completo (Obligatorio)</label>
-              <input type="text" id="chk-name" class="public-input" required th:value="${currentUser != null ? currentUser.name : ''}">
-            </div>
-            
-            <div class="form-group" style="margin-top: 15px;">
-              <label>2. Teléfono WhatsApp (Obligatorio)</label>
-              <input type="text" id="chk-phone" class="public-input" required placeholder="Ej: 3764123456" th:value="${currentUser != null ? currentUser.phone : ''}">
-            </div>
+          <dl class="summary-rows">
+            <div><dt>Subtotal</dt><dd>$<span id="cart-subtotal">0</span></dd></div>
+            <div id="cart-discount-row" class="summary-discount" hidden><dt id="cart-discount-label">Descuento</dt><dd>−$<span id="cart-discount">0</span></dd></div>
+            <div id="cart-benefit-row" class="summary-discount" hidden><dt>Beneficio</dt><dd id="cart-benefit"></dd></div>
+          </dl>
+          <p class="summary-total"><span>Total</span><strong>$<span id="full-cart-total">0</span></strong></p>
 
-            <div class="form-group" style="margin-top: 15px;">
-              <label>3. Email (Opcional para promociones)</label>
-              <input type="email" id="chk-email" class="public-input" th:value="${currentUser != null ? currentUser.email : ''}">
-            </div>
-
-            <div class="form-group" style="margin-top: 15px;">
-              <label>4. Detalles del pedido (Opcional)</label>
-              <textarea id="chk-general-details" class="public-input" rows="3" placeholder="Aclaraciones generales para retirar, alergias, etc..."></textarea>
-            </div>
-
-            <hr style="margin: 20px 0; border:0; border-top:1px solid #eee;">
-
-            <h3>Logística y Pago</h3>
-            <div class="form-grid">
-              <div class="form-group" style="grid-column: 1 / -1;">
-                <label>¿Para cuándo quiero la torta? *</label>
-                <input type="date" id="chk-date" class="public-input" required>
-                <small style="color: #666; font-size: 0.8rem;">(Mínimo 3 días de anticipación)</small>
-              </div>
-            </div>
-
-            <div class="form-group" style="margin-top: 15px;">
-              <label>Medio de Pago *</label>
-              <select id="chk-payment" class="public-input" required>
-                <option value="Transferencia">Transferencia Bancaria</option>
-                <option value="Efectivo">Efectivo en el local</option>
-              </select>
-            </div>
-
-            <button type="submit" class="btn btn-pink btn-large" style="width: 100%; margin-top: 25px; display:flex; align-items:center; justify-content:center; gap:10px;">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-              Confirmar pedido por WhatsApp
-            </button>
-          </form>
-        </div>
-
+          <button type="submit" form="final-checkout-form" class="button button--ink button--lg button--block checkout-submit">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3Z"></path>
+              <path d="M9.2 8.6c.2 2.9 3.3 6 6.2 6.2l1.1-1.4-1.9-1-.9.8c-1-.4-2-1.4-2.4-2.4l.8-.9-1-1.9-1.9.6Z" fill="currentColor" stroke="none"></path>
+            </svg>
+            Confirmar pedido por WhatsApp
+          </button>
+          <p class="summary-note">Guardamos tu pedido y abrimos WhatsApp con el mensaje listo para enviar. La seña y el diseño final se coordinan por ahí.</p>
+        </aside>
       </div>
     </div>
   </main>
 
-  <div id="modal-alert-v1" class="public-modal-overlay" hidden style="z-index: 3000;">
-    <div class="public-modal-card" style="max-width: 400px; text-align: center; margin: auto;">
-      <div class="public-modal-header" style="justify-content: center; background: #fff; border-bottom: none; padding-bottom: 0;">
-        <h3 style="color: var(--accent);">Atención</h3>
-      </div>
-      <div class="public-modal-body" style="padding-top: 10px;">
-        <p id="alert-v1-msg" style="margin-bottom: 25px; color: #444; font-size: 1.05rem;"></p>
-        <button type="button" class="btn btn-pink" style="padding: 10px 30px; border-radius: 8px;" onclick="document.getElementById('modal-alert-v1').hidden = true">Entendido</button>
-      </div>
+  <!-- Aviso de error (store.js: showPublicAlert) -->
+  <div id="modal-alert-v1" class="public-modal-overlay" hidden>
+    <div class="public-modal-card alert-card" role="alertdialog" aria-modal="true" aria-labelledby="alert-v1-title" aria-describedby="alert-v1-msg">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+      <h2 id="alert-v1-title">No pudimos continuar</h2>
+      <p id="alert-v1-msg"></p>
+      <button type="button" class="button button--primary" onclick="document.getElementById('modal-alert-v1').hidden = true">Entendido</button>
     </div>
   </div>
 
-  <div id="modal-success-v1" class="public-modal-overlay" hidden style="z-index: 3000;">
-    <div class="public-modal-card" style="max-width: 450px; text-align: center; margin: auto;">
-      <div class="public-modal-header" style="justify-content: center; background: #fff; border-bottom: none; padding-bottom: 0;">
-        <h3 style="color: #25D366;">¡Pedido Enviado! 🎉</h3>
-      </div>
-      <div class="public-modal-body" style="padding-top: 10px;">
-        <p style="margin-bottom: 25px; color: #444; font-size: 1.1rem;">Tu pedido ha sido registrado. Muchas gracias por confiar en DreamBake.</p>
-        <div style="display: flex; gap: 15px; justify-content: center;">
-          <button type="button" class="btn btn-grey" id="btn-keep-shopping" style="padding: 10px 20px; border-radius: 8px;">Seguir comprando</button>
-          <button type="button" class="btn btn-pink" id="btn-accept-success" style="padding: 10px 30px; border-radius: 8px;">Aceptar</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <div th:replace="~{fragments/footer :: footer}"></div>
 
-  <footer>
-    © <strong>Dulce Sueños Posadas</strong>
-  </footer>
-  
   <script th:src="@{/js/header.js}"></script>
   <script th:src="@{/js/public/store.js}"></script>
 </body>
 </html>
-

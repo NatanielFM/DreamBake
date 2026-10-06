@@ -1,0 +1,82 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "Dulce Sueños" [ref=e4] [cursor=pointer]:
+        - /url: /
+      - navigation [ref=e9]:
+        - list [ref=e10]:
+          - listitem [ref=e11]:
+            - link "Inicio" [ref=e12] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e13]:
+            - link "Productos" [ref=e14] [cursor=pointer]:
+              - /url: /products
+          - listitem [ref=e15]:
+            - link "Nosotros" [ref=e16] [cursor=pointer]:
+              - /url: /about
+          - listitem [ref=e17]:
+            - link "Contacto" [ref=e18] [cursor=pointer]:
+              - /url: /contact
+      - generic [ref=e19]:
+        - link "WhatsApp" [ref=e20] [cursor=pointer]:
+          - /url: https://wa.me/549XXXXXXXXXX
+          - img "WA" [ref=e21]
+        - link "Instagram" [ref=e22] [cursor=pointer]:
+          - /url: https://www.instagram.com/dulcessuenos_posadas/
+          - img "IG" [ref=e23]
+        - link "Ver carrito" [ref=e24] [cursor=pointer]:
+          - /url: /cart
+          - generic [ref=e27]: "0"
+        - button "Mi cuenta" [ref=e29] [cursor=pointer]
+  - main [ref=e32]:
+    - region "Introducción" [ref=e34]:
+      - img "Logo de Dulce Sueños Posadas" [ref=e35]
+      - generic [ref=e36]:
+        - link "Hace tu torta" [ref=e37] [cursor=pointer]:
+          - /url: /builder
+        - link "Ver menú" [ref=e38] [cursor=pointer]:
+          - /url: /products
+    - paragraph [ref=e41]: "\"Un pedacito de amor en forma de torta.\""
+    - generic [ref=e42]:
+      - heading "Nuestros productos" [level=2] [ref=e43]
+      - generic [ref=e44]:
+        - generic [ref=e45]:
+          - img "Dulces" [ref=e47]
+          - generic [ref=e48]: Dulces
+        - generic [ref=e49]:
+          - img "Tortas" [ref=e51]
+          - generic [ref=e52]: Tortas
+        - generic [ref=e53]:
+          - img "Souvenirs" [ref=e55]
+          - generic [ref=e56]: Souvenirs
+    - region [ref=e57]:
+      - heading "Sobre Nosotros" [level=2] [ref=e58]
+      - generic [ref=e59]:
+        - generic [ref=e60]:
+          - heading "Vero y Maca" [level=3] [ref=e61]
+          - paragraph [ref=e62]: Somos Vero y Maca, emprendedoras apasionadas por la pastelería artesanal. Nuestro objetivo es crear recuerdos dulces que acompañen a los momentos lindos de la vida. Trabajamos con ingredientes locales y recetas cuidadas para ofrecer productos frescos, personalizados y con sabor casero.
+          - paragraph [ref=e63]:
+            - link "Escribinos! ❤️" [ref=e64] [cursor=pointer]:
+              - /url: /contact
+        - img "Vero y Maca, fundadoras de Dulce Sueños" [ref=e66]:
+          - img "Vero y Maca" [ref=e67]
+    - heading "Galería" [level=2] [ref=e69]
+    - region [ref=e70]:
+      - generic [ref=e71]:
+        - generic [ref=e72]:
+          - heading "Promociones y novedades" [level=2] [ref=e73]
+          - paragraph [ref=e74]: Suscribite al newsletter y recibí ofertas exclusivas, novedades y descuentos.
+          - generic [ref=e75]:
+            - generic [ref=e76]: Tu email
+            - textbox "Tu email" [ref=e77]:
+              - /placeholder: Ingresá tu email
+          - paragraph [ref=e78]: Sin spam. Podés darte de baja cuando quieras.
+          - button "Suscribirse" [ref=e80] [cursor=pointer]
+        - generic [ref=e81]:
+          - figure "Cliente frecuente" [ref=e82]:
+            - img "Cliente frecuente" [ref=e83]
+          - figure "Promo cumpleañero" [ref=e85]:
+            - img "Promo cumpleañero" [ref=e86]
+  - contentinfo [ref=e88]:
+    - text: ©
+    - strong [ref=e89]: Dulce Sueños Posadas

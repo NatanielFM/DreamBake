@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     sidebarToggleBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       body.classList.toggle('sidebar-toggled');
+      syncSidebarExpanded();
       // Emitimos un evento global para que otros módulos (como products) se adapten al nuevo espacio
       document.dispatchEvent(new Event('layoutChanged'));
     });
@@ -64,8 +65,19 @@ document.addEventListener('DOMContentLoaded', () => {
   if (backdrop) {
     backdrop.addEventListener('click', () => {
       body.classList.remove('sidebar-toggled');
+      syncSidebarExpanded();
     });
   }
+
+  // Le avisa a los lectores de pantalla si el menú lateral está abierto
+  // (en el celular "sidebar-toggled" = abierto; en escritorio = oculto)
+  function syncSidebarExpanded() {
+    if (!sidebarToggleBtn) return;
+    const mobile = window.innerWidth <= 880;
+    const toggled = body.classList.contains('sidebar-toggled');
+    sidebarToggleBtn.setAttribute('aria-expanded', String(mobile ? toggled : !toggled));
+  }
+  syncSidebarExpanded();
 
   let isMobile = window.innerWidth <= 880;
   window.addEventListener('resize', () => {
@@ -73,6 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isMobile !== currentlyMobile) {
       body.classList.remove('sidebar-toggled');
       isMobile = currentlyMobile;
+      syncSidebarExpanded();
     }
   });
 
@@ -89,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const tabId = btn.dataset.tab;
       document.getElementById(tabId).classList.add('active');
       
-      if (window.innerWidth <= 880) body.classList.remove('sidebar-toggled');
+      if (window.innerWidth <= 880) { body.classList.remove('sidebar-toggled'); syncSidebarExpanded(); }
       
       // Magia: Emitimos un evento informando qué pestaña se abrió.
       // Los otros scripts escucharán esto y cargarán sus datos solo si es necesario.
@@ -97,7 +110,39 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ================= 4. HEADER (Cerrar Sesión, Campana) =================
+  // ================= 4. TECLA ESC Y FONDO DE LAS VENTANAS =================
+  // Esc cierra la ventana que está más arriba; si no hay ninguna abierta y el
+  // menú lateral está abierto en el celular, cierra el menú.
+  function topOpenModal() {
+    const open = [...document.querySelectorAll('.modal-overlay:not([hidden])')];
+    if (open.length === 0) return null;
+    const z = (el) => parseInt(getComputedStyle(el).zIndex, 10) || 0;
+    return open.sort((a, b) => z(b) - z(a))[0];
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const modal = topOpenModal();
+    if (modal) {
+      modal.hidden = true;
+      return;
+    }
+    if (window.innerWidth <= 880 && body.classList.contains('sidebar-toggled')) {
+      body.classList.remove('sidebar-toggled');
+      syncSidebarExpanded();
+      if (sidebarToggleBtn) sidebarToggleBtn.focus();
+    }
+  });
+
+  // Tocar el fondo oscuro cierra las ventanas SIN formulario (avisos, detalles).
+  // Las que tienen formulario solo se cierran con sus botones, para no perder lo cargado.
+  document.querySelectorAll('.modal-overlay').forEach(modal => {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal && !modal.querySelector('form')) modal.hidden = true;
+    });
+  });
+
+  // ================= 5. HEADER (Cerrar Sesión, Campana) =================
   const logoutHeaderBtn = document.getElementById('btn-logout-header');
   if (logoutHeaderBtn) {
     logoutHeaderBtn.addEventListener('click', () => {

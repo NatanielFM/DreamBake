@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnAddTeamMember.addEventListener('click', () => {
       formTeam.reset();
       teamIdInput.value = '';
-      document.getElementById('modal-team-title').textContent = 'Nuevo Pastelero';
+      document.getElementById('modal-team-title').textContent = 'Agregar pastelero';
       document.getElementById('team-password').setAttribute('required', 'true');
       modalTeam.hidden = false;
     });
@@ -54,21 +54,17 @@ document.addEventListener('DOMContentLoaded', () => {
           body: JSON.stringify(payload)
         });
 
+        // Avisos con las ventanas del panel (no con alert() del navegador)
         if (response.ok) {
-          if (typeof showNotification === 'function') {
-            showNotification('Pastelero guardado exitosamente', 'success');
-          } else {
-            alert('Guardado exitosamente');
-          }
           modalTeam.hidden = true;
           loadTeam();
         } else {
           const err = await response.text();
-          alert('Error: ' + err);
+          window.showErrorAlert(err || 'No se pudo guardar al pastelero.');
         }
       } catch (error) {
         console.error(error);
-        alert('Error de conexión');
+        window.showErrorAlert('No se pudo conectar con el servidor.');
       }
     });
   }
@@ -92,26 +88,27 @@ document.addEventListener('DOMContentLoaded', () => {
     teamTbody.innerHTML = '';
     
     if (team.length === 0) {
-      teamTbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #666;">No hay pasteleros registrados.</td></tr>';
+      teamTbody.innerHTML = '<tr><td colspan="4" class="cell-empty">Todavía no hay pasteleros. Agregá uno para que pueda entrar al panel de la cocina.</td></tr>';
       return;
     }
 
     team.forEach(member => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${member.name}</td>
-        <td>${member.email}</td>
-        <td>${member.phone || '-'}</td>
-        <td style="text-align: center;">
-          <button class="btn btn-grey btn-sm btn-edit" data-id="${member.id}" style="margin-right: 5px;">Editar</button>
-          <button class="btn btn-red btn-sm btn-delete" data-id="${member.id}">Eliminar</button>
-        </td>
+        <td class="cell-title cell-strong">${member.name}</td>
+        <td data-label="Email">${member.email}</td>
+        <td data-label="Teléfono">${member.phone || '—'}</td>
+        <td class="cell-actions"><div class="action-buttons-container">
+          <button type="button" class="btn btn-grey btn-sm btn-edit" data-id="${member.id}">Editar</button>
+          <button type="button" class="btn btn-red btn-sm btn-delete" data-id="${member.id}">Eliminar</button>
+        </div></td>
       `;
       teamTbody.appendChild(tr);
     });
 
     // Attach events for edit/delete buttons
-    document.querySelectorAll('.btn-edit').forEach(btn => {
+    // Solo los botones de la tabla de Equipo (antes usaba '.btn-edit' de todo el panel)
+    teamTbody.querySelectorAll('.btn-edit').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-id');
         const member = team.find(m => m.id == id);
@@ -122,30 +119,30 @@ document.addEventListener('DOMContentLoaded', () => {
           document.getElementById('team-phone').value = member.phone || '';
           document.getElementById('team-password').value = ''; // Leave empty
           document.getElementById('team-password').removeAttribute('required'); // Not required on edit
-          document.getElementById('modal-team-title').textContent = 'Editar Pastelero';
+          document.getElementById('modal-team-title').textContent = 'Editar pastelero';
           modalTeam.hidden = false;
         }
       });
     });
 
-    document.querySelectorAll('.btn-delete').forEach(btn => {
-      btn.addEventListener('click', async () => {
+    teamTbody.querySelectorAll('.btn-delete').forEach(btn => {
+      btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-id');
-        if (confirm('¿Estás seguro de que deseas eliminar este pastelero?')) {
+        const member = team.find(m => m.id == id);
+        // Confirmación con la ventana del panel (no la del navegador)
+        window.showConfirmModal('Eliminar pastelero', `¿Eliminar a ${member ? member.name : 'este pastelero'}? Ya no va a poder entrar al panel.`, 'Eliminar', 'btn-red', async () => {
           try {
             const response = await fetch('/api/users/' + id, { method: 'DELETE' });
             if (response.ok) {
-              if (typeof showNotification === 'function') {
-                showNotification('Pastelero eliminado', 'success');
-              }
               loadTeam();
             } else {
-              alert('Error al eliminar');
+              window.showErrorAlert('No se pudo eliminar al pastelero.');
             }
           } catch (error) {
             console.error(error);
+            window.showErrorAlert('No se pudo conectar con el servidor.');
           }
-        }
+        });
       });
     });
   }

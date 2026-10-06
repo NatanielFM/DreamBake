@@ -1,0 +1,340 @@
+/* =========================================================
+   cart.css — Carrito y checkout (/cart, Fase 3)
+   ---------------------------------------------------------
+   Requiere tokens.css, components.css y public.css.
+   Columna principal: productos (con cantidades), datos y
+   entrega. Columna lateral (fija en escritorio): cupón,
+   subtotal, descuento, total y botón de confirmar.
+   ========================================================= */
+
+.cart-page {
+  padding-block: var(--space-7) var(--space-9);
+}
+
+.cart-layout {
+  display: grid;
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.checkout-form {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+/* Botón de confirmar en la columna del resumen: un poco menos de relleno para
+   que "Confirmar pedido por WhatsApp" entre en un renglón en escritorio */
+.order-summary .button--lg { padding-inline: var(--space-5); }
+@media (min-width: 64rem) {
+  .order-summary .button--lg { font-size: 1rem; }
+}
+
+/* Cada bloque del formulario es una tarjeta blanca */
+.cart-block,
+.order-summary {
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+}
+
+.block-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.block-title {
+  margin: 0 0 var(--space-4);
+  color: var(--ink);
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-black);
+  letter-spacing: -0.01em;
+}
+.block-meta { color: var(--text-muted); font-size: var(--fs-small); }
+
+.cart-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.line-side {
+  display: grid;
+  justify-items: end;
+  align-content: start;
+  gap: var(--space-2);
+}
+/* En celular (menos de 480 px) el nombre y el detalle usan todo el ancho, y el precio
+   con las cantidades van en una fila abajo. Antes, al lado, dejaban una columna
+   tan angosta que "personalizada" se partía en dos. */
+@media (max-width: 29.99rem) {
+  .cart-lines .cart-item-row { grid-template-columns: minmax(0, 1fr); }
+  .cart-lines .line-side {
+    grid-auto-flow: column;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+/* Control de cantidad: − 2 + */
+.qty {
+  display: inline-flex;
+  align-items: center;
+  border: 1.5px solid var(--line-input);
+  border-radius: var(--radius-pill);
+}
+.qty-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink);
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+.qty-btn svg { width: 18px; height: 18px; }
+.qty-btn:active { transform: scale(0.92); }
+@media (hover: hover) and (pointer: fine) {
+  .qty-btn:hover { background: var(--rose-100); }
+}
+.qty-value {
+  min-width: 1.75rem;
+  color: var(--ink);
+  font-weight: var(--fw-bold);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.add-more {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: var(--space-2);
+}
+
+/* Formulario: en tablet, celular y email lado a lado */
+.field-row {
+  display: grid;
+  gap: 20px;
+}
+@media (min-width: 48rem) {
+  .field-row { grid-template-columns: 1fr 1fr; }
+}
+
+/* Opciones tipo tarjeta (turno y medio de pago) */
+.choice-group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.choice-group legend { padding: 0; margin-bottom: var(--space-2); }
+
+.choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.choice-card {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  min-height: 56px;
+  padding: var(--space-3) var(--space-4) var(--space-3) 48px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+.choice-card:active { transform: scale(0.98); }
+.choice-card input {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0;
+}
+.choice-title { color: var(--ink); font-weight: var(--fw-semibold); line-height: 1.3; align-self: center; }
+.choice-desc { color: var(--text-muted); font-size: var(--fs-small); line-height: 1.35; }
+.choice-card:has(input:checked) { border-color: var(--ink); background: var(--rose-50); }
+.choice-card:has(input:focus-visible) { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+.field--error .choice-card { border-color: var(--cherry-500); }
+@media (hover: hover) and (pointer: fine) {
+  .choice-card:hover { border-color: var(--rose-300); }
+}
+/* En celulares (menos de 480 px) las opciones van una debajo de la otra: los textos no entran en dos columnas */
+@media (max-width: 29.99rem) {
+  .choice-grid { grid-template-columns: 1fr; }
+}
+
+
+/* ---------- Resumen ---------- */
+.coupon { margin-bottom: var(--space-5); }
+.coupon-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-2);
+}
+.coupon-row .button { min-height: 52px; }
+
+.coupon-message {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: var(--space-1) 0 0;
+  font-size: var(--fs-small);
+  font-weight: var(--fw-semibold);
+}
+.coupon-message svg { flex: none; width: 16px; height: 16px; }
+.coupon-message--success { color: var(--rose-800); }
+.coupon-message--error { color: var(--cherry-700); }
+
+.summary-rows {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--line);
+}
+.summary-rows > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.summary-rows dt { color: var(--text-strong); }
+.summary-rows dd { margin: 0; color: var(--ink); font-weight: var(--fw-semibold); font-variant-numeric: tabular-nums; }
+.summary-discount dt, .summary-discount dd { color: var(--rose-700); }
+
+.summary-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0 var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
+}
+.summary-total strong {
+  font-size: clamp(1.75rem, 1.5rem + 1vw, 2.25rem);
+  font-weight: var(--fw-black);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  transform-origin: right center;
+}
+/* El total "late" cuando cambia (cantidades o cupón) */
+.summary-total.is-bumped strong { animation: total-bump 360ms var(--ease-out); }
+@keyframes total-bump {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+.checkout-submit { white-space: normal; }
+.summary-note {
+  margin: var(--space-3) 0 0;
+  color: var(--text-muted);
+  font-size: var(--fs-small);
+  line-height: 1.5;
+}
+
+
+/* ---------- Vacío y éxito ---------- */
+.cart-empty--page {
+  padding: var(--space-8) var(--space-4);
+  border-radius: var(--radius-xl);
+  background: var(--white);
+}
+.cart-empty--page h2 { margin: 0; color: var(--ink); }
+.cart-empty-icon { width: 64px; height: 64px; color: var(--rose-400); }
+.cart-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.checkout-success {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-4);
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-5);
+  border-radius: var(--radius-xl);
+  background: var(--white);
+  text-align: center;
+}
+.checkout-success h2 { margin: 0; }
+.checkout-success h2:focus { outline: none; }
+.checkout-success .text-lead { margin: 0; color: var(--rose-800); }
+.success-icon {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--rose-600);
+  color: var(--white);
+}
+.success-icon svg { width: 36px; height: 36px; }
+.checkout-success:not([hidden]) .success-icon { animation: success-pop 480ms var(--ease-out); }
+@keyframes success-pop {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: none; }
+}
+.success-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+
+/* ---------- Escritorio: resumen fijo a la derecha ---------- */
+@media (min-width: 64rem) {
+  .cart-layout {
+    grid-template-columns: minmax(0, 1fr) 24rem;
+    gap: var(--space-6);
+  }
+  .cart-block,
+  .order-summary { padding: var(--space-6); }
+  .order-summary {
+    position: sticky;
+    top: calc(var(--header-height) + var(--space-5));
+  }
+}
+
+
+/* La lista del carrito la arma store.js al cargar. Hasta entonces el contenido
+   queda invisible (sin saltos a la vista) y después entra con un fundido.
+   Si por algún motivo el JS no corre, a los 2 s se muestra igual. */
+.cart-page:not(.is-ready) {
+  visibility: hidden;
+  animation: cart-page-fallback 0s linear 2s forwards;
+}
+.cart-page.is-ready { animation: fade-in var(--dur-base) var(--ease-out); }
+@keyframes cart-page-fallback {
+  to { visibility: visible; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .summary-total.is-bumped strong { animation: none; }
+  .checkout-success:not([hidden]) .success-icon { animation-name: fade-in; }
+  .qty-btn:active,
+  .choice-card:active { transform: none; }
+}

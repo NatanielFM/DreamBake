@@ -2,63 +2,94 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Iniciar sesión — Dulce Sueños</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <!-- Color de la barra del navegador en el celular: el mismo fondo del header -->
+  <meta name="theme-color" content="#fef9f9" />
+  <link rel="icon" type="image/svg+xml" th:href="@{/img/favicon.svg}" />
+  <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
+  <script th:src="@{/js/csrf.js}"></script>
+  <title>Iniciar sesión — Dulce Sueños Posadas</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Orden: base vieja compartida → tokens → componentes → header → CSS de la página → footer -->
   <link rel="stylesheet" th:href="@{/css/main.css}">
+  <link rel="stylesheet" th:href="@{/css/tokens.css}">
+  <link rel="stylesheet" th:href="@{/css/components.css}">
   <link rel="stylesheet" th:href="@{/css/header.css}">
-  <link rel="stylesheet" th:href="@{/css/footer.css}">
   <link rel="stylesheet" th:href="@{/css/login.css}">
+  <link rel="stylesheet" th:href="@{/css/footer.css}">
 </head>
-<body>
-  
-  <!-- Header por fragment-->
+<body class="page-auth page-login">
+
   <div th:replace="~{fragments/header :: header}"></div>
 
-  <main class="page-main" style="padding-top: var(--header-height);"> 
-    <section class="login-hero">
-      <div class="login-inner single-column">
-        <div class="login-card">
-          <h1 class="login-title">Iniciar sesión</h1>
+  <main id="main" class="auth-main">
+    <div class="auth">
+      <!-- Panel de marca (la foto solo se ve en escritorio) -->
+      <aside class="auth-brand" aria-hidden="true">
+        <img class="auth-brand-photo" th:src="@{/img/galeria/torta-03.webp}" alt="" width="720" height="900" loading="lazy">
+        <p class="auth-brand-title">Hola de nuevo.</p>
+        <p class="auth-brand-text">Entrá para pedir más rápido: tus datos quedan cargados en el carrito.</p>
+      </aside>
 
-          <div th:if="${param.error}" style="color: red; text-align: center; margin-bottom: 10px;">
-            Usuario o contraseña incorrectos.
+      <section class="auth-panel" aria-labelledby="login-title">
+        <div class="auth-card">
+          <h1 id="login-title" class="auth-title">Iniciar sesión</h1>
+          <p class="auth-lead">Con tu email y contraseña.</p>
+
+          <!-- Mensajes que llegan de Spring Security por la dirección (?error, ?blocked, ?logout) -->
+          <div th:if="${param.error}" class="login-alert login-alert--error" role="alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+            <span>Email o contraseña incorrectos. Revisalos e intentá de nuevo.</span>
+          </div>
+          <!-- 5 intentos fallidos seguidos: la cuenta queda bloqueada 15 minutos (LoginAttemptService) -->
+          <div th:if="${param.blocked}" class="login-alert login-alert--error" role="alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+            <span>Por seguridad bloqueamos el ingreso por 15 minutos después de varios intentos fallidos. Probá de nuevo más tarde.</span>
+          </div>
+          <div th:if="${param.logout}" class="login-alert" role="status">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+            <span>Cerraste sesión. ¡Hasta pronto!</span>
           </div>
 
-          <form th:action="@{/login}" method="post" class="form">
-            
-            <label for="email" class="form-label">Correo electrónico</label>
-            <input id="email" name="username" type="email" class="form-input" placeholder="tu@ejemplo.com" required>
+          <form th:action="@{/login}" method="post" class="auth-form" id="login-form" novalidate>
+            <div class="field-stack">
+              <div class="field">
+                <label for="email" class="field__label">Email</label>
+                <input id="email" name="username" type="email" class="input" autocomplete="username" inputmode="email"
+                       placeholder="nombre@gmail.com" required aria-describedby="email-error">
+                <p class="field__error" id="email-error" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span></span></p>
+              </div>
 
-            <label for="password" class="form-label">Contraseña</label>
-            <div class="password-wrap">
-              <input id="password" name="password" type="password" class="form-input" placeholder="Contraseña" required>
-              <button type="button" class="btn-toggle-pass" id="toggle-password" aria-label="Mostrar contraseña">👁️</button>
+              <div class="field">
+                <label for="password" class="field__label">Contraseña</label>
+                <div class="password-field">
+                  <input id="password" name="password" type="password" class="input" autocomplete="current-password" required aria-describedby="password-error">
+                  <button type="button" class="toggle-password" data-toggle-password="password" aria-pressed="false" aria-label="Mostrar contraseña">
+                    <svg class="icon-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg class="icon-hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a3 3 0 0 0 4.2 4.2M9.9 5.2A10.6 10.6 0 0 1 12 5c6.4 0 10 7 10 7a17.7 17.7 0 0 1-3.2 4.2M6.6 6.6A17.4 17.4 0 0 0 2 12s3.6 7 10 7a10 10 0 0 0 5.4-1.6"/></svg>
+                  </button>
+                </div>
+                <p class="field__error" id="password-error" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span></span></p>
+              </div>
+
+              <button type="submit" class="button button--primary button--lg button--block auth-submit" id="login-submit">Entrar</button>
             </div>
-
-            <div class="form-row">
-              <label class="checkbox">
-                <input type="checkbox" name="remember-me">
-                <span>Recordarme</span>
-              </label>
-            </div>
-
-            <button type="submit" class="btn btn-primary login-submit">
-              <span class="btn-text">Entrar</span>
-            </button>
           </form>
 
-          <p class="signup-note">¿No tenés cuenta? <a th:href="@{/register}">Registrate</a></p>
+          <p class="auth-switch">¿No tenés cuenta? <a class="link" th:href="@{/register}">Creá una gratis</a></p>
         </div>
-      </div>
-    </section>
+      </section>
+    </div>
   </main>
 
-  <footer>
-    © <strong>Dulce Sueños Posadas</strong>
-  </footer>
+  <div th:replace="~{fragments/footer :: footer}"></div>
 
+  <script th:src="@{/js/header.js}" defer></script>
+  <script th:src="@{/js/form-helpers.js}" defer></script>
   <script th:src="@{/js/login.js}" defer></script>
 </body>
 </html>

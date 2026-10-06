@@ -1,0 +1,185 @@
+/* =========================================================
+   tokens.css — Tokens de diseño del sitio público (Fase 1)
+   ---------------------------------------------------------
+   Un "token" es una variable con una decisión de diseño:
+   un color, un tamaño de letra, un espacio, una duración.
+   Todas las páginas públicas usan estas variables en vez de
+   valores sueltos, así el sitio se ve consistente y cambiar
+   algo se hace en un solo lugar.
+
+   Reglas de la paleta (ver design-review/DESIGN-PLAN.md §3.1):
+   - Los colores base son los de siempre: #e0487f, #cf1810,
+     el rosa de fondo #f09c9c, el texto #222 y el muted #777.
+   - Los tonos claros ("tintes") se obtienen mezclando el color
+     base con blanco; los oscuros ("sombras"), con negro.
+     No se agrega ningún color nuevo.
+   ========================================================= */
+
+:root {
+  /* ---------- Rosa de la marca (base #e0487f) ---------- */
+  --rose-50:  #fdf4f7;  /* base + 94 % blanco: fondos muy suaves */
+  --rose-100: #fbe9f0;  /* base + 88 % blanco: bloques rosa claro */
+  --rose-200: #f7d1df;  /* base + 75 % blanco: platos, chips activos */
+  --rose-300: #f1adc5;  /* base + 55 % blanco: bordes suaves */
+  --rose-400: #e97fa5;  /* base + 30 % blanco: solo decorativo */
+  --rose-500: #e0487f;  /* color base de la marca */
+  --rose-600: #be3d6c;  /* base + 15 % negro: botón principal (blanco encima = 5.2:1) */
+  --rose-700: #9d3259;  /* base + 30 % negro: hover y texto rosa chico */
+  --rose-800: #702440;  /* base + 50 % negro: texto sobre bloques rosa */
+  --ink:      #481729;  /* base + 68 % negro: "tinta" ciruela para titulares y footer */
+
+  /* ---------- Rosa de fondo (base #f09c9c) ---------- */
+  --blush-50:  #fef9f9; /* fondo base de las superficies nuevas */
+  --blush-100: #fdf3f3;
+  --blush-200: #fbe6e6;
+  --blush-300: #f8d2d2; /* casi igual al fondo actual del sitio */
+  --blush-500: #f09c9c; /* color base, solo decorativo */
+
+  /* ---------- Rojo secundario (base #cf1810) ---------- */
+  --cherry-50:  #fcf1f1; /* fondo de mensajes de error */
+  --cherry-100: #f9e3e2;
+  --cherry-500: #cf1810; /* color base: stickers de oferta, errores */
+  --cherry-700: #91110b; /* texto de error sobre cherry-50 */
+
+  /* ---------- Neutros ---------- */
+  --white: #ffffff;
+  --text-strong: #222222;  /* el texto de siempre */
+  --text-muted:  #6b6b6b;  /* gris secundario apenas más oscuro que #777 para pasar contraste AA */
+  --line:        rgb(34 34 34 / 0.12);   /* bordes finos de inputs y separadores */
+  --line-strong: rgb(34 34 34 / 0.28);
+  --line-input:  rgb(72 23 41 / 0.5);    /* borde de inputs: tinta al 50 %, contraste ≥ 3:1 con el blanco */
+
+  /* ---------- Roles (qué color se usa para qué) ---------- */
+  --surface-page:   var(--blush-50);
+  --surface-card:   var(--white);
+  --surface-soft:   var(--rose-50);
+  --color-primary:        var(--rose-600);
+  --color-primary-hover:  var(--rose-700);
+  --color-link:           var(--rose-700);
+  --color-focus:          var(--rose-600);
+  --color-heading:        var(--ink);
+  --color-error:          var(--cherry-700);
+  --color-error-bg:       var(--cherry-50);
+
+  /* ---------- Tipografía (Poppins) ---------- */
+  --font-sans: 'Poppins', system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+
+  /* Tamaños fluidos: crecen suavemente entre 375 px y 1440 px de ancho */
+  --fs-display: clamp(2.75rem, 1.6rem + 5.2vw, 6rem);       /* 44 → 96 px */
+  --fs-h1:      clamp(2.25rem, 1.55rem + 3vw, 4rem);        /* 36 → 64 px */
+  --fs-h2:      clamp(1.875rem, 1.35rem + 2.3vw, 3.25rem);  /* 30 → 52 px */
+  --fs-h3:      clamp(1.25rem, 1.12rem + 0.55vw, 1.5rem);   /* 20 → 24 px */
+  --fs-lead:    clamp(1.0625rem, 1rem + 0.35vw, 1.25rem);   /* 17 → 20 px */
+  --fs-body:    1rem;      /* 16 px: también en inputs, evita el zoom automático de iOS */
+  --fs-small:   0.875rem;  /* 14 px */
+  --fs-label:   0.9375rem; /* 15 px */
+  --fs-eyebrow: 0.8125rem; /* 13 px: solo para stickers */
+
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --fw-black: 800;
+
+  --lh-tight: 1;      /* titulares grandes */
+  --lh-heading: 1.15;
+  --lh-snug: 1.3;
+  --lh-body: 1.6;
+
+  --ls-display: -0.035em; /* interletrado negativo: los titulares grandes se ven más firmes */
+  --ls-heading: -0.025em;
+  --ls-tight: -0.01em;
+  --ls-eyebrow: 0.08em;
+
+  /* ---------- Espaciado (escala de a 4 px) ---------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+  --space-10: 128px;
+
+  /* Con el celular acostado, el margen nunca es menor que la zona del notch (env = 0 en el resto) */
+  --safe-x: max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+  --gutter: max(16px, var(--safe-x));                          /* margen lateral: 16 / 24 / 32 px según pantalla */
+  --section-y: clamp(64px, 9vw, 128px);    /* aire vertical de cada sección */
+  --container: 1200px;
+  --container-wide: 1320px;
+  --container-narrow: 720px;
+
+  /* ---------- Radios ---------- */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 24px;
+  --radius-xl: 36px;
+  --radius-pill: 999px;
+
+  /* ---------- Sombras (teñidas con la tinta, solo para lo que flota) ---------- */
+  --shadow-0: none;
+  --shadow-1: 0 1px 2px rgb(72 23 41 / 0.06), 0 2px 8px -2px rgb(72 23 41 / 0.10);
+  --shadow-2: 0 10px 30px -10px rgb(72 23 41 / 0.25);
+  --shadow-3: 0 24px 60px -16px rgb(72 23 41 / 0.35);
+  --shadow-sticker: 0 4px 12px -4px rgb(72 23 41 / 0.40);
+
+  /* ---------- Capas (z-index) ---------- */
+  --z-base: 0;
+  --z-raised: 10;
+  --z-header: 100;
+  --z-floating: 200;
+  --z-dropdown: 300;
+  --z-overlay: 400;
+  --z-modal: 500;
+  --z-toast: 600;
+
+  /* ---------- Movimiento ---------- */
+  --dur-press: 120ms;   /* escala al presionar */
+  --dur-fast: 160ms;    /* hover de color, foco */
+  --dur-base: 220ms;    /* menús, dropdown, chips */
+  --dur-slow: 320ms;    /* modales, paneles */
+  --dur-reveal: 600ms;  /* aparición de secciones */
+  --dur-marquee: 38s;   /* cinta de texto */
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);      /* entradas y respuestas: arranca rápido */
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);  /* movimientos dentro de la pantalla */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);   /* menú móvil y paneles (estilo iOS) */
+  --ease-pop: cubic-bezier(0.16, 1, 0.3, 1);       /* frenado exponencial suave: el "pop" del badge lo dan sus keyframes, no un rebote */
+
+  /* ---------- Header ---------- */
+  --header-height: 64px;          /* alto del header; las páginas lo usan para dejar espacio arriba */
+  --header-height-compact: 56px;  /* alto al hacer scroll */
+
+  /* =========================================================
+     Variables viejas (compatibilidad)
+     ---------------------------------------------------------
+     Otros CSS y el HTML que arma store.js ya usan estos nombres.
+     Se mantienen con el MISMO valor que tenían, apuntando a los
+     tokens nuevos cuando coinciden, para que nada cambie hasta
+     que cada página se rediseñe en su fase.
+     ========================================================= */
+  --accent: var(--rose-500);                 /* #e0487f */
+  --accent2: var(--cherry-500);              /* #cf1810 */
+  --bg: rgb(240 156 156 / 0.5);              /* rosa de fondo actual (#f09c9c al 50 %) */
+  --text: var(--text-strong);                /* #222 */
+  --muted: #777777;                          /* sin cambios hasta que se decida (DESIGN-PLAN §7.8) */
+  --overlay-rose: rgb(224 72 128 / 0.84);
+  --card-shadow: 0 6px 18px rgb(0 0 0 / 0.08);
+  --card-shadow-soft: 0 4px 12px rgb(0 0 0 / 0.08);
+  --radius: 12px;
+  --container-max: 1100px;
+}
+
+/* El margen lateral crece con la pantalla */
+@media (min-width: 48rem) {   /* 768 px */
+  :root { --gutter: max(24px, var(--safe-x)); }
+}
+@media (min-width: 80rem) {   /* 1280 px */
+  :root { --gutter: max(32px, var(--safe-x)); }
+}
+
+/* Breakpoints de referencia (las variables no funcionan dentro de @media,
+   por eso se escriben a mano en cada archivo):
+   sm 30rem (480 px) · md 48rem (768 px) · lg 64rem (1024 px) · xl 80rem (1280 px) */

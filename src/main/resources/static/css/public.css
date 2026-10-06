@@ -1,60 +1,384 @@
-/* public.css - SOLO Estilos del Creador de Tortas y Carrito */
+/* =========================================================
+   public.css — Piezas compartidas de la tienda (Fase 3)
+   ---------------------------------------------------------
+   Lo usan la home, /products, /builder, /cart y /profile.
+   - Encabezado de las páginas de la tienda (.shop-hero)
+   - Mini-carrito (lo crea store.js: #modal-checkout-preview)
+   - Botón flotante "Ver pedido" (#floating-cart-btn)
+   - Filas de ítems del carrito y estado vacío
+   - Ventana de aviso (#modal-alert-v1 en /cart)
+   Requiere tokens.css y components.css.
+   ========================================================= */
 
-/* WIZARD / CREADOR DE TORTAS */
-.section-creador { padding: 4rem 1.5rem; /* Eliminado el background para heredar de main.css */ }
-.section-builder { /* Eliminado el background para heredar el rgba global sin oscurecerse */ }
+/* ---------- Páginas de la tienda ---------- */
+.page-shop {
+  background: var(--surface-page);
+  line-height: var(--lh-body);
+}
 
-.container-wizard { max-width: 900px; margin: 0 auto; background: #fff; padding: 2.5rem; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
-.wizard-header { text-align: center; margin-bottom: 2rem; }
-.progress-bar { display: flex; justify-content: space-between; margin-top: 2rem; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-.step { flex: 1; font-weight: 600; color: #aaa; transition: 0.3s; text-align: center; font-size: 0.95rem; }
-.step.active { color: var(--accent); }
+.shop-main {
+  padding-top: var(--header-height);
+  min-height: 80svh;
+}
+/* En /cart el JS decide al cargar si muestra el formulario o el "carrito vacío" (que es más bajo).
+   Con el alto de una pantalla completa, el footer nunca entra de golpe a la vista. */
+.page-cart .shop-main { min-height: 100svh; }
 
-.wizard-step { display: none; animation: fadeIn 0.4s ease; }
-.wizard-step.active { display: block; }
-@keyframes fadeIn { from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+/* Encabezado de página: bloque rosa claro con festoneado abajo */
+.shop-hero {
+  position: relative;
+  padding: var(--space-7) 0;
+  background: var(--rose-100);
+}
+.shop-hero::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 12px;
+  background: radial-gradient(circle 12px at 50% 0, var(--rose-100) 96%, transparent 100%) 0 0 / 24px 12px repeat-x;
+  pointer-events: none;
+}
+.shop-hero .text-h1 { margin: 0 0 var(--space-3); }
+.shop-hero .text-lead { margin: 0; color: var(--rose-800); }
 
-/* Selection Cards */
-.cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; }
-.select-card { background: #f9f9f9; border: 2px solid #eee; border-radius: 12px; padding: 1.5rem; text-align: center; font-weight: 600; cursor: pointer; transition: 0.2s; user-select: none; }
-.select-card:hover { border-color: #ccc; }
-.select-card.selected { background: #fff0f5; border-color: var(--accent); color: var(--accent); box-shadow: 0 4px 10px rgba(224, 72, 127, 0.2); }
-.select-card span.price { display: block; font-size: 1.2rem; margin-top: 5px; color: #333; }
+.shop-hero-row {
+  display: grid;
+  gap: var(--space-5);
+  align-items: end;
+}
+@media (min-width: 48rem) {
+  .shop-hero { padding: var(--space-8) 0; }
+  .shop-hero-row { grid-template-columns: 1fr auto; }
+}
 
-.badge { background: var(--accent); color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; vertical-align: middle; }
 
-/* Buttons & Inputs */
-.btn-pink { background: var(--accent); color: #fff; border: none; }
-.btn-pink:hover:not(:disabled) { background: #c93b6d; }
-.btn-pink:disabled { background: #f5c2c7; cursor: not-allowed; }
-.btn-large { padding: 1rem 1.5rem; font-size: 1.1rem; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-.btn-grey { background: #eee; color: #333; border: none; border-radius: 8px; padding: 1rem 1.5rem; font-weight: bold; cursor: pointer;}
-.btn-grey:hover { background: #ddd; }
-.wizard-next { width: 100%; margin-top: 2rem; }
+/* ---------- Botón flotante "Ver pedido" ----------
+   store.js le pone display block/none. En celular es una píldora de tinta
+   abajo al centro; desde 768 px se oculta porque el carrito del header
+   ya está siempre visible. */
+.floating-cart {
+  position: fixed;
+  left: 50%;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: var(--z-floating);
+  min-height: 52px;
+  padding: 0 22px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--white);
+  font-size: 1rem;
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+  /* Aro claro: sobre el footer (mismo color tinta) el botón no se pierde */
+  box-shadow: 0 0 0 2px var(--blush-50), var(--shadow-2);
+  transform: translateX(-50%);
+  transition: transform var(--dur-press) var(--ease-out);
+}
+.floating-cart:active { transform: translateX(-50%) scale(0.97); }
+/* Cada vez que el botón pasa de oculto a visible (primer producto agregado)
+   sube desde abajo en vez de aparecer de golpe. Sin "fill": al terminar,
+   la animación se suelta y vuelve a funcionar el :active de arriba. */
+.floating-cart { animation: floating-cart-in var(--dur-slow) var(--ease-drawer); }
+@keyframes floating-cart-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(100%); }
+}
+/* El contador "late" cuando se suma algo (store.js agrega .is-bumped) */
+.floating-cart.is-bumped .floating-cart-count { animation: floating-count-pop 360ms var(--ease-pop); }
+@keyframes floating-count-pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.28); }
+  100% { transform: scale(1); }
+}
+.floating-cart-inner { display: inline-flex; align-items: center; gap: 10px; }
+.floating-cart-inner svg { flex: none; width: 20px; height: 20px; }
+.floating-cart-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--white);
+  color: var(--ink);
+  font-size: 0.8125rem;
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+}
+@media (min-width: 48rem) {
+  .floating-cart { display: none !important; }
+}
+/* En el creador la barra inferior ya tiene el precio: el botón flotante no hace falta */
+.page-builder .floating-cart { display: none !important; }
+/* Con el botón flotante visible, el final del footer deja lugar para que no tape el texto */
+@media (max-width: 47.99rem) {
+  body:has(.floating-cart[style*="block"]) .site-footer-bottom { padding-bottom: 84px; }
+  /* Al navegar con Tab, el navegador deja ese mismo espacio abajo: el botón flotante
+     no tapa el elemento enfocado (WCAG 2.4.11, foco no oculto) */
+  html:has(.floating-cart[style*="block"]) { scroll-padding-bottom: 92px; }
+}
 
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
-.form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; font-size: 0.9rem;}
-.public-input { width: 100%; padding: 0.8rem; border: 1px solid #ccc; border-radius: 8px; font-family: inherit; box-sizing: border-box; font-size: 1rem;}
-.public-input:focus { outline: none; border-color: var(--accent); }
-@media(max-width: 600px){ .form-grid { grid-template-columns: 1fr; } }
 
-/* Floating Cart */
-.floating-cart { position: fixed; bottom: 30px; right: 30px; background: var(--accent); color: white; border: none; border-radius: 50px; padding: 15px 25px; font-size: 1.1rem; font-weight: bold; cursor: pointer; box-shadow: 0 10px 25px rgba(224, 72, 127, 0.4); transition: transform 0.2s; z-index: 1000; }
-.floating-cart:hover { transform: scale(1.05); }
-@keyframes pulseBtn { 0% { transform: scale(1); } 50% { transform: scale(1.1); box-shadow: 0 0 20px var(--accent); } 100% { transform: scale(1); } }
-.pulse-animation { animation: pulseBtn 0.5s ease; }
+/* ---------- Ventanas (mini-carrito y avisos) ---------- */
+.public-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gutter);
+  background: rgb(72 23 41 / 0.45);
+}
 
-/* Checkout Modal */
-.public-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
-.public-modal-overlay[hidden] { display: none; }
-.public-modal-card { background: #fff; width: 90%; max-width: 550px; border-radius: 16px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-.public-modal-header { padding: 1.5rem; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #fafafa; border-radius: 16px 16px 0 0;}
-.public-modal-header h3 { margin: 0; font-size: 1.3rem; color: #333; }
-.public-close-modal { background: none; border: none; font-size: 1.8rem; cursor: pointer; color: #666; transition: 0.2s;}
-.public-close-modal:hover { color: var(--danger, #dc3545); }
-.public-modal-body { padding: 1.5rem; overflow-y: auto; }
+.public-modal-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 440px;
+  max-height: 90vh;
+  max-height: 90dvh;   /* alto visible real del celular (con la barra del navegador) */
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  box-shadow: var(--shadow-3);
+}
 
-.cart-item-row { display: flex; justify-content: space-between; padding: 15px; background: #f9f9f9; border-radius: 8px; margin-bottom: 10px; border: 1px solid #eee;}
-.cart-item-title { font-weight: 600; color: var(--accent); margin-bottom: 5px; }
-.cart-item-desc { font-size: 0.85rem; color: #666; line-height: 1.4;}
-@media(max-width: 768px){.cart-layout { grid-template-columns: 1fr !important; }}
+.public-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4) var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--line);
+}
+
+.public-close-modal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink);
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+.public-close-modal:active { transform: scale(0.92); }
+.public-close-modal svg { width: 22px; height: 22px; }
+@media (hover: hover) and (pointer: fine) {
+  .public-close-modal:hover { background: var(--rose-100); }
+}
+
+.public-modal-body {
+  flex: 1;
+  padding: var(--space-2) var(--space-5);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Mini-carrito: hoja que sube desde abajo en celular, panel a la derecha en escritorio */
+.mini-cart {
+  align-items: flex-end;
+  padding: 0;
+  background: rgb(72 23 41 / 0);
+  transition: background-color var(--dur-slow) var(--ease-out);
+}
+.mini-cart.is-open { background: rgb(72 23 41 / 0.45); }
+
+.mini-cart-panel {
+  max-width: none;
+  max-height: 85vh;
+  max-height: 85dvh;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  transform: translateY(100%);
+  transition: transform var(--dur-slow) var(--ease-drawer);
+}
+.mini-cart.is-open .mini-cart-panel { transform: none; }
+.mini-cart:not(.is-open) .mini-cart-panel { transition-duration: var(--dur-base); }
+
+.mini-cart-title {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-black);
+}
+
+.mini-cart-footer {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5) calc(var(--space-5) + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+}
+.mini-cart-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0;
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
+}
+.mini-cart-total strong {
+  font-size: 1.5rem;
+  font-weight: var(--fw-black);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 48rem) {
+  .mini-cart { justify-content: flex-end; align-items: stretch; }
+  .mini-cart-panel {
+    width: 420px;
+    max-height: none;
+    height: 100%;
+    border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+    transform: translateX(100%);
+  }
+}
+
+/* Movimiento reducido: el panel no se desliza, pero aparece y se va con un fundido */
+@media (prefers-reduced-motion: reduce) {
+  .mini-cart { transition: background-color var(--dur-base) ease; }
+  .mini-cart-panel,
+  .mini-cart:not(.is-open) .mini-cart-panel {
+    transform: none;
+    opacity: 0;
+    transition: opacity var(--dur-base) ease;
+  }
+  .mini-cart.is-open .mini-cart-panel { opacity: 1; }
+  .floating-cart { animation-name: fade-in; }
+  .floating-cart:active { transform: translateX(-50%); }
+  .public-close-modal:active { transform: none; }
+  .floating-cart.is-bumped .floating-cart-count { animation: none; }
+}
+
+
+/* ---------- Filas del carrito (mini-carrito y /cart) ---------- */
+.cart-item-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--line);
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+.cart-item-row:last-child { border-bottom: 0; }
+/* Al quitar un ítem, la fila se desvanece antes de desaparecer */
+.cart-item-row.is-removing { opacity: 0; transform: translateX(12px); }
+
+.cart-item-row--mini {
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+}
+
+.line-main { min-width: 0; }
+
+.cart-item-title {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: var(--fw-bold);
+  line-height: 1.3;
+  overflow-wrap: break-word;   /* parte una palabra solo si no entra entera */
+  hyphens: auto;
+}
+.line-qty-inline { color: var(--rose-700); font-weight: var(--fw-semibold); }
+
+.line-price {
+  margin: 0;
+  color: var(--ink);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.line-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--rose-700);
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+.line-remove:active { transform: scale(0.92); }
+.line-remove svg { width: 20px; height: 20px; }
+@media (hover: hover) and (pointer: fine) {
+  .line-remove:hover { background: var(--cherry-50); color: var(--cherry-700); }
+}
+
+.line-desc,
+.line-unit {
+  margin: var(--space-1) 0 0;
+  color: var(--text-muted);
+  font-size: var(--fs-small);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+/* Detalle de la torta como lista (Tamaño, Cubierta, Bizcochuelo…) */
+.line-specs {
+  display: grid;
+  gap: 2px;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-strong);
+  font-size: var(--fs-small);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.line-specs span { color: var(--text-muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  .cart-item-row { transition: opacity var(--dur-fast) ease; }
+  .cart-item-row.is-removing { transform: none; }
+  .line-remove:active { transform: none; }
+}
+
+/* Carrito vacío */
+.cart-empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-4);
+  padding: var(--space-7) var(--space-4);
+  text-align: center;
+}
+.cart-empty p { margin: 0; color: var(--rose-800); }
+.cart-empty--mini { padding: var(--space-6) 0; }
+
+
+/* ---------- Ventana de aviso (#modal-alert-v1) ---------- */
+.alert-card {
+  max-width: 400px;
+  padding: var(--space-6);
+  text-align: center;
+}
+.alert-card svg {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto var(--space-3);
+  color: var(--cherry-500);
+}
+.alert-card h2 {
+  margin: 0 0 var(--space-2);
+  color: var(--ink);
+  font-size: var(--fs-h3);
+}
+.alert-card p {
+  margin: 0 0 var(--space-5);
+  color: var(--text-strong);
+}

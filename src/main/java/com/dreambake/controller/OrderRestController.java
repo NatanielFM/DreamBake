@@ -1,6 +1,7 @@
 package com.dreambake.controller;
 
 import com.dreambake.entity.*;
+import com.dreambake.util.InputSanitizer;
 import com.dreambake.repository.CustomerRepository;
 import com.dreambake.repository.CustomerTagRepository;
 import com.dreambake.repository.OrderRepository;
@@ -82,7 +83,45 @@ public class OrderRestController {
 
     @PostMapping
     @Transactional
-    public ResponseEntity<Order> createOrder(@RequestBody Order order) {
+    public ResponseEntity<?> createOrder(@RequestBody Order order, org.springframework.security.core.Authentication auth) {
+        // ¿Lo crea el personal desde el panel o un cliente desde la tienda pública?
+        boolean isStaff = auth != null && auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ADMIN") || a.getAuthority().equals("PASTELERO"));
+
+        // Siempre es un pedido NUEVO: si viniera un id, save() pisaría un pedido existente
+        order.setId(null);
+        if (order.getItems() != null) {
+            order.getItems().forEach(item -> item.setId(null));
+        }
+
+        if (!isStaff) {
+            // Pedido desde la tienda: el cliente no decide el estado, la seña ni la fecha de creación
+            order.setStatus(OrderStatus.PENDING);
+            order.setDeposit(0.0);
+            order.setCreatedAt(null);
+
+            // Datos obligatorios
+            if (order.getCustomerName() == null || order.getCustomerName().isBlank()
+                    || order.getCustomerPhone() == null || order.getCustomerPhone().isBlank()
+                    || order.getDeliveryDate() == null
+                    || order.getItems() == null || order.getItems().isEmpty() || order.getItems().size() > 100) {
+                return ResponseEntity.badRequest().body("Faltan datos del pedido.");
+            }
+
+            // Textos limpios (evita que se inyecte código en el panel) y con largo máximo
+            order.setCustomerName(InputSanitizer.clean(order.getCustomerName(), 120));
+            order.setCustomerPhone(InputSanitizer.clean(order.getCustomerPhone(), 40));
+            order.setCustomerEmail(InputSanitizer.clean(order.getCustomerEmail(), 150));
+            order.setDeliveryShift(InputSanitizer.clean(order.getDeliveryShift(), 60));
+            for (OrderItem item : order.getItems()) {
+                item.setProduct(null);
+                item.setProductType(InputSanitizer.clean(item.getProductType(), 200));
+                item.setDetails(InputSanitizer.clean(item.getDetails(), 3000));
+                if (item.getPrice() == null || item.getPrice() < 0) item.setPrice(0.0);
+            }
+            if (order.getTotalPrice() == null || order.getTotalPrice() < 0) order.setTotalPrice(0.0);
+        }
+
         if (order.getItems() != null) {
             for (OrderItem item : order.getItems()) {
                 item.setOrder(order);
