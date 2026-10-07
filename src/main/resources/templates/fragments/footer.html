@@ -6,7 +6,8 @@
     Se incluye con: <div th:replace="~{fragments/footer :: footer}"></div>
     El link "Contacto" lleva a la sección #contacto de la home.
   -->
-  <footer th:fragment="footer" class="site-footer on-dark">
+  <!-- data-whatsapp: número que se cambia desde Panel → Ajustes (lo lee store.js para el mensaje del pedido) -->
+  <footer th:fragment="footer" class="site-footer on-dark" th:attr="data-whatsapp=${whatsappNumber}">
     <div class="site-footer-inner">
 
       <!-- Marca y descripción -->
@@ -43,7 +44,7 @@
         <h2 class="footer-title">Contacto</h2>
         <ul class="footer-contact">
           <li>
-            <a href="https://wa.me/5493764159312" target="_blank" rel="noopener">
+            <a th:href="|https://wa.me/${whatsappNumber}|" target="_blank" rel="noopener">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
                 <path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3Z"></path>
                 <path d="M9.2 8.6c.2 2.9 3.3 6 6.2 6.2l1.1-1.4-1.9-1-.9.8c-1-.4-2-1.4-2.4-2.4l.8-.9-1-1.9-1.9.6Z" fill="currentColor" stroke="none"></path>

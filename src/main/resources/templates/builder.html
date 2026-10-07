@@ -10,6 +10,18 @@
   <script th:src="@{/js/csrf.js}"></script>
   <title>Armá tu torta — Dulce Sueños Posadas</title>
   <meta name="description" content="Elegí tamaño, cobertura, sabores y rellenos de tu torta y mirá el precio al instante.">
+  <!-- Vista previa al compartir el link (WhatsApp, Instagram, Facebook) -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Dulce Sueños Posadas">
+  <meta property="og:locale" content="es_AR">
+  <meta property="og:title" content="Armá tu torta — Dulce Sueños Posadas">
+  <meta property="og:description" content="Elegí tamaño, cobertura, sabores y rellenos de tu torta y mirá el precio al instante.">
+  <meta property="og:url" th:content="${siteUrl} + '/builder'">
+  <meta property="og:image" th:content="${siteUrl} + '/img/og-portada.jpg'">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Torta decorada de Dulce Sueños Posadas">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -58,7 +70,7 @@
               <h2 class="step-heading step-heading--sub">¿Con qué cobertura?</h2>
               <p class="step-help">Los rellenos disponibles cambian según la cobertura.</p>
               <div class="cards-grid coverage-grid" id="grid-coverages">
-                <button type="button" class="select-card coverage-card" data-val="Crema" aria-pressed="false" onclick="selectCoverage('Crema')">
+                <button type="button" class="select-card coverage-card" data-val="Crema" aria-pressed="false">
                   <span class="option-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>
                   <svg class="coverage-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
                     <path d="M10 26c0-4 3-6 6-6 1-4 4-7 8-7s7 3 8 7c3 0 6 2 6 6"/><path d="M8 26h32v6a10 10 0 0 1-10 10H18A10 10 0 0 1 8 32v-6Z"/><path d="M16 26v4M24 26v5M32 26v4"/>
@@ -66,7 +78,7 @@
                   <span class="coverage-name">Crema</span>
                   <span class="coverage-desc">Liviana y suave</span>
                 </button>
-                <button type="button" class="select-card coverage-card" data-val="Fondant" aria-pressed="false" onclick="selectCoverage('Fondant')">
+                <button type="button" class="select-card coverage-card" data-val="Fondant" aria-pressed="false">
                   <span class="option-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>
                   <svg class="coverage-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
                     <rect x="9" y="20" width="30" height="20" rx="4"/><path d="M9 28c4 3 7 3 10 0s7-3 10 0 7 3 10 0"/><path d="M24 20v-6M21 11l3 3 3-3"/>
@@ -127,7 +139,7 @@
             <div class="builder-nav-buttons">
               <button type="button" class="button button--secondary" id="btn-prev" hidden>Volver</button>
               <button type="button" class="button button--primary" id="btn-next">Siguiente</button>
-              <button type="button" class="button button--ink" id="btn-add-cake" onclick="addCakeToCart()" hidden>Agregar al pedido</button>
+              <button type="button" class="button button--ink" id="btn-add-cake" hidden>Agregar al pedido</button>
             </div>
           </div>
         </div>

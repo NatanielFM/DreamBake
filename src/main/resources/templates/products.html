@@ -10,6 +10,18 @@
   <script th:src="@{/js/csrf.js}"></script>
   <title>Productos — Dulce Sueños Posadas</title>
   <meta name="description" content="Catálogo de productos de Dulce Sueños Posadas." />
+  <!-- Vista previa al compartir el link (WhatsApp, Instagram, Facebook) -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Dulce Sueños Posadas">
+  <meta property="og:locale" content="es_AR">
+  <meta property="og:title" content="Productos — Dulce Sueños Posadas">
+  <meta property="og:description" content="Catálogo de productos de Dulce Sueños Posadas.">
+  <meta property="og:url" th:content="${siteUrl} + '/products'">
+  <meta property="og:image" th:content="${siteUrl} + '/img/og-portada.jpg'">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Torta decorada de Dulce Sueños Posadas">
+  <meta name="twitter:card" content="summary_large_image">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -74,6 +86,8 @@
                 <circle class="bi-cherry" cx="21.5" cy="5.6" r="3"/>
               </svg>
               <span class="sticker shop-card-sticker" th:if="${prod.category != null}" th:text="${prod.category.name}">Categoría</span>
+              <!-- Los 3 más pedidos (lo calcula WebController con los pedidos confirmados o entregados) -->
+              <span class="sticker sticker--cherry sticker--right best-seller-sticker" th:if="${bestSellerIds.contains(prod.id)}">Más vendido</span>
             </div>
             <div class="shop-card-body">
               <h2 class="shop-card-name" th:text="${prod.name}">Nombre del producto</h2>
@@ -83,7 +97,7 @@
                   <span class="shop-card-currency">$</span><span th:text="${#numbers.formatDecimal(prod.price, 0, 'POINT', 0, 'COMMA')}">0</span>
                 </p>
                 <button type="button" class="button button--primary shop-card-add" data-add-to-cart
-                        th:attr="data-prod-name=${prod.name}, data-prod-desc=${prod.description != null ? prod.description : 'Catálogo general'}, data-prod-price=${prod.price}, aria-label='Agregar ' + ${prod.name} + ' al pedido'">
+                        th:attr="data-prod-id=${prod.id}, data-prod-name=${prod.name}, data-prod-desc=${prod.description != null ? prod.description : 'Catálogo general'}, data-prod-price=${prod.price}, aria-label='Agregar ' + ${prod.name} + ' al pedido'">
                   <svg class="add-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>
                   <svg class="added-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
                   <span data-add-label>Agregar</span>
@@ -116,7 +130,7 @@
           <p>Mientras tanto, armá tu torta a medida o escribinos por WhatsApp.</p>
           <div class="catalog-empty-actions">
             <a class="button button--primary" th:href="@{/builder}">Armá tu torta</a>
-            <a class="button button--secondary" href="https://wa.me/5493764159312" target="_blank" rel="noopener">Escribinos</a>
+            <a class="button button--secondary" th:href="|https://wa.me/${whatsappNumber}|" target="_blank" rel="noopener">Escribinos</a>
             <a sec:authorize="hasAuthority('ADMIN')" class="button button--soft" th:href="@{/admin}">Ir al panel de administración</a>
           </div>
         </div>
@@ -130,56 +144,6 @@
   <script th:src="@{/js/public/store.js}" defer></script>
 
   <!-- Filtro del catálogo: búsqueda por nombre + píldoras de categoría -->
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const searchInput = document.getElementById('search');
-      const pills = document.querySelectorAll('#categoryFilter [data-filter]');
-      const items = document.querySelectorAll('.catalog-item');
-      const emptyState = document.getElementById('emptyState');
-      const counter = document.getElementById('catalogCount');
-      const clearBtn = document.getElementById('clearFilters');
-      let currentCat = 'all';
-
-      // Esqueleto de carga: el "plato" brilla hasta que la foto termina de cargar
-      document.querySelectorAll('.shop-card-plate img').forEach(img => {
-        const plate = img.closest('.shop-card-plate');   // se guarda antes: si la foto falla, store.js la reemplaza
-        const done = () => { if (plate) plate.classList.add('is-loaded'); };
-        if (img.complete) done(); else { img.addEventListener('load', done, { once: true }); img.addEventListener('error', done, { once: true }); }
-      });
-
-      function filterProducts() {
-        const query = (searchInput?.value || '').toLowerCase().trim();
-        let visibleCount = 0;
-        items.forEach(card => {
-          const name = card.getAttribute('data-name') || '';
-          const itemCat = card.getAttribute('data-category') || '';
-          const show = name.includes(query) && (currentCat === 'all' || itemCat === currentCat);
-          card.hidden = !show;
-          if (show) visibleCount++;
-        });
-        if (emptyState) emptyState.style.display = visibleCount === 0 && items.length > 0 ? 'grid' : 'none';
-        if (counter) counter.textContent = `${visibleCount} ${visibleCount === 1 ? 'producto' : 'productos'}`;
-      }
-
-      function selectCategory(cat) {
-        currentCat = cat;
-        pills.forEach(p => {
-          const on = p.getAttribute('data-filter') === cat;
-          p.classList.toggle('is-selected', on);
-          p.setAttribute('aria-pressed', on ? 'true' : 'false');
-        });
-        filterProducts();
-      }
-
-      pills.forEach(p => p.addEventListener('click', () => selectCategory(p.getAttribute('data-filter'))));
-      searchInput?.addEventListener('input', filterProducts);
-      clearBtn?.addEventListener('click', () => { if (searchInput) searchInput.value = ''; selectCategory('all'); searchInput?.focus(); });
-
-      // Si se llega desde la home con ?categoria=Tortas, se preselecciona (si existe)
-      const fromUrl = new URLSearchParams(location.search).get('categoria');
-      const match = fromUrl && Array.from(pills).find(p => p.getAttribute('data-filter').toLowerCase() === fromUrl.toLowerCase());
-      if (match) selectCategory(match.getAttribute('data-filter')); else filterProducts();
-    });
-  </script>
+  <script th:src="@{/js/public/catalog.js}" defer></script>
 </body>
 </html>

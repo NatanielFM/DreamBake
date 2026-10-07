@@ -31,6 +31,13 @@ public class Customer {
     @JoinColumn(name = "tag_id")
     private CustomerTag tag;
 
+    // Resumen de sus pedidos. No son columnas (@Transient): el servidor los calcula
+    // cada vez que se pide la lista de clientes (ver CustomerRestController).
+    @Transient
+    private Integer ordersCount;
+    @Transient
+    private Double totalSpent;
+
     @PrePersist
     protected void onCreate() {
         if (dateAdded == null) {

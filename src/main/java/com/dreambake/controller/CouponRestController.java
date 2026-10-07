@@ -2,6 +2,7 @@ package com.dreambake.controller;
 
 import com.dreambake.entity.Coupon;
 import com.dreambake.repository.CouponRepository;
+import com.dreambake.service.CouponService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,9 @@ public class CouponRestController {
 
     @Autowired
     private CouponRepository couponRepository;
+
+    @Autowired
+    private CouponService couponService;
 
     @GetMapping
     public List<Coupon> getAllCoupons() {
@@ -53,36 +57,16 @@ public class CouponRestController {
         return ResponseEntity.notFound().build();
     }
 
+    // Lo usa el carrito de la tienda (público) para mostrar el descuento antes de enviar el pedido.
+    // Solo consulta: el uso del cupón se descuenta en el servidor al guardar el pedido
+    // (OrderRestController), así nadie puede gastar los usos de un código desde afuera.
     @GetMapping("/validate/{code}")
     public ResponseEntity<Coupon> validateCoupon(@PathVariable String code) {
-        Optional<Coupon> optionalCoupon = couponRepository.findByCodeIgnoreCase(code);
-        if (optionalCoupon.isPresent()) {
-            Coupon coupon = optionalCoupon.get();
-            if (coupon.isActive() && (coupon.isUnlimited() || (coupon.getUsageLimit() != null && coupon.getUsageLimit() > 0))) {
-                return ResponseEntity.ok(coupon);
-            }
-            return ResponseEntity.badRequest().build();
+        if (couponRepository.findByCodeIgnoreCase(code).isEmpty()) {
+            return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.notFound().build();
-    }
-
-    @PostMapping("/consume/{code}")
-    public ResponseEntity<Void> consumeCoupon(@PathVariable String code) {
-        Optional<Coupon> optionalCoupon = couponRepository.findByCodeIgnoreCase(code);
-        if (optionalCoupon.isPresent()) {
-            Coupon coupon = optionalCoupon.get();
-            if (coupon.isActive() && (coupon.isUnlimited() || (coupon.getUsageLimit() != null && coupon.getUsageLimit() > 0))) {
-                if (!coupon.isUnlimited()) {
-                    coupon.setUsageLimit(coupon.getUsageLimit() - 1);
-                    if (coupon.getUsageLimit() == 0) {
-                        coupon.setActive(false);
-                    }
-                    couponRepository.save(coupon);
-                }
-                return ResponseEntity.ok().build();
-            }
-            return ResponseEntity.badRequest().build();
-        }
-        return ResponseEntity.notFound().build();
+        return couponService.findUsable(code)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.badRequest().build());
     }
 }

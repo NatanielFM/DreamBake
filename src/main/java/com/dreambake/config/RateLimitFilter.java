@@ -43,7 +43,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String bucket = null;
 
         if ("POST".equals(method) && "/api/orders".equals(path)) { limit = MAX_ORDERS; bucket = "orders"; }
-        else if (path.startsWith("/api/coupons/validate/") || path.startsWith("/api/coupons/consume/")) { limit = MAX_COUPONS; bucket = "coupons"; }
+        else if (path.startsWith("/api/coupons/validate/")) { limit = MAX_COUPONS; bucket = "coupons"; }
         else if ("POST".equals(method) && "/register".equals(path)) { limit = MAX_REGISTERS; bucket = "register"; }
 
         if (limit != null && tooMany(bucket + ":" + request.getRemoteAddr(), limit)) {

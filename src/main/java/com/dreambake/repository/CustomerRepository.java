@@ -11,4 +11,7 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
     // NUEVO MÉTODO PARA AUTO-CREACIÓN DE CLIENTES
     Optional<Customer> findByPhone(String phone);
+
+    // Igual que findByPhone, pero no falla si por error hay dos clientes con el mismo teléfono
+    Optional<Customer> findFirstByPhone(String phone);
 }

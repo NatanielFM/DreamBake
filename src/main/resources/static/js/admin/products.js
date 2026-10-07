@@ -185,6 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('prod-id').value = '';
       document.getElementById('prod-image-preview').innerHTML = '<span>Sin foto</span>';
       document.getElementById('btn-delete').disabled = true; 
+      updateMarginHint();
       emptyViewer.style.display = 'none';
       activeViewer.style.display = 'block';
     });
@@ -426,6 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       document.getElementById('prod-recipe').value = '';
     }
+    updateMarginHint();
 
     emptyViewer.style.display = 'none';
     activeViewer.style.display = 'block';
@@ -454,7 +456,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // ================= 9. COSTO Y GANANCIA DEL PRODUCTO =================
+  // Debajo de "Receta": cuánto cuestan los insumos de la receta y cuánto queda de ganancia
+  // con el precio escrito. El costo lo calcula el servidor (Recipe.getEstimatedCost) con el
+  // costo por unidad de cada insumo que se carga en Inventario.
+  let recipesForMargin = [];
+
+  function updateMarginHint() {
+    const hint = document.getElementById('prod-margin');
+    if (!hint) return;
+    const recipe = recipesForMargin.find(r => String(r.id) === document.getElementById('prod-recipe').value);
+    const price = parseFloat(document.getElementById('prod-price').value);
+    hint.classList.remove('is-negative');
+    if (!recipe) { hint.textContent = ''; return; }
+    if (!recipe.estimatedCost) { hint.textContent = 'Los insumos de esta receta todavía no tienen costo. Cargalo en Inventario para ver la ganancia.'; return; }
+    const cost = recipe.estimatedCost;
+    const fmt = (n) => '$' + Math.round(n).toLocaleString('es-AR');
+    let text = `Costo de los insumos: ${fmt(cost)}${recipe.costComplete ? '' : ' (faltan costos de algunos insumos)'}`;
+    if (!isNaN(price) && price > 0) {
+      const profit = price - cost;
+      text += ` · Ganancia: ${fmt(profit)} (${Math.round(profit / price * 100)}%)`;
+      hint.classList.toggle('is-negative', profit < 0);
+    }
+    hint.textContent = text;
+  }
+  document.getElementById('prod-recipe')?.addEventListener('change', updateMarginHint);
+  document.getElementById('prod-price')?.addEventListener('input', updateMarginHint);
+
   document.addEventListener('recipesLoaded', (e) => {
+    recipesForMargin = e.detail;
     const prodRecipeSelect = document.getElementById('prod-recipe');
     if (!prodRecipeSelect) return;
     
@@ -467,6 +497,7 @@ document.addEventListener('DOMContentLoaded', () => {
     prodRecipeSelect.innerHTML = html;
     
     if (currentVal) prodRecipeSelect.value = currentVal;
+    updateMarginHint();
   });
 
   loadCategoriesFromServer();

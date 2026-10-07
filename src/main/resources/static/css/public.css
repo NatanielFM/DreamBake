@@ -382,3 +382,14 @@
   margin: 0 0 var(--space-5);
   color: var(--text-strong);
 }
+
+
+/* ---------- Sticker "Más vendido" (vitrina de la home y catálogo) ----------
+   Abajo a la izquierda de la foto, para no tapar el sticker de la categoría (arriba). */
+.best-seller-sticker {
+  position: absolute;
+  z-index: 1;
+  left: var(--space-3);
+  bottom: var(--space-3);
+  white-space: nowrap;
+}

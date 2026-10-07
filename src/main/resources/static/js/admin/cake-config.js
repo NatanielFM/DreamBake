@@ -29,10 +29,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Interruptor "En la tienda" (mismo estilo que el de Productos), con nombre accesible
-  function storeSwitch(checked, onchange, name) {
+  // Interruptor "En la tienda" (mismo estilo que el de Productos), con nombre accesible.
+  // kind = "size" u "option": lo usa el listener de abajo para saber qué guardar.
+  function storeSwitch(checked, kind, id, name) {
     return `<label class="toggle-switch">
-              <input type="checkbox" ${checked ? 'checked' : ''} onchange="${onchange}" aria-label="Mostrar ${name} en la tienda">
+              <input type="checkbox" ${checked ? 'checked' : ''} data-cake-toggle="${kind}" data-id="${id}" aria-label="Mostrar ${name} en la tienda">
               <span class="slider"></span>
               <span class="switch-text" aria-hidden="true"><span class="switch-on">Sí</span><span class="switch-off">No</span></span>
             </label>`;
@@ -51,10 +52,10 @@ document.addEventListener('DOMContentLoaded', () => {
           <td data-label="Precio" class="cell-money">$${Number(s.price).toLocaleString('es-AR')}</td>
           <td data-label="Rellenos">Hasta ${s.maxRellenos}</td>
           <td data-label="Bizcochuelos">${s.mixSponge ? '2 sabores' : '1 sabor'}</td>
-          <td data-label="En la tienda">${storeSwitch(s.enabled, `toggleSizeEnabled(${s.id}, this.checked)`, s.name)}</td>
+          <td data-label="En la tienda">${storeSwitch(s.enabled, 'size', s.id, s.name)}</td>
           <td class="cell-actions"><div class="action-buttons-container">
-            <button type="button" class="btn btn-grey btn-sm" onclick="openEditSize(${s.id})">${svgEdit} Editar</button>
-            <button type="button" class="btn btn-red btn-sm" onclick="confirmDeleteSize(${s.id})">${svgTrash} Eliminar</button>
+            <button type="button" class="btn btn-grey btn-sm" data-cake-action="edit-size" data-id="${s.id}">${svgEdit} Editar</button>
+            <button type="button" class="btn btn-red btn-sm" data-cake-action="delete-size" data-id="${s.id}">${svgTrash} Eliminar</button>
           </div></td>
         </tr>
       `;
@@ -79,15 +80,34 @@ document.addEventListener('DOMContentLoaded', () => {
         <tr>
           <td class="cell-title cell-strong">${o.name}</td>
           <td data-label="Tipo"><span class="tag-badge">${badgeLabel}</span></td>
-          <td data-label="En la tienda">${storeSwitch(o.enabled, `toggleOptionEnabled(${o.id}, this.checked)`, o.name)}</td>
+          <td data-label="En la tienda">${storeSwitch(o.enabled, 'option', o.id, o.name)}</td>
           <td class="cell-actions"><div class="action-buttons-container">
-            <button type="button" class="btn btn-grey btn-sm" onclick="openEditOption(${o.id})">${svgEdit} <span class="btn-label">Editar <span class="visually-hidden">${o.name}</span></span></button>
-            <button type="button" class="btn btn-red btn-sm" onclick="confirmDeleteOption(${o.id})">${svgTrash} <span class="btn-label">Eliminar <span class="visually-hidden">${o.name}</span></span></button>
+            <button type="button" class="btn btn-grey btn-sm" data-cake-action="edit-option" data-id="${o.id}">${svgEdit} <span class="btn-label">Editar <span class="visually-hidden">${o.name}</span></span></button>
+            <button type="button" class="btn btn-red btn-sm" data-cake-action="delete-option" data-id="${o.id}">${svgTrash} <span class="btn-label">Eliminar <span class="visually-hidden">${o.name}</span></span></button>
           </div></td>
         </tr>
       `;
     });
   }
+
+  // Botones e interruptores de las dos tablas (antes eran onclick/onchange dentro del HTML,
+  // que la política de seguridad ya no permite)
+  document.getElementById('armador')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-cake-action]');
+    if (!btn) return;
+    const id = Number(btn.dataset.id);
+    if (btn.dataset.cakeAction === 'edit-size') window.openEditSize(id);
+    else if (btn.dataset.cakeAction === 'delete-size') window.confirmDeleteSize(id);
+    else if (btn.dataset.cakeAction === 'edit-option') window.openEditOption(id);
+    else if (btn.dataset.cakeAction === 'delete-option') window.confirmDeleteOption(id);
+  });
+  document.getElementById('armador')?.addEventListener('change', (e) => {
+    const input = e.target.closest('[data-cake-toggle]');
+    if (!input) return;
+    const id = Number(input.dataset.id);
+    if (input.dataset.cakeToggle === 'size') window.toggleSizeEnabled(id, input.checked);
+    else window.toggleOptionEnabled(id, input.checked);
+  });
 
   // Filtros por Chips
   document.querySelectorAll('#cake-option-chips .chip').forEach(chip => {

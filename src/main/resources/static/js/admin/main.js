@@ -47,6 +47,44 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Botones "Cancelar" / "Volver" / ✕ que cierran una ventana: data-close-modal="id-de-la-ventana".
+  // (Antes cada uno tenía su onclick="…" dentro del HTML; la política de seguridad ya no lo permite.)
+  document.addEventListener('click', (e) => {
+    const closer = e.target.closest('[data-close-modal]');
+    if (!closer) return;
+    const modal = document.getElementById(closer.dataset.closeModal);
+    if (modal) modal.hidden = true;
+  });
+
+  // Al abrir una ventana, el foco del teclado pasa adentro (al primer campo o botón) y,
+  // al cerrarla, vuelve al botón que la abrió. Así se puede usar todo con el teclado.
+  const focusBeforeModal = new Map();
+  const modalObserver = new MutationObserver(records => {
+    records.forEach(({ target: modal }) => {
+      if (!modal.hidden) {
+        if (!focusBeforeModal.has(modal)) focusBeforeModal.set(modal, document.activeElement);
+        // Esperamos un cuadro: si la ventana se llena con JS después de mostrarse, el campo ya existe
+        requestAnimationFrame(() => {
+          if (modal.hidden || modal.contains(document.activeElement)) return;
+          // Primero se busca un campo para escribir; si la ventana no tiene, un botón.
+          // Se toma el primero que se ve (getClientRects vacío = oculto con display:none).
+          const visible = (selector) => [...modal.querySelectorAll(selector)].find(el => el.getClientRects().length > 0);
+          const first = visible('input:not([type="hidden"]):not([readonly]):not([disabled]), select:not([disabled]), textarea:not([readonly])')
+            || visible('.modal-body button:not([disabled])')
+            || visible('.close-modal');
+          if (first) first.focus();
+        });
+      } else {
+        const previous = focusBeforeModal.get(modal);
+        focusBeforeModal.delete(modal);
+        if (previous && document.contains(previous) && !topOpenModal()) previous.focus();
+      }
+    });
+  });
+  document.querySelectorAll('.modal-overlay').forEach(modal => {
+    modalObserver.observe(modal, { attributes: true, attributeFilter: ['hidden'] });
+  });
+
   // ================= 2. MENÚ LATERAL Y RESPONSIVE =================
   const sidebarToggleBtn = document.getElementById('sidebar-toggle');
   const backdrop = document.getElementById('sidebar-backdrop');
@@ -142,7 +180,23 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ================= 5. HEADER (Cerrar Sesión, Campana) =================
+  // ================= 5. HEADER (Modo oscuro, Cerrar Sesión, Campana) =================
+  // Modo claro / oscuro: se guarda en el navegador (theme-init.js lo aplica al entrar)
+  const themeToggleBtn = document.getElementById('btn-theme-toggle');
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', () => {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      if (isDark) {
+        document.documentElement.removeAttribute('data-theme');
+        try { localStorage.setItem('theme', 'light'); } catch (e) { /* sin localStorage */ }
+      } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        try { localStorage.setItem('theme', 'dark'); } catch (e) { /* sin localStorage */ }
+      }
+      document.dispatchEvent(new Event('themechange')); // los gráficos se redibujan
+    });
+  }
+
   const logoutHeaderBtn = document.getElementById('btn-logout-header');
   if (logoutHeaderBtn) {
     logoutHeaderBtn.addEventListener('click', () => {

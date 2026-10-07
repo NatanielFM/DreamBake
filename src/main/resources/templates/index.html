@@ -10,6 +10,18 @@
   <script th:src="@{/js/csrf.js}"></script>
   <title>Dulce Sueños Posadas — Tortas personalizadas y mesas dulces</title>
   <meta name="description" content="Tortas personalizadas, mesas dulces y souvenirs hechos a mano en Posadas, Misiones. Armá tu torta online y pedila por WhatsApp.">
+  <!-- Vista previa al compartir el link (WhatsApp, Instagram, Facebook) -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Dulce Sueños Posadas">
+  <meta property="og:locale" content="es_AR">
+  <meta property="og:title" content="Dulce Sueños Posadas — Tortas personalizadas y mesas dulces">
+  <meta property="og:description" content="Tortas personalizadas, mesas dulces y souvenirs hechos a mano en Posadas, Misiones. Armá tu torta online y pedila por WhatsApp.">
+  <meta property="og:url" th:content="${siteUrl} + '/'">
+  <meta property="og:image" th:content="${siteUrl} + '/img/og-portada.jpg'">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Torta decorada de Dulce Sueños Posadas">
+  <meta name="twitter:card" content="summary_large_image">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -219,6 +231,8 @@
                 <circle class="bi-cherry" cx="21.5" cy="5.6" r="3"/>
               </svg>
               <span class="sticker showcase-sticker" th:if="${prod.category != null}" th:text="${prod.category.name}">Categoría</span>
+              <!-- Los 3 más pedidos (lo calcula WebController con los pedidos confirmados o entregados) -->
+              <span class="sticker sticker--cherry sticker--right best-seller-sticker" th:if="${bestSellerIds.contains(prod.id)}">Más vendido</span>
             </div>
             <div class="showcase-body">
               <h3 class="showcase-name" th:text="${prod.name}">Producto</h3>
@@ -228,7 +242,7 @@
                   <span class="showcase-currency">$</span><span th:text="${#numbers.formatDecimal(prod.price, 0, 'POINT', 0, 'COMMA')}">0</span>
                 </p>
                 <button type="button" class="button button--primary showcase-add" data-add-to-cart
-                        th:attr="data-prod-name=${prod.name}, data-prod-desc=${prod.description != null and !prod.description.isEmpty() ? prod.description : 'Producto del catálogo'}, data-prod-price=${prod.price}, aria-label='Agregar ' + ${prod.name} + ' al pedido'">
+                        th:attr="data-prod-id=${prod.id}, data-prod-name=${prod.name}, data-prod-desc=${prod.description != null and !prod.description.isEmpty() ? prod.description : 'Producto del catálogo'}, data-prod-price=${prod.price}, aria-label='Agregar ' + ${prod.name} + ' al pedido'">
                   <svg class="showcase-add-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>
                   <svg class="showcase-added-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
                   <span class="showcase-add-label" data-add-label>Agregar</span>
@@ -293,7 +307,7 @@
           <h2 id="about-title" class="text-h2">Somos Vero y Maca</h2>
           <p class="text-lead">Emprendedoras apasionadas por la pastelería artesanal. Nuestro objetivo es crear recuerdos dulces que acompañen los momentos lindos de la vida.</p>
           <p class="about-text">Trabajamos con ingredientes locales y recetas cuidadas para ofrecer productos frescos, personalizados y con sabor casero.</p>
-          <a class="button button--ink button--lg" href="https://wa.me/5493764159312" target="_blank" rel="noopener">
+          <a class="button button--ink button--lg" th:href="|https://wa.me/${whatsappNumber}|" target="_blank" rel="noopener">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
               <path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3Z"></path>
               <path d="M9.2 8.6c.2 2.9 3.3 6 6.2 6.2l1.1-1.4-1.9-1-.9.8c-1-.4-2-1.4-2.4-2.4l.8-.9-1-1.9-1.9.6Z" fill="currentColor" stroke="none"></path>
@@ -368,7 +382,7 @@
             <div class="promo-body">
               <h3 class="promo-title">Promo cumpleañero</h3>
               <p class="promo-text">Si es tu cumple, tenemos un beneficio especial para vos.</p>
-              <a class="button button--soft" href="https://wa.me/5493764159312" target="_blank" rel="noopener">Consultar por WhatsApp</a>
+              <a class="button button--soft" th:href="|https://wa.me/${whatsappNumber}|" target="_blank" rel="noopener">Consultar por WhatsApp</a>
             </div>
           </article>
 
@@ -380,7 +394,7 @@
             <div class="promo-body">
               <h3 class="promo-title">Cliente frecuente</h3>
               <p class="promo-text">Si ya nos elegiste, preguntanos por los beneficios para clientes frecuentes.</p>
-              <a class="button button--soft" href="https://wa.me/5493764159312" target="_blank" rel="noopener">Consultar por WhatsApp</a>
+              <a class="button button--soft" th:href="|https://wa.me/${whatsappNumber}|" target="_blank" rel="noopener">Consultar por WhatsApp</a>
             </div>
           </article>
         </div>
@@ -396,7 +410,7 @@
           <h2 id="contact-title" class="contact-title">¿Tenés un evento en mente?</h2>
           <p class="contact-lead">Contanos qué estás imaginando y te ayudamos a armarlo. Te respondemos por WhatsApp.</p>
           <div class="contact-actions">
-            <a class="button button--light button--lg" href="https://wa.me/5493764159312" target="_blank" rel="noopener">
+            <a class="button button--light button--lg" th:href="|https://wa.me/${whatsappNumber}|" target="_blank" rel="noopener">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
                 <path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3Z"></path>
                 <path d="M9.2 8.6c.2 2.9 3.3 6 6.2 6.2l1.1-1.4-1.9-1-.9.8c-1-.4-2-1.4-2.4-2.4l.8-.9-1-1.9-1.9.6Z" fill="currentColor" stroke="none"></path>

@@ -7,6 +7,7 @@ import com.dreambake.repository.CustomerTagRepository;
 import com.dreambake.repository.OrderRepository;
 import com.dreambake.repository.ProductRepository;
 import com.dreambake.repository.InventoryItemRepository;
+import com.dreambake.service.OrderPricingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -37,6 +38,9 @@ public class OrderRestController {
 
     @Autowired
     private InventoryItemRepository inventoryItemRepo;
+
+    @Autowired
+    private OrderPricingService pricingService;
 
     @GetMapping
     public List<Order> getAllOrders() {
@@ -90,9 +94,13 @@ public class OrderRestController {
 
         // Siempre es un pedido NUEVO: si viniera un id, save() pisaría un pedido existente
         order.setId(null);
+        order.setCustomer(null); // el cliente se une al confirmar (ver linkCustomer)
         if (order.getItems() != null) {
             order.getItems().forEach(item -> item.setId(null));
         }
+
+        // Retiro o envío (y la dirección, que es obligatoria si es envío)
+        String deliveryError = normalizeDelivery(order);
 
         if (!isStaff) {
             // Pedido desde la tienda: el cliente no decide el estado, la seña ni la fecha de creación
@@ -105,7 +113,16 @@ public class OrderRestController {
                     || order.getCustomerPhone() == null || order.getCustomerPhone().isBlank()
                     || order.getDeliveryDate() == null
                     || order.getItems() == null || order.getItems().isEmpty() || order.getItems().size() > 100) {
-                return ResponseEntity.badRequest().body("Faltan datos del pedido.");
+                return ResponseEntity.badRequest().body(Map.of("message", "Faltan datos del pedido."));
+            }
+            if (deliveryError != null) {
+                return ResponseEntity.badRequest().body(Map.of("message", deliveryError));
+            }
+
+            // Precios reales y cupón: los calcula el servidor (no se usa el total que manda el navegador)
+            String priceError = pricingService.priceStoreOrder(order);
+            if (priceError != null) {
+                return ResponseEntity.badRequest().body(Map.of("message", priceError));
             }
 
             // Textos limpios (evita que se inyecte código en el panel) y con largo máximo
@@ -113,19 +130,23 @@ public class OrderRestController {
             order.setCustomerPhone(InputSanitizer.clean(order.getCustomerPhone(), 40));
             order.setCustomerEmail(InputSanitizer.clean(order.getCustomerEmail(), 150));
             order.setDeliveryShift(InputSanitizer.clean(order.getDeliveryShift(), 60));
+            order.setDeliveryAddress(InputSanitizer.clean(order.getDeliveryAddress(), 250));
             for (OrderItem item : order.getItems()) {
-                item.setProduct(null);
                 item.setProductType(InputSanitizer.clean(item.getProductType(), 200));
                 item.setDetails(InputSanitizer.clean(item.getDetails(), 3000));
-                if (item.getPrice() == null || item.getPrice() < 0) item.setPrice(0.0);
             }
-            if (order.getTotalPrice() == null || order.getTotalPrice() < 0) order.setTotalPrice(0.0);
+        } else if (deliveryError != null) {
+            return ResponseEntity.badRequest().body(Map.of("message", deliveryError));
         }
 
         if (order.getItems() != null) {
             for (OrderItem item : order.getItems()) {
                 item.setOrder(order);
             }
+        }
+        // Un pedido cargado a mano como agendado o entregado ya tiene cliente
+        if (order.getStatus() == OrderStatus.CONFIRMED || order.getStatus() == OrderStatus.COMPLETED) {
+            linkCustomer(order);
         }
         calculateStockStatus(order);
         Order savedOrder = orderRepo.save(order);
@@ -170,19 +191,8 @@ public class OrderRestController {
                 order.setDeliveryDate(req.deliveryDate());
             }
 
-            // Auto-crear cliente
-            if (order.getCustomerPhone() != null && !order.getCustomerPhone().trim().isEmpty()) {
-                Optional<Customer> existingCustomer = customerRepo.findByPhone(order.getCustomerPhone());
-                if (existingCustomer.isEmpty()) {
-                    Customer newCustomer = new Customer();
-                    newCustomer.setName(order.getCustomerName());
-                    newCustomer.setPhone(order.getCustomerPhone());
-                    newCustomer.setEmail(order.getCustomerEmail());
-                    CustomerTag tag = tagRepo.findByName("Sin etiqueta").orElse(null);
-                    newCustomer.setTag(tag);
-                    customerRepo.save(newCustomer);
-                }
-            }
+            // Une el pedido con su cliente (lo crea si su teléfono no existe)
+            linkCustomer(order);
             return ResponseEntity.ok(orderRepo.save(order));
         }).orElse(ResponseEntity.notFound().build());
     }
@@ -194,22 +204,36 @@ public class OrderRestController {
         return orderRepo.findById(id).map(order -> {
             order.setCustomerName(updatedOrder.getCustomerName());
             order.setCustomerPhone(updatedOrder.getCustomerPhone());
-            order.setCustomerEmail(updatedOrder.getCustomerEmail());
             order.setDeliveryDate(updatedOrder.getDeliveryDate());
             order.setTotalPrice(updatedOrder.getTotalPrice());
             order.setDeposit(updatedOrder.getDeposit());
+
+            // Estos datos solo se cambian si vienen en la petición
+            // (antes el email se borraba al editar porque el panel no lo mandaba)
+            if (updatedOrder.getCustomerEmail() != null) order.setCustomerEmail(updatedOrder.getCustomerEmail());
+            if (updatedOrder.getDeliveryShift() != null) order.setDeliveryShift(updatedOrder.getDeliveryShift());
+            if (updatedOrder.getDeliveryMethod() != null) {
+                order.setDeliveryMethod(updatedOrder.getDeliveryMethod());
+                order.setDeliveryAddress(updatedOrder.getDeliveryAddress());
+                String deliveryError = normalizeDelivery(order);
+                if (deliveryError != null) {
+                    return ResponseEntity.badRequest().body(Map.of("message", deliveryError));
+                }
+            }
 
             // Si el estado viene en la petición, lo actualizamos
             if (updatedOrder.getStatus() != null) {
                 if (updatedOrder.getStatus() == OrderStatus.CONFIRMED && order.getStatus() == OrderStatus.PENDING) {
                     deductInventory(order);
+                    linkCustomer(order);
                 }
                 order.setStatus(updatedOrder.getStatus());
             }
 
-            // Limpiamos los ítems viejos y guardamos el nuevo texto "aplanado"
-            order.getItems().clear();
+            // Los productos solo se reemplazan si el panel los manda (si no se tocó el texto
+            // de los productos, se conservan los originales con su precio y su receta)
             if (updatedOrder.getItems() != null) {
+                order.getItems().clear();
                 for (OrderItem item : updatedOrder.getItems()) {
                     item.setOrder(order);
                     order.getItems().add(item);
@@ -234,6 +258,9 @@ public class OrderRestController {
                     return errorResponse;
                 }
                 deductInventory(order);
+            }
+            if (req.status() == OrderStatus.CONFIRMED || req.status() == OrderStatus.COMPLETED) {
+                linkCustomer(order);
             }
             order.setStatus(req.status());
             return ResponseEntity.ok(orderRepo.save(order));
@@ -302,8 +329,6 @@ public class OrderRestController {
         boolean hasStockIssues = false;
         boolean isSinInventario = false;
 
-        System.out.println("--- TEST VALIDATION START ---");
-
         for (Map.Entry<Long, Double> entry : requiredStock.entrySet()) {
             InventoryItem invItem = inventoryItemRepo.findById(entry.getKey()).orElse(null);
             if (invItem != null) {
@@ -311,10 +336,6 @@ public class OrderRestController {
                 double currentValid = (invItem.getCurrentStock() != null && !isExpired) ? invItem.getCurrentStock() : 0.0;
                 double min = invItem.getMinimumStock() != null ? invItem.getMinimumStock() : 0.0;
                 double required = entry.getValue();
-
-                System.out.println("Product: " + invItem.getName());
-                System.out.println("Required Amount: " + required);
-                System.out.println("Actual Valid Stock: " + currentValid);
 
                 if (currentValid < required) {
                     isSinInventario = true;
@@ -335,7 +356,6 @@ public class OrderRestController {
         } else {
             order.setStockStatus("Realizable");
         }
-        System.out.println("Calculated Status: " + order.getStockStatus());
     }
 
     private void deductInventory(Order order) {
@@ -362,5 +382,54 @@ public class OrderRestController {
         }
         
         inventoryItemRepo.saveAll(itemsToUpdate);
+    }
+
+    // ================= CLIENTE Y ENTREGA =================
+
+    // Une el pedido con su cliente. Si no hay ninguno con ese teléfono, lo crea con
+    // la etiqueta "Sin etiqueta" (así la dueña no tiene que cargar a mano a cada cliente).
+    private void linkCustomer(Order order) {
+        if (order.getCustomer() != null) return;
+        String phone = order.getCustomerPhone() == null ? "" : order.getCustomerPhone().trim();
+        if (phone.isEmpty()) return;
+
+        Customer customer = customerRepo.findFirstByPhone(phone).orElseGet(() -> {
+            Customer newCustomer = new Customer();
+            newCustomer.setName(order.getCustomerName() != null ? order.getCustomerName() : "Cliente");
+            newCustomer.setPhone(phone);
+            newCustomer.setEmail(order.getCustomerEmail());
+            newCustomer.setTag(tagRepo.findByName("Sin etiqueta").orElse(null));
+            return newCustomer;
+        });
+        // Si pidió envío y el cliente todavía no tenía dirección, se guarda la del pedido
+        if ((customer.getAddress() == null || customer.getAddress().isBlank())
+                && "Envío".equals(order.getDeliveryMethod()) && order.getDeliveryAddress() != null) {
+            customer.setAddress(order.getDeliveryAddress());
+        }
+        order.setCustomer(customerRepo.save(customer));
+    }
+
+    // Deja el método de entrega en uno de los dos valores válidos ("Retiro" o "Envío").
+    // Devuelve un mensaje de error si es envío y falta la dirección; si no, null.
+    private String normalizeDelivery(Order order) {
+        String method = order.getDeliveryMethod() == null ? "" : order.getDeliveryMethod().trim().toLowerCase();
+        if (method.isEmpty()) {
+            order.setDeliveryMethod(null);   // pedidos viejos o cargados sin este dato
+            order.setDeliveryAddress(null);
+            return null;
+        }
+        if (method.startsWith("env")) {
+            order.setDeliveryMethod("Envío");
+            if (order.getDeliveryAddress() == null || order.getDeliveryAddress().isBlank()) {
+                return "Escribí la dirección para el envío.";
+            }
+            String address = order.getDeliveryAddress().trim();
+            // La columna de la base admite 255 caracteres
+            order.setDeliveryAddress(address.length() > 250 ? address.substring(0, 250) : address);
+        } else {
+            order.setDeliveryMethod("Retiro");
+            order.setDeliveryAddress(null);
+        }
+        return null;
     }
 }

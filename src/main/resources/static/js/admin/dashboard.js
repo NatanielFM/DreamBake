@@ -253,6 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     renderTables(upcomingDeliveries, clientMap, criticalInventory);
     renderCharts(monthlyRev, monthlyOrd, statusCounts, productRanking, weekdayCounts);
+    renderMargins(selectedYear);
 
     // Guardar resumen para exportación PDF
     dashState.summary = {
@@ -341,6 +342,99 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
       }
     }
+  }
+
+  // ================= GANANCIA ESTIMADA (costos y márgenes) =================
+  // Costo de un producto = costo de su receta (lo calcula el servidor con el costo por unidad
+  // de cada insumo). Ganancia de un pedido = total cobrado − costo de sus productos.
+  // Solo se puede calcular en los pedidos donde TODOS los productos tienen receta con costo:
+  // las tortas del creador todavía no tienen receta, así que esos pedidos se cuentan aparte.
+  function renderMargins(selectedYear) {
+    const tbody = document.getElementById('dash-margin-tbody');
+    const summary = document.getElementById('dash-margin-summary');
+    if (!tbody || !summary) return;
+
+    const fmt = (n) => '$' + Math.round(n).toLocaleString('es-AR');
+    const products = dashState.products || [];
+    const byId = new Map(products.map(p => [p.id, p]));
+    const byName = new Map(products.map(p => [String(p.name).toLowerCase(), p]));
+    // Solo cuenta si TODOS los insumos de la receta tienen costo (un costo parcial inflaría la ganancia)
+    const costOf = (p) => (p && p.recipe && p.recipe.costComplete) ? p.recipe.estimatedCost : null;
+
+    const soldUnits = {};          // id del producto → unidades vendidas en el año
+    let ordersWithCost = 0, ordersTotal = 0, revenueWithCost = 0, costTotal = 0;
+
+    dashState.orders.forEach(o => {
+      const status = (o.status || '').toUpperCase();
+      if (status !== 'CONFIRMED' && status !== 'COMPLETED') return;
+      const year = o.deliveryDate ? parseInt(String(o.deliveryDate).slice(0, 4), 10) : null;
+      if (year && year !== selectedYear) return;
+      ordersTotal++;
+
+      let orderCost = 0;
+      let complete = (o.items || []).length > 0;
+      (o.items || []).forEach(it => {
+        const product = it.isCustomCake ? null
+          : (it.product && byId.get(it.product.id)) || byName.get(String(it.productType || '').toLowerCase());
+        if (product) soldUnits[product.id] = (soldUnits[product.id] || 0) + 1;
+        const cost = costOf(product);
+        if (cost === null) complete = false; else orderCost += cost;
+      });
+      if (complete) {
+        ordersWithCost++;
+        revenueWithCost += Number(o.totalPrice || 0);
+        costTotal += orderCost;
+      }
+    });
+
+    // Resumen en palabras
+    if (!products.some(p => costOf(p) !== null)) {
+      summary.textContent = 'Para ver la ganancia: cargá el costo por unidad de cada insumo (Inventario) y elegí la receta de cada producto (Productos).';
+    } else if (ordersWithCost === 0) {
+      summary.textContent = `Todavía no hay pedidos en ${selectedYear} con todos sus productos con costo. Abajo, la ganancia por unidad de cada producto.`;
+    } else {
+      const profit = revenueWithCost - costTotal;
+      const pct = revenueWithCost > 0 ? Math.round(profit / revenueWithCost * 100) : 0;
+      const others = ordersTotal - ordersWithCost;
+      summary.textContent = `Ganancia estimada en ${selectedYear}: ${fmt(profit)} (${pct}% de ${fmt(revenueWithCost)} cobrados).`
+        + (others > 0 ? ` Calculada con ${ordersWithCost} de ${ordersTotal} pedidos: los otros ${others} tienen tortas personalizadas o productos sin costo cargado.` : '');
+    }
+
+    // Tabla por producto: los más vendidos primero
+    const rows = products.slice().sort((a, b) => (soldUnits[b.id] || 0) - (soldUnits[a.id] || 0));
+    if (rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="cell-empty">Todavía no hay productos cargados.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(p => {
+      const cost = costOf(p);
+      const price = Number(p.price || 0);
+      let costCell, profitCell;
+      if (!p.recipe) {
+        costCell = '<span class="cell-soft">Sin receta</span>';
+        profitCell = '<span class="cell-soft">—</span>';
+      } else if (cost === null && p.recipe.estimatedCost > 0) {
+        // Algunos insumos tienen costo y otros no: se muestra lo que hay, sin calcular la ganancia
+        costCell = `${fmt(p.recipe.estimatedCost)} <span class="cell-soft">(parcial)</span>`;
+        profitCell = '<span class="cell-soft">Faltan costos de insumos</span>';
+      } else if (cost === null) {
+        costCell = '<span class="cell-soft">Insumos sin costo</span>';
+        profitCell = '<span class="cell-soft">—</span>';
+      } else {
+        const profit = price - cost;
+        const pct = price > 0 ? Math.round(profit / price * 100) : 0;
+        costCell = fmt(cost);
+        profitCell = `<span class="${profit < 0 ? 'text-danger' : ''}">${fmt(profit)} (${pct}%)</span>`;
+      }
+      return `
+        <tr>
+          <td class="cell-title cell-strong">${p.name}</td>
+          <td data-label="Precio" class="cell-money">${fmt(price)}</td>
+          <td data-label="Costo de insumos" class="cell-money">${costCell}</td>
+          <td data-label="Ganancia por unidad" class="cell-money">${profitCell}</td>
+          <td data-label="Vendidos en el año">${soldUnits[p.id] || 0}</td>
+        </tr>`;
+    }).join('');
   }
 
   // Colores de los gráficos: salen de las variables de admin.css, así respetan

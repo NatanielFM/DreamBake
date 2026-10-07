@@ -40,8 +40,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (img.complete && img.naturalWidth === 0 && img.getAttribute('src')) replaceBrokenImage(img);
   });
 
-  // Número de WhatsApp del negocio (pendiente: que se pueda elegir desde el panel, ver PRODUCT.md)
-  const BUSINESS_PHONE = '5493764159312';
+  // Número de WhatsApp del negocio. Se cambia desde Panel → Ajustes y llega en el footer
+  // (data-whatsapp); el número de respaldo es el de siempre, por si la página no tiene footer.
+  const BUSINESS_PHONE = document.querySelector('[data-whatsapp]')?.dataset.whatsapp || '5493764159312';
 
   // Utilidades ------------------------------------------------------------
   // Formato de precio argentino: 82000 -> "82.000"
@@ -61,15 +62,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
   // ================= 1. CONFIGURACIÓN DEL CREADOR =================
-  // Respaldo por si el servidor no responde
-  let cakeSizes = [
-    { id: '1', name: '10 porciones (14x12cm)', price: 44000, maxRellenos: 2, mixSponge: false },
-    { id: '2', name: '15 porciones (14x15cm)', price: 60000, maxRellenos: 2, mixSponge: false },
-    { id: '3', name: '20 porciones (16x15cm)', price: 82000, maxRellenos: 3, mixSponge: false },
-    { id: '4', name: '30 porciones (18x15cm)', price: 125000, maxRellenos: 3, mixSponge: false },
-    { id: '5', name: '30 porciones (2 Pisos)', price: 135000, maxRellenos: 3, mixSponge: true },
-    { id: '6', name: '40-50 porciones (2 Pisos)', price: 176000, maxRellenos: 3, mixSponge: true }
-  ];
+  // Los tamaños y precios vienen SOLO del servidor. Antes había una lista de respaldo escrita
+  // acá con precios viejos: si el servidor fallaba, el cliente podía pedir con un precio
+  // equivocado. Ahora, si no llegan, el creador muestra un aviso (ver "Tamaños como botones").
+  let cakeSizes = [];
 
   let spongesList = ['Vainilla', 'Chocolate', 'Limón', 'Coco'];
 
@@ -101,7 +97,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
   } catch (err) {
-    console.warn('Usando configuración local de respaldo.');
+    console.warn('No se pudo cargar la configuración del creador de tortas.');
   }
 
   // Deja los tamaños disponibles para otras partes del sitio (el "Desde $…" de la home)
@@ -160,7 +156,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (currentPath !== '/cart') {
     if (!document.getElementById('floating-cart-btn')) {
       document.body.insertAdjacentHTML('beforeend', `
-        <button id="floating-cart-btn" class="floating-cart" type="button" style="display: none;" onclick="openMiniCart()">
+        <button id="floating-cart-btn" class="floating-cart" type="button" style="display: none;">
           <span class="floating-cart-inner">${ICON_BAG} Ver pedido <span class="floating-cart-count" id="cart-count-float">0</span></span>
         </button>
       `);
@@ -173,7 +169,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div class="public-modal-card mini-cart-panel" role="dialog" aria-modal="true" aria-labelledby="mini-cart-title">
             <div class="public-modal-header">
               <h2 id="mini-cart-title" class="mini-cart-title">Tu pedido</h2>
-              <button type="button" class="public-close-modal" onclick="closeMiniCart()" aria-label="Cerrar">${ICON_X}</button>
+              <button type="button" class="public-close-modal" data-close-mini-cart aria-label="Cerrar">${ICON_X}</button>
             </div>
             <div class="public-modal-body">
               <div id="cart-items-preview"></div>
@@ -187,6 +183,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       `);
     }
   }
+
+  // Los botones se conectan acá (antes usaban onclick="…" dentro del HTML)
+  document.getElementById('floating-cart-btn')?.addEventListener('click', () => openMiniCart());
+  document.querySelector('[data-close-mini-cart]')?.addEventListener('click', () => closeMiniCart());
 
   let lastFocusBeforeMiniCart = null;
 
@@ -271,9 +271,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   // Suma un producto al carrito sin recargar la página y avisa con un toast.
-  // item = { productType, details, price } (mismo formato que guarda el carrito)
+  // item = { productId, productType, details, price } (mismo formato que guarda el carrito).
+  // El id permite que el servidor busque el precio real del producto al recibir el pedido.
   window.addToCart = function (item) {
     cart.push({
+      productId: item.productId ? Number(item.productId) : null,
       productType: item.productType,
       details: item.details,
       price: Number(item.price) || 0
@@ -292,6 +294,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btn = e.target.closest('[data-add-to-cart]');
     if (!btn) return;
     window.addToCart({
+      productId: btn.getAttribute('data-prod-id'),
       productType: btn.getAttribute('data-prod-name'),
       details: btn.getAttribute('data-prod-desc') || 'Producto del catálogo',
       price: parseFloat(btn.getAttribute('data-prod-price')) || 0
@@ -468,14 +471,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   let currentStep = 1;
   const gridSizes = document.getElementById('grid-sizes');
 
-  if (gridSizes) {
+  if (gridSizes && cakeSizes.length === 0) {
+    // No llegaron los tamaños (servidor caído o el admin los deshabilitó todos): aviso en vez de precios inventados
+    gridSizes.innerHTML = `
+      <div class="builder-unavailable" role="status">
+        <p><strong>No pudimos cargar los tamaños de torta.</strong> Probá de nuevo en un rato o escribinos y te pasamos los precios.</p>
+        <a class="button button--primary" href="https://wa.me/${esc(BUSINESS_PHONE)}" target="_blank" rel="noopener">Escribinos por WhatsApp</a>
+      </div>`;
+  } else if (gridSizes) {
     // Tamaños como botones (se pueden usar con el teclado); aria-pressed indica cuál está elegido
     gridSizes.innerHTML = cakeSizes.map(size => {
       const match = String(size.name).match(/^([\d\s\-–]+)\s*porciones\s*(.*)$/i);
       const portions = match ? match[1].trim() : '';
       const rest = match ? match[2].replace(/^\(|\)$/g, '').trim() : size.name;
       return `
-        <button type="button" class="select-card size-card" data-id="${esc(size.id)}" aria-pressed="false" onclick="selectSize('${esc(size.id)}')">
+        <button type="button" class="select-card size-card" data-id="${esc(size.id)}" aria-pressed="false">
           <span class="option-check" aria-hidden="true">${ICON_CHECK}</span>
           ${portions ? `<span class="size-portions">${esc(portions)}</span><span class="size-unit">porciones</span>` : ''}
           <span class="size-name">${esc(portions ? rest : size.name)}</span>
@@ -483,6 +493,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         </button>`;
     }).join('');
   }
+
+  // Clicks del creador (tamaño, cobertura y "Agregar al pedido"), en un solo lugar
+  // (antes eran onclick="…" escritos en el HTML)
+  document.addEventListener('click', (e) => {
+    const sizeCard = e.target.closest('.size-card[data-id]');
+    if (sizeCard) { window.selectSize(sizeCard.dataset.id); return; }
+    const coverageCard = e.target.closest('#grid-coverages .select-card[data-val]');
+    if (coverageCard) { window.selectCoverage(coverageCard.dataset.val); return; }
+    if (e.target.closest('#btn-add-cake')) window.addCakeToCart();
+  });
 
   // Marca como elegidas (o no) las tarjetas de un grupo
   function syncPressed(selector, isSelected) {
@@ -752,6 +772,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     cart.push({
       productType: 'Torta Personalizada',
+      cakeSizeId: Number(cakeData.size.id),   // el servidor busca el precio real de este tamaño
       details: detailsText,
       price: cakeData.size.price
     });
@@ -830,6 +851,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (hint) hint.textContent = `Pedidos con 3 días de anticipación: elegí una fecha desde el ${minDate.split('-').reverse().join('/')}.`;
   }
 
+  document.querySelector('[data-close-alert]')?.addEventListener('click', () => {
+    document.getElementById('modal-alert-v1').hidden = true;
+  });
+
   // Avisos en ventana (errores de guardado o de conexión)
   window.showPublicAlert = function (msg) {
     const alertMsg = document.getElementById('alert-v1-msg');
@@ -892,6 +917,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   document.querySelectorAll('input[name="shift"]').forEach(r => r.addEventListener('change', () => validateChoice('shift', 'chk-shift-error', '')));
 
+  // Retiro o envío: la dirección se pide solo si es envío
+  const addressField = document.getElementById('chk-address-field');
+  const isDelivery = () => (document.querySelector('input[name="delivery"]:checked') || {}).value === 'Envío';
+  validators['chk-address'] = (v) => !isDelivery() || v.trim().length >= 5 ? '' : 'Escribí la dirección: calle, número y barrio.';
+  document.getElementById('chk-address')?.addEventListener('input', (e) => {
+    if (e.target.getAttribute('aria-invalid') === 'true') validateField('chk-address');
+  });
+  document.querySelectorAll('input[name="delivery"]').forEach(r => r.addEventListener('change', () => {
+    if (!addressField) return;
+    addressField.hidden = !isDelivery();
+    if (isDelivery()) document.getElementById('chk-address').focus();
+    else showFieldError('chk-address', '');
+  }));
+
   const finalForm = document.getElementById('final-checkout-form');
   if (finalForm) {
     finalForm.addEventListener('submit', async (e) => {
@@ -919,28 +958,32 @@ document.addEventListener('DOMContentLoaded', async () => {
       const cDate = document.getElementById('chk-date').value;
       const cShift = document.querySelector('input[name="shift"]:checked').value;
       const cPay = (document.querySelector('input[name="payment"]:checked') || {}).value || 'Transferencia';
-
-      const { total } = getTotals();
+      const cDelivery = isDelivery() ? 'Envío' : 'Retiro';
+      const cAddress = isDelivery() ? document.getElementById('chk-address').value.trim() : '';
 
       // Texto de los ítems para el mensaje de WhatsApp
       const itemsText = cart.map(item => `> *${item.productType}*\n${item.details}`).join('\n\n');
 
-      // Mismos datos que siempre + el turno (deliveryShift, campo que ya existe en el pedido)
+      // El navegador dice QUÉ se compra (id del producto o del tamaño de torta) y el cupón.
+      // El servidor busca los precios reales, aplica el cupón y calcula el total (OrderPricingService).
       const orderData = {
         customerName: cName,
         customerPhone: cPhone,
         customerEmail: cEmail,
         deliveryDate: cDate,
         deliveryShift: cShift,
-        totalPrice: total,
-        deposit: 0,
-        status: 'PENDING',
+        deliveryMethod: cDelivery,
+        deliveryAddress: cAddress,
+        couponCode: appliedCoupon ? appliedCoupon.code : null,
         items: cart.map((item, index) => {
           const extra = (index === 0 && cDetails) ? `\n\n> *Aclaraciones:* ${cDetails}` : '';
+          const isCake = item.productType === 'Torta Personalizada';
           return {
             productType: item.productType,
             details: item.details + extra,
-            price: item.price
+            isCustomCake: isCake,
+            cakeSizeId: isCake ? (item.cakeSizeId || null) : null,
+            product: !isCake && item.productId ? { id: item.productId } : null
           };
         })
       };
@@ -954,11 +997,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         if (!res.ok) {
-          showPublicAlert('No pudimos guardar tu pedido. Probá de nuevo en unos minutos o escribinos por WhatsApp.');
+          // El servidor explica qué pasó (producto que ya no está, cupón vencido, falta la dirección…)
+          let message = 'No pudimos guardar tu pedido. Probá de nuevo en unos minutos o escribinos por WhatsApp.';
+          const raw = await res.text().catch(() => '');
+          try {
+            const data = JSON.parse(raw);
+            if (data && data.message) message = data.message;
+          } catch (err) {
+            // Respuesta sin JSON: el límite de pedidos por minuto (RateLimitFilter) manda un texto simple
+            if (res.status === 429 && raw) message = raw;
+          }
+          showPublicAlert(message);
           return;
         }
 
         const savedOrder = await res.json();
+        const total = savedOrder.totalPrice;   // el total que calculó el servidor
 
         // 3. Mensaje de WhatsApp con el número de pedido
         let waMsg = `Hola! 👋 Confirmo mi pedido 🩷\n\n> N° Referencia: #${savedOrder.id}\n\n`;
@@ -974,15 +1028,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         waMsg += `> *Para el:* ${cDate.split('-').reverse().join('/')}\n`;
         waMsg += `> *Turno:* ${cShift}\n`;
+        waMsg += cDelivery === 'Envío' ? `> *Envío a:* ${cAddress}\n` : `> *Retira en el local*\n`;
         waMsg += `> *Pago:* ${cPay}\n`;
         if (cDetails.trim() !== '') waMsg += `> *Aclaraciones:* ${cDetails}\n\n`;
         waMsg += `El total es de $${total.toLocaleString('es-AR')}.`;
-
-        if (appliedCoupon) {
-          try {
-            await fetch(`/api/coupons/consume/${encodeURIComponent(appliedCoupon.code)}`, { method: 'POST' });
-          } catch (err) { console.error('Error al consumir cupón', err); }
-        }
 
         const waUrl = `https://wa.me/${BUSINESS_PHONE}?text=${encodeURIComponent(waMsg)}`;
 

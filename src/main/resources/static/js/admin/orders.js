@@ -15,6 +15,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const iconTrash = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
   const iconRevert = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>`;
 
+  // Escapa texto antes de meterlo en HTML (dirección, turno, cupón…)
+  const esc = (text) => String(text ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+
   const months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
   // ================= 1. CARGA DE DATOS =================
@@ -160,6 +163,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('search-orders')?.addEventListener('input', renderTable);
 
+  // Turno y forma de entrega debajo de la fecha: "Por la tarde · Envío"
+  function deliveryInfo(o) {
+    const parts = [o.deliveryShift, o.deliveryMethod].filter(Boolean).map(esc);
+    return parts.length ? `<span class="cell-soft cell-sub">${parts.join(' · ')}</span>` : '';
+  }
+
   function renderTable() {
     const tbody = document.getElementById('orders-tbody');
     if (!tbody) return;
@@ -200,20 +209,20 @@ document.addEventListener('DOMContentLoaded', () => {
       let actionsHtml = '';
       if (currentTab === 'nuevos') {
         actionsHtml = `
-          <button type="button" class="btn btn-pink btn-sm" onclick="openConfirmModal(${o.id})">${iconCheck} Confirmar</button>
-          <button type="button" class="btn btn-grey btn-sm" onclick="actionView(${o.id})">${iconEye} Ver</button>
-          <button type="button" class="btn btn-red btn-sm" onclick="actionReject(${o.id})">${iconX} Rechazar</button>
+          <button type="button" class="btn btn-pink btn-sm" data-order-action="confirm" data-id="${o.id}">${iconCheck} Confirmar</button>
+          <button type="button" class="btn btn-grey btn-sm" data-order-action="view" data-id="${o.id}">${iconEye} Ver</button>
+          <button type="button" class="btn btn-red btn-sm" data-order-action="reject" data-id="${o.id}">${iconX} Rechazar</button>
         `;
       } else if (currentTab === 'agendados') {
         actionsHtml = `
-          <button type="button" class="btn btn-pink btn-sm" onclick="actionToggleComplete(${o.id}, true)">${iconCheck} Entregado</button>
-          <button type="button" class="btn btn-grey btn-sm" onclick="actionView(${o.id})">${iconEye} Ver</button>
-          <button type="button" class="btn btn-red btn-sm btn-icon" aria-label="Eliminar el pedido #${o.id}" title="Eliminar" onclick="actionDelete(${o.id})">${iconTrash}</button>
+          <button type="button" class="btn btn-pink btn-sm" data-order-action="complete" data-id="${o.id}">${iconCheck} Entregado</button>
+          <button type="button" class="btn btn-grey btn-sm" data-order-action="view" data-id="${o.id}">${iconEye} Ver</button>
+          <button type="button" class="btn btn-red btn-sm btn-icon" aria-label="Eliminar el pedido #${o.id}" title="Eliminar" data-order-action="delete" data-id="${o.id}">${iconTrash}</button>
         `;
       } else {
         actionsHtml = `
-          <button type="button" class="btn btn-grey btn-sm" onclick="actionView(${o.id})">${iconEye} Ver</button>
-          <button type="button" class="btn btn-red btn-sm btn-icon" aria-label="Eliminar el pedido #${o.id}" title="Eliminar" onclick="actionDelete(${o.id})">${iconTrash}</button>
+          <button type="button" class="btn btn-grey btn-sm" data-order-action="view" data-id="${o.id}">${iconEye} Ver</button>
+          <button type="button" class="btn btn-red btn-sm btn-icon" aria-label="Eliminar el pedido #${o.id}" title="Eliminar" data-order-action="delete" data-id="${o.id}">${iconTrash}</button>
         `;
       }
 
@@ -231,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td class="cell-id" data-label="Pedido">#${o.id}</td>
         <td class="cell-strong" data-label="Cliente">${o.customerName || 'Sin nombre'}</td>
         <td class="cell-soft" data-label="Teléfono">${o.customerPhone || '—'}</td>
-        <td data-label="Entrega">${o.deliveryDate ? `${day}/${month}/${year}` : 'Sin fecha'}</td>
+        <td data-label="Entrega">${o.deliveryDate ? `${day}/${month}/${year}` : 'Sin fecha'}${deliveryInfo(o)}</td>
         <td class="cell-money" data-label="Total">$${o.totalPrice.toLocaleString('es-AR')}</td>
         <td data-label="Estado"><div class="status-stack">${getStatusBadge(o.status)}${stockBadge}</div></td>
         <td class="cell-actions"><div class="action-buttons-container">${actionsHtml}</div></td>
@@ -264,27 +273,22 @@ document.addEventListener('DOMContentLoaded', () => {
     if(onDateConfirmedCallback) onDateConfirmedCallback();
   });
 
+  // true cuando ya se aceptó el aviso de "faltan insumos": se confirma sin volver a preguntar
+  let forceStockConfirm = false;
+
   window.openConfirmModal = function(id) {
+    forceStockConfirm = false;
     orderToConfirm = dbOrders.find(o => o.id === id);
     if(!orderToConfirm) return;
 
+    // Faltan insumos: se avisa y, si acepta, se sigue a la ventana de confirmación igual
+    // (antes se confirmaba directo con seña $0, sin poder anotar cuánto pagó el cliente)
     if (orderToConfirm.stockStatus === 'Sin inventario') {
       window.showConfirmModal(
-        'Alerta de Stock',
-        'Este pedido requiere más insumos de los disponibles (Stock insuficiente). El inventario de los insumos faltantes quedará en 0. ¿Desea confirmar de todos modos?',
-        'Aceptar', 'btn-red',
-        async () => {
-          try {
-            const res = await fetch(`/api/orders/${orderToConfirm.id}/confirm`, {
-              method: 'PUT', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ deposit: 0.0, deliveryDate: orderToConfirm.deliveryDate, force: true })
-            });
-            if (res.ok) {
-              window.showConfirmModal('Éxito', 'El pedido fue confirmado y el inventario ajustado a 0.', 'Aceptar', 'btn-pink', () => {});
-              jumpCalendarToDate(orderToConfirm.deliveryDate);
-            }
-          } catch(e) { console.error(e); }
-        }
+        'Faltan insumos',
+        'Este pedido necesita más insumos de los que hay. Si lo confirmás, los insumos que falten quedan en 0. ¿Confirmarlo igual?',
+        'Sí, seguir', 'btn-red',
+        () => { forceStockConfirm = true; proceedToConfirmModal(); }
       );
       return;
     }
@@ -337,7 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const res = await fetch(`/api/orders/${orderToConfirm.id}/confirm`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ deposit: depositValue, deliveryDate: newDate, force: false })
+          body: JSON.stringify({ deposit: depositValue, deliveryDate: newDate, force: forceStockConfirm })
         });
         if (res.ok) {
           document.getElementById('modal-confirm-order').hidden = true;
@@ -405,6 +409,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('vo-date-input').value = order.deliveryDate;
     document.getElementById('vo-total').value = order.totalPrice;
     document.getElementById('vo-deposit').value = order.deposit;
+    document.getElementById('vo-email').value = order.customerEmail || '';
+    document.getElementById('vo-shift').value = order.deliveryShift || '';
+    document.getElementById('vo-delivery').value = order.deliveryMethod || '';
+    document.getElementById('vo-address').value = order.deliveryAddress || '';
+    document.getElementById('vo-coupon').value = order.couponCode || '';
+    syncViewAddress();
 
     // Aplanar items a texto
     let detailsText = "";
@@ -412,18 +422,26 @@ document.addEventListener('DOMContentLoaded', () => {
       detailsText += `[${i.productType}] - ${i.details}\n\n`;
     });
     document.getElementById('vo-items-details').value = detailsText.trim();
+    originalItemsText = detailsText.trim();
   }
+
+  // La dirección solo se ve si es envío
+  let originalItemsText = '';
+  function syncViewAddress() {
+    document.getElementById('vo-address-group').hidden = document.getElementById('vo-delivery').value !== 'Envío';
+  }
+  document.getElementById('vo-delivery')?.addEventListener('change', syncViewAddress);
 
   // Función auxiliar que SOLO maneja lo visual (bloquear/desbloquear cajones)
   function toggleReadOnlyUI(isReadOnly) {
     document.querySelectorAll('#modal-view-order .form-input').forEach(input => {
-      if(isReadOnly) {
-        input.classList.add('readonly-mode');
-        input.setAttribute('readonly', 'true');
-      } else {
-        input.classList.remove('readonly-mode');
-        input.removeAttribute('readonly');
-      }
+      // El cupón no se edita: lo aplicó el servidor al recibir el pedido
+      const locked = isReadOnly || input.hasAttribute('data-always-readonly');
+      input.classList.toggle('readonly-mode', locked);
+      // Las listas (select) no tienen "readonly": se desactivan
+      if (input.tagName === 'SELECT') input.disabled = locked;
+      else if (locked) input.setAttribute('readonly', 'true');
+      else input.removeAttribute('readonly');
     });
     document.getElementById('btn-enable-edit').hidden = !isReadOnly;
     document.getElementById('vo-save-container').hidden = isReadOnly;
@@ -550,7 +568,8 @@ document.addEventListener('DOMContentLoaded', () => {
           <p><strong>Pedido N°:</strong> ${viewingOrder.id}</p>
           <p><strong>Cliente:</strong> ${viewingOrder.customerName || 'Sin Nombre'}</p>
           <p><strong>Teléfono:</strong> ${viewingOrder.customerPhone || 'N/A'}</p>
-          <p><strong>Entrega:</strong> ${viewingOrder.deliveryDate}</p>
+          <p><strong>Entrega:</strong> ${viewingOrder.deliveryDate ? viewingOrder.deliveryDate.split('-').reverse().join('/') : 'Sin fecha'}${viewingOrder.deliveryShift ? ` (${esc(viewingOrder.deliveryShift)})` : ''}</p>
+          ${viewingOrder.deliveryMethod === 'Envío' ? `<p><strong>Envío a:</strong> ${esc(viewingOrder.deliveryAddress)}</p>` : viewingOrder.deliveryMethod === 'Retiro' ? '<p><strong>Retira en el local</strong></p>' : ''}
         </div>
         <hr style="border-top: 2px dashed #000; margin: 15px 0;">
         <div class="receipt-items">
@@ -560,11 +579,12 @@ document.addEventListener('DOMContentLoaded', () => {
         <hr style="border-top: 2px dashed #000; margin: 15px 0;">
         <div class="receipt-financials" style="text-align: right; font-size: 1.1em;">
           <p><strong>Total:</strong> $${viewingOrder.totalPrice.toLocaleString('es-AR')}</p>
+          ${viewingOrder.couponCode ? `<p><strong>Cupón:</strong> ${esc(viewingOrder.couponCode)}</p>` : ''}
           <p><strong>Seña:</strong> $${viewingOrder.deposit.toLocaleString('es-AR')}</p>
           <p class="receipt-balance" style="font-size: 1.2em; margin-top: 10px;"><strong>Saldo Pendiente:</strong> $${pendingBalance.toLocaleString('es-AR')}</p>
         </div>
         <div style="text-align: center; margin-top: 40px; font-size: 0.9em; color: #666;">
-          <p>¡Gracias por elegir DreamBake!</p>
+          <p>¡Gracias por elegir Dulce Sueños!</p>
         </div>
       </div>
     `;
@@ -604,14 +624,29 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    const delivery = document.getElementById('vo-delivery').value;
+    const address = document.getElementById('vo-address').value.trim();
+    if (delivery === 'Envío' && !address) {
+      window.showErrorAlert('Escribí la dirección para el envío.');
+      return;
+    }
+
+    const itemsText = document.getElementById('vo-items-details').value;
     const updatedOrder = {
       customerName: document.getElementById('vo-name').value,
       customerPhone: document.getElementById('vo-phone').value,
+      customerEmail: document.getElementById('vo-email').value.trim(),
       deliveryDate: newDate,
+      deliveryShift: document.getElementById('vo-shift').value,
+      deliveryMethod: delivery,
+      deliveryAddress: address,
       totalPrice: newTotal,
       deposit: newDeposit,
       status: viewingOrder.status,
-      items: [{ productType: "Detalles del Pedido", details: document.getElementById('vo-items-details').value, price: newTotal }]
+      // Si no se tocó el texto de los productos, no se mandan: el servidor conserva los
+      // productos originales (con su precio y su receta para descontar insumos)
+      items: itemsText.trim() === originalItemsText ? null
+        : [{ productType: "Detalles del Pedido", details: itemsText, price: newTotal }]
     };
 
     handleDateWarning(newDate, async () => {
@@ -622,6 +657,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (res.ok) {
           document.getElementById('modal-view-order').hidden = true;
           jumpCalendarToDate(newDate); // Actualiza y salta al calendario correcto
+        } else {
+          const data = await res.json().catch(() => ({}));
+          window.showErrorAlert(data.message || 'No se pudo guardar el pedido.');
         }
       } catch(e) { console.error(e); }
     });
@@ -632,6 +670,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.openManualOrderModal = async function() {
     document.getElementById('form-manual-order').reset();
+    document.getElementById('mo-address-group').hidden = true;
     const container = document.getElementById('mo-items-container');
     if (container) container.innerHTML = '';
     
@@ -660,11 +699,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const itemHtml = `
       <div class="manual-order-item">
-        <button type="button" class="manual-item-remove" aria-label="Quitar este producto" title="Quitar" onclick="if(document.querySelectorAll('.manual-order-item').length > 1) this.parentElement.remove()">&times;</button>
+        <button type="button" class="manual-item-remove" aria-label="Quitar este producto" title="Quitar">&times;</button>
         <div class="form-grid-2">
           <label class="form-group">
             <span>Producto</span>
-            <select class="form-input mo-item-type" onchange="toggleManualItemType(this)">
+            <select class="form-input mo-item-type">
               ${optionsHtml}
             </select>
           </label>
@@ -681,6 +720,19 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
     container.insertAdjacentHTML('beforeend', itemHtml);
   };
+
+  // Quitar un producto (siempre queda al menos uno) y cambiar de catálogo a personalizado
+  document.getElementById('mo-items-container')?.addEventListener('click', (e) => {
+    const remove = e.target.closest('.manual-item-remove');
+    if (remove && document.querySelectorAll('.manual-order-item').length > 1) remove.closest('.manual-order-item').remove();
+  });
+  document.getElementById('mo-items-container')?.addEventListener('change', (e) => {
+    if (e.target.matches('.mo-item-type')) window.toggleManualItemType(e.target);
+  });
+  // La dirección solo se pide si es envío
+  document.getElementById('mo-delivery')?.addEventListener('change', (e) => {
+    document.getElementById('mo-address-group').hidden = e.target.value !== 'Envío';
+  });
 
   window.toggleManualItemType = function(select) {
     const row = select.closest('.manual-order-item');
@@ -734,10 +786,20 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    const moDelivery = document.getElementById('mo-delivery').value;
+    const moAddress = document.getElementById('mo-address').value.trim();
+    if (moDelivery === 'Envío' && !moAddress) {
+      window.showErrorAlert('Escribí la dirección para el envío.');
+      return;
+    }
+
     const orderData = {
       customerName: document.getElementById('mo-name').value,
       customerPhone: document.getElementById('mo-phone').value,
       deliveryDate: newDate,
+      deliveryShift: document.getElementById('mo-shift').value || null,
+      deliveryMethod: moDelivery,
+      deliveryAddress: moAddress,
       totalPrice: total,
       deposit: deposit,
       status: document.getElementById('mo-status').value,
@@ -752,6 +814,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (res.ok) {
           document.getElementById('modal-manual-order').hidden = true;
           jumpCalendarToDate(newDate);
+        } else {
+          const data = await res.json().catch(() => ({}));
+          window.showErrorAlert(data.message || 'No se pudo guardar el pedido.');
         }
       } catch(err) { console.error(err); }
     });
@@ -779,14 +844,14 @@ document.addEventListener('DOMContentLoaded', () => {
       let actionsHtml = '';
       if (o.status === 'CONFIRMED') {
         actionsHtml = `
-          <button type="button" class="btn btn-pink btn-sm" onclick="setOrderStatus(${o.id}, 'COMPLETED')">${iconCheck} Entregado</button>
-          <button type="button" class="btn btn-grey btn-sm" onclick="actionView(${o.id})">${iconEye} Ver</button>
-          <button type="button" class="btn btn-red btn-sm btn-icon" aria-label="Eliminar el pedido #${o.id}" title="Eliminar" onclick="actionDelete(${o.id})">${iconTrash}</button>
+          <button type="button" class="btn btn-pink btn-sm" data-order-action="deliver" data-id="${o.id}">${iconCheck} Entregado</button>
+          <button type="button" class="btn btn-grey btn-sm" data-order-action="view" data-id="${o.id}">${iconEye} Ver</button>
+          <button type="button" class="btn btn-red btn-sm btn-icon" aria-label="Eliminar el pedido #${o.id}" title="Eliminar" data-order-action="delete" data-id="${o.id}">${iconTrash}</button>
         `;
       } else if (o.status === 'COMPLETED') {
         actionsHtml = `
-          <button type="button" class="btn btn-grey btn-sm" onclick="actionView(${o.id})">${iconEye} Ver</button>
-          <button type="button" class="btn btn-grey btn-sm" onclick="setOrderStatus(${o.id}, 'CONFIRMED')">${iconRevert} Volver a agendado</button>
+          <button type="button" class="btn btn-grey btn-sm" data-order-action="view" data-id="${o.id}">${iconEye} Ver</button>
+          <button type="button" class="btn btn-grey btn-sm" data-order-action="revert" data-id="${o.id}">${iconRevert} Volver a agendado</button>
         `;
       }
 
@@ -821,6 +886,33 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch(e) { console.error(e); }
   };
+
+  // ================= 9. BOTONES (antes eran onclick="…" en el HTML) =================
+  // La política de seguridad (CSP) ya no permite JavaScript dentro del HTML, así que los
+  // botones se conectan desde acá. Los de las tablas usan data-order-action="…" y data-id.
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-order-action]');
+    if (!btn) return;
+    const id = Number(btn.dataset.id);
+    switch (btn.dataset.orderAction) {
+      case 'confirm':  window.openConfirmModal(id); break;
+      case 'view':     window.actionView(id); break;
+      case 'reject':   window.actionReject(id); break;
+      case 'complete': window.actionToggleComplete(id, true); break;
+      case 'delete':   window.actionDelete(id); break;
+      case 'deliver':  window.setOrderStatus(id, 'COMPLETED'); break;
+      case 'revert':   window.setOrderStatus(id, 'CONFIRMED'); break;
+    }
+  });
+
+  document.getElementById('btn-new-order')?.addEventListener('click', () => window.openManualOrderModal());
+  document.getElementById('btn-add-manual-item')?.addEventListener('click', () => window.addManualOrderItem());
+  document.getElementById('co-payment-type')?.addEventListener('change', () => window.toggleDepositInput());
+  document.getElementById('btn-complete-view-order')?.addEventListener('click', () => window.actionToggleCompleteViewingOrder());
+  document.getElementById('btn-enable-edit')?.addEventListener('click', () => window.enableEditMode());
+  document.getElementById('btn-cancel-view-order')?.addEventListener('click', () => window.actionCancelViewingOrder());
+  document.getElementById('btn-discard-edit')?.addEventListener('click', () => window.disableEditMode());
+  document.getElementById('btn-save-edit')?.addEventListener('click', () => window.saveEditedOrder());
 
   document.addEventListener('tabChanged', e => {
     if (e.detail === 'pedidos') loadOrders();

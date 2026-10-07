@@ -11,4 +11,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     java.util.Optional<Product> findByName(String name);
 
     java.util.Optional<Product> findByNameIgnoreCase(String name); // NUEVO
+
+    // Para los pedidos de la tienda: busca el producto activo por nombre (carritos guardados sin id)
+    java.util.Optional<Product> findFirstByNameIgnoreCaseAndEnabledTrue(String name);
 }

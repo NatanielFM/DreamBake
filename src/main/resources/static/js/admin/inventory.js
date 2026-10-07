@@ -1,6 +1,24 @@
 // /js/admin/inventory.js - Módulo de Inventario (Con SVGs más grandes)
 document.addEventListener('DOMContentLoaded', () => {
 
+  // ================= COSTO POR UNIDAD (solo panel del admin) =================
+  // La columna "Costo" existe solo en admin.html; el panel del pastelero no muestra dinero.
+  const showCost = Boolean(document.querySelector('#inventario th[data-col="cost"]'));
+  const UNIT_SINGULAR = { Kg: 'kg', Gramos: 'gramo', Litros: 'litro', Mililitros: 'mililitro', Unidades: 'unidad', Cajas: 'caja' };
+  const unitSingular = (unit) => UNIT_SINGULAR[unit] || unit;
+
+  function costText(item) {
+    if (item.unitCost == null) return 'Sin cargar';
+    return `$${Number(item.unitCost).toLocaleString('es-AR', { maximumFractionDigits: 2 })} / ${unitSingular(item.unit)}`;
+  }
+
+  // Texto de ayuda del formulario: "Lo que cuesta 1 kg"
+  function updateCostHint() {
+    const label = document.getElementById('inv-cost-unit');
+    if (label && invUnitSelect) label.textContent = `1 ${unitSingular(invUnitSelect.value)}`;
+  }
+
+
   let dbInventory = [];
   const inventoryTbody = document.getElementById('inventory-tbody');
   const searchInventory = document.getElementById('search-inventory');
@@ -134,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
         : currentInvFilter === 'low' ? 'Ningún insumo tiene stock bajo.'
         : currentInvFilter === 'expiring' ? 'Ningún insumo vence en los próximos 7 días.'
         : 'Todavía no hay insumos cargados.';
-      inventoryTbody.innerHTML = `<tr><td colspan="6" class="cell-empty">${emptyText}</td></tr>`;
+      inventoryTbody.innerHTML = `<tr><td colspan="${showCost ? 7 : 6}" class="cell-empty">${emptyText}</td></tr>`;
       return;
     }
 
@@ -165,6 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td class="cell-title"><span class="cell-strong">${item.name}</span>${stateBadge ? `<div class="status-stack">${stateBadge}</div>` : ''}</td>
         <td data-label="Stock actual" class="${isLowStock ? 'text-danger' : ''}">${item.currentStock} ${item.unit}</td>
         <td data-label="Stock mínimo">${item.minimumStock} ${item.unit}</td>
+        ${showCost ? `<td data-label="Costo" class="${item.unitCost == null ? 'cell-soft' : 'cell-money'}">${costText(item)}</td>` : ''}
         <td data-label="Actualizado" class="cell-soft">${dateAddText}</td>
         <td data-label="Vence" class="${expClass}">${expText}</td>
         <td class="cell-actions"><div class="action-buttons-container">
@@ -200,6 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const invMinInput = document.getElementById('inv-min');
 
   function updateStepBasedOnUnit() {
+      updateCostHint();
       if (['Unidades', 'Cajas'].includes(invUnitSelect.value)) {
           invCurrentInput.step = "1";
           invMinInput.step = "1";
@@ -231,6 +251,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('inv-min').value = item.minimumStock || '';
     document.getElementById('inv-unit').value = item.unit;
     document.getElementById('inv-exp').value = item.expirationDate || '';
+    const costInput = document.getElementById('inv-cost');
+    if (costInput) costInput.value = item.unitCost ?? '';
     
     updateStepBasedOnUnit(); 
     
@@ -262,6 +284,9 @@ document.addEventListener('DOMContentLoaded', () => {
         unit: unit,
         expirationDate: document.getElementById('inv-exp').value || null
       };
+      // Costo por unidad (el campo solo existe en el panel del admin)
+      const costInput = document.getElementById('inv-cost');
+      if (costInput) data.unitCost = costInput.value === '' ? null : parseFloat(costInput.value);
 
       const url = id ? `/api/inventory/${id}` : '/api/inventory';
       const method = id ? 'PUT' : 'POST';
@@ -287,28 +312,6 @@ document.addEventListener('DOMContentLoaded', () => {
     window.showConfirmModal('Eliminar Insumo', `¿Seguro que deseas eliminar "${item.name}" del inventario?`, 'Eliminar', 'btn-red', async () => {
       await fetch(`/api/inventory/${item.id}`, { method: 'DELETE' });
       loadInventoryFromServer();
-    });
-  }
-
-  const btnTestDeduct = document.getElementById('btn-test-deduct');
-  if(btnTestDeduct) {
-    btnTestDeduct.addEventListener('click', async () => {
-      const orderId = await window.showCustomPrompt("¿De qué pedido querés descontar los insumos? Escribí su número:");
-      if (!orderId) return;
-      
-      fetch(`/api/inventory/test-deduct/${orderId}`, { method: 'POST' })
-        .then(res => res.text().then(text => ({ ok: res.ok, text })))
-        .then(data => {
-          if (typeof window.showConfirmModal === 'function') {
-            window.showConfirmModal("Resultado de Depuración", data.text, "Aceptar", "btn-pink", () => {
-              loadInventoryFromServer();
-            });
-          } else {
-            alert(data.text);
-            loadInventoryFromServer();
-          }
-        })
-        .catch(e => console.error(e));
     });
   }
 

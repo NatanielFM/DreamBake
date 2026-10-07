@@ -107,6 +107,8 @@
 }
 
 .auth-submit { margin-top: var(--space-2); }
+/* "Mantener la sesión iniciada": casilla con área táctil de 44 px (.check, components.css) */
+.auth-remember { margin-top: calc(var(--space-2) * -1); color: var(--text-strong); }
 
 .auth-switch {
   margin: var(--space-6) 0 0;

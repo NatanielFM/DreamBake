@@ -3,6 +3,7 @@ package com.dreambake.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import java.time.LocalDate;
@@ -26,7 +27,21 @@ public class Order {
 
     // Logística
     private LocalDate deliveryDate;
-    private String deliveryShift; // Ej: "10:00 a 12:00" o "19:00 a 20:00"
+    private String deliveryShift; // Ej: "Por la mañana" o "Por la tarde"
+
+    // Cómo se entrega: "Retiro" (lo busca el cliente) o "Envío" (con la dirección de abajo)
+    private String deliveryMethod;
+    private String deliveryAddress;
+
+    // Código del cupón usado en la tienda (el servidor ya lo validó y le descontó un uso)
+    private String couponCode;
+
+    // Cliente al que pertenece el pedido. Se completa al confirmarlo (se busca por teléfono
+    // o se crea uno nuevo). Los pedidos nuevos de la tienda todavía no lo tienen.
+    @ManyToOne
+    @JoinColumn(name = "customer_id")
+    @JsonIgnoreProperties({ "tag", "address", "birthDate", "totalPurchases", "dateAdded", "ordersCount", "totalSpent" })
+    private Customer customer;
 
     // Finanzas
     private Double totalPrice = 0.0;

@@ -1,10 +1,9 @@
 # Cuenta de prueba (solo entorno local)
 
-Creada durante la Fase 0 del rediseño para poder capturar `/profile` y el menú de usuario.
-Es un usuario común (sin rol ADMIN ni PASTELERO) en la base local `dreambake_db`.
+La cuenta `qa.rediseno@dreambake.test`, creada en la Fase 0 del rediseño para capturar `/profile`
+y probar los paneles, **se borró el 2026-10-07** junto con las demás cuentas `@dreambake.test`
+(ver `PENDIENTES-BACKEND.md`, punto 5).
 
-- Email: qa.rediseno@dreambake.test
-- Contraseña: QaRediseno2026
-
-Se puede borrar desde MySQL cuando termine el rediseño:
-`DELETE FROM users WHERE email='qa.rediseno@dreambake.test';`
+Para volver a probar: registrarse en `/register` con un email `@dreambake.test` y, si hace falta,
+darle un rol desde MySQL (`UPDATE users SET roles='ADMIN' WHERE email='...';`). Al terminar:
+`DELETE FROM users WHERE email LIKE '%@dreambake.test';`

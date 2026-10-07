@@ -69,12 +69,14 @@ DreamBake es el **trabajo final (tesis)** de Nataniel Medina para la carrera **T
 
 ```
 src/main/java/com/dreambake/
-├── config/        SecurityConfig (rutas y roles), MvcConfig (expone /uploads), GlobalControllerAdvice (currentUser en todas las vistas)
+├── config/        SecurityConfig (rutas, roles, CSP, remember-me), MvcConfig (expone /uploads), GlobalControllerAdvice (currentUser en todas las vistas),
+│                  PublicViewAdvice (número de WhatsApp y URL del sitio en las páginas públicas), RateLimitFilter
 ├── controller/    Controladores de vistas (WebController, AdminController, BakerController, AuthController, ProfileController)
 │                  y REST bajo /api (*RestController) que consume el JS del frontend
 ├── entity/        Entidades JPA (ver "Modelo de datos")
 ├── repository/    Interfaces Spring Data JPA
-└── service/       UserService, UserDetailsServiceImpl, ProductManagementService
+└── service/       UserService, UserDetailsServiceImpl, ProductManagementService, LoginAttemptService,
+                   OrderPricingService (precios reales de un pedido de la tienda), CouponService, BusinessSettingService (ajustes del negocio)
                    (gran parte de la lógica de negocio está directamente en los controladores REST)
 
 src/main/resources/
@@ -99,15 +101,16 @@ uploads/           imágenes subidas desde el panel (servidas en /uploads/**)
 
 ### Detalles importantes del frontend
 - **`baker.html` reutiliza scripts del admin** (`admin/main.js`, `inventory.js`, `recipes.js`, `orders.js`). Un cambio en esos archivos afecta a **los dos paneles**: verificá que no rompa ninguno.
-- El panel admin cambia de sección con pestañas `data-tab` (resumen, pedidos, productos, inventario, recetas, clientes, galería, armador, equipo); cada pestaña tiene su JS en `static/js/admin/`.
+- El panel admin cambia de sección con pestañas `data-tab` (resumen, pedidos, productos, inventario, recetas, clientes, galería, armador, equipo, ajustes); cada pestaña tiene su JS en `static/js/admin/` (Ajustes → `settings.js`).
+- **Sin JavaScript dentro del HTML**: la CSP no permite `<script>…</script>` ni `onclick="…"`/`onchange="…"` (tampoco en el HTML que arma el JS). Los botones se conectan con `addEventListener`, usando ids o atributos `data-*`: `data-close-modal="id"` cierra una ventana (main.js), `data-order-action` (orders.js), `data-cake-action`/`data-cake-toggle` (cake-config.js). El modo oscuro se aplica con `admin/theme-init.js` en el `<head>`.
 - Modales y confirmaciones globales: `window.showConfirmModal(...)` y `window.showErrorAlert(...)` en `admin/main.js`. Reutilizalos en vez de usar `alert()`/`confirm()`. Todas las ventanas (`.modal-overlay`) se cierran con Esc; las que no tienen formulario, también tocando el fondo.
 - Tablas de los paneles: en el celular cada fila se ve como tarjeta. Cada `<td>` que arma el JS lleva `data-label="…"` (la etiqueta de la tarjeta); la celda de botones lleva `class="cell-actions"`.
-- `baker.html` oculta con su propio `<style>` los botones de admin por clase (`.btn-edit`, `.btn-delete`, `button.btn-red`…) y la 5.ª columna de Pedidos (el total): no cambiar esas clases ni el orden de las columnas.
+- `baker.html` oculta con su propio `<style>` los botones de admin por clase (`.btn-edit`, `.btn-delete`, `button.btn-red`…), la 5.ª columna de Pedidos (el total) y la caja de pago de "Ver pedido" (`.order-details-box--money`): no cambiar esas clases ni el orden de las columnas.
+- Dinero solo en el admin: la columna de costo de Inventario existe solo en `admin.html` (`th[data-col="cost"]`) e `inventory.js` la dibuja si la encuentra; `recipes.js` muestra costos solo si `<body data-panel="admin">`.
 - El JS se comunica con el backend vía `fetch` a los endpoints `/api/...` y arma el HTML dinámicamente.
 - Variables de diseño: `tokens.css` (paleta y escalas) y, en los paneles, las variables `--admin-*` de `admin.css` (modo claro y oscuro). Color de acento `--accent: #e0487f` (rosa). Usá las variables existentes en vez de colores sueltos.
 - Los íconos son SVG inline (se reemplazaron los emojis por SVG). No volver a usar emojis como íconos.
-- `static/js/admin.js` y `static/js/products.js` no aparecen referenciados en ningún template (posible código viejo). Confirmar con el autor antes de borrarlos.
-- Los scripts sueltos de la raíz (`strip_baker.*`, `replace_emojis.*`) fueron utilidades de una sola vez; no son parte del sistema.
+- El número de WhatsApp del negocio se cambia en Panel → Ajustes: en las plantillas públicas se usa `${whatsappNumber}` y `store.js` lo lee del atributo `data-whatsapp` del footer. No escribir el número fijo en el código.
 
 ## Seguridad y roles
 
@@ -116,22 +119,25 @@ Definido en `config/SecurityConfig.java`:
 | Ruta | Acceso |
 |---|---|
 | `/`, `/builder`, `/products`, `/cart`, `/register`, `/login`, `/css/**`, `/js/**`, `/img/**`, `/uploads/**` | Público |
-| `POST /api/orders`, `GET /api/cake-config/public`, `GET /api/coupons/validate/**`, `POST /api/coupons/consume/**` | Público (lo usa la tienda) |
+| `POST /api/orders`, `GET /api/cake-config/public`, `GET /api/coupons/validate/**` | Público (lo usa la tienda) |
 | `/admin/**` | `ADMIN` |
 | `/baker/**` | `PASTELERO` |
 | `/api/orders/**`, `/api/inventory/**`, `/api/recipes/**`, `GET /api/products/**`, `GET /api/categories/**` | `ADMIN` o `PASTELERO` |
-| resto de `/api/**` (usuarios, clientes, cupones, galería, configuración del creador, altas/bajas de productos) | `ADMIN` |
+| resto de `/api/**` (usuarios, clientes, cupones, galería, configuración del creador, altas/bajas de productos, ajustes `/api/settings`) | `ADMIN` |
 
 - Los roles son **authorities sin prefijo** (`ADMIN`, `PASTELERO`), guardados como texto en `User.roles`.
-- Tras el login: ADMIN → `/admin`, PASTELERO → `/baker`, otro → `/`. Logout → `/login?logout`.
+- Tras el login: ADMIN → `/admin`, PASTELERO → `/baker`, otro → `/`. Logout → `/login?logout`. Después de registrarse → `/login?registered`.
+- "Mantener la sesión iniciada": `rememberMe()` con cookie firmada de 14 días. La clave sale de `dreambake.remember-me-key`; si no está configurada se genera una al arrancar (al reiniciar hay que volver a entrar).
 - Contraseñas con BCrypt.
 - **CSRF activado** (`csrf.spa()`): el token viaja en la cookie `XSRF-TOKEN`. Los formularios con `th:action` lo incluyen solos; los `fetch` lo agregan con `static/js/csrf.js`, que se carga primero en **todas** las páginas (públicas y paneles). Toda página nueva debe incluirlo.
-- Encabezados: Content-Security-Policy (orígenes permitidos en `SecurityConfig`; si se agrega un CDN nuevo, sumarlo ahí), `X-Frame-Options: DENY`, `Referrer-Policy`, cookie de sesión `SameSite=Lax`.
+- Encabezados: Content-Security-Policy (orígenes permitidos en `SecurityConfig`; si se agrega un CDN nuevo, sumarlo ahí; `script-src` **no** permite JavaScript dentro del HTML), `X-Frame-Options: DENY`, `Referrer-Policy`, cookie de sesión `SameSite=Lax`.
 - Login: bloqueo de 15 min tras 5 intentos fallidos (`LoginAttemptService`). Cuentas con `enabled=false` no pueden entrar.
 - `RateLimitFilter`: límite por IP de pedidos, cupones y registros.
 - Pedidos públicos: el servidor fuerza `PENDING`, seña 0 y pedido nuevo, exige nombre/teléfono/fecha/ítems y limpia los textos (`util/InputSanitizer`) para evitar XSS en el panel.
+- **El precio lo calcula el servidor** (`OrderPricingService`): el carrito manda `product.id` o `cakeSizeId` y el código del cupón; el servidor busca los precios en `products` y `cake_sizes`, valida el cupón, le descuenta un uso y calcula el total. El total que mande el navegador se ignora.
 - Registro: solo se aceptan `name`, `email`, `phone`, `password` (`@InitBinder`) y el email debe ser único.
-- Galería: solo imágenes JPG/PNG/WEBP/GIF, guardadas con nombre UUID.
+- Galería: solo imágenes JPG/PNG/WEBP/GIF, guardadas con nombre UUID. Al borrar una foto se borra también el archivo (solo dentro de `uploads/`); si la usa un producto, no se borra.
+- Producción: `application-prod.properties` (perfil `prod`) toma la base y las claves de variables de entorno, activa cookies `Secure` y oculta los detalles de los errores.
 - Al agregar una ruta o endpoint nuevo, **actualizá SecurityConfig** si hace falta.
 
 ## Modelo de datos (entidades JPA)
@@ -139,27 +145,30 @@ Definido en `config/SecurityConfig.java`:
 | Entidad (tabla) | Contenido principal | Relaciones |
 |---|---|---|
 | `User` (users) | email (login), password, name, phone, roles, enabled | — |
-| `Customer` (customers) | name, email, phone, address, birthDate, totalPurchases, dateAdded | ManyToOne `CustomerTag` |
+| `Customer` (customers) | name, email, phone, address, birthDate, totalPurchases (sin uso), dateAdded; `ordersCount`/`totalSpent` calculados (@Transient) | ManyToOne `CustomerTag` |
 | `CustomerTag` (customer_tags) | name, isDeletable, displayOrder | — |
-| `Order` (orders_table) | customerName/Phone/Email (texto), deliveryDate, deliveryShift, totalPrice, deposit (seña), status, stockStatus, createdAt | OneToMany `OrderItem` |
+| `Order` (orders_table) | customerName/Phone/Email (texto), deliveryDate, deliveryShift, deliveryMethod ("Retiro"/"Envío"), deliveryAddress, couponCode, totalPrice, deposit (seña), status, stockStatus, createdAt | OneToMany `OrderItem`, ManyToOne `Customer` (se une al confirmar) |
 | `OrderItem` (order_items) | productType, isCustomCake, details (TEXT), price | ManyToOne `Order`, ManyToOne `Product` |
 | `Product` (products) | name, description, price, enabled, imageUrl | ManyToOne `Category`, ManyToOne `Recipe` |
 | `Category` (categories) | name, isDeletable, displayOrder | — |
 | `Recipe` (recipes) | name, details | OneToMany `RecipeItem` |
 | `RecipeItem` (recipe_items) | quantityRequired | ManyToOne `Recipe`, ManyToOne `InventoryItem` |
-| `InventoryItem` (inventory_items) | name, currentStock, minimumStock, unit, expirationDate | — |
+| `InventoryItem` (inventory_items) | name, currentStock, minimumStock, unit, expirationDate, unitCost (costo de 1 unidad) | — |
 | `Coupon` (coupons) | code, type (`CouponType`), active, discountPercentage, customText, usageLimit, isUnlimited | — |
 | `CakeSize` (cake_sizes) | name, price, maxRellenos, mixSponge, enabled | — |
 | `CakeOption` (cake_options) | name, category ("Sponge", "Crema", "Fondant"), enabled | — |
 | `GalleryImage` (gallery_images) | url, uploadedAt | — |
+| `BusinessSetting` (business_settings) | key, value (ej: whatsapp) | — |
 
 Enums: `OrderStatus` = PENDING → CONFIRMED → IN_PROGRESS → COMPLETED (o CANCELLED). `CouponType` = DESCUENTO, ENVIO_GRATIS, REGALO.
 
-**Cadena clave del negocio:** Pedido → Ítem → Producto → Receta → Ítem de receta → Insumo. Al **confirmar** un pedido (`PUT /api/orders/{id}/confirm` o pasar de PENDING a CONFIRMED) se verifica el stock (con opción `force`), **se descuentan los insumos** del inventario y se crea el `Customer` automáticamente si su teléfono no existe.
+**Cadena clave del negocio:** Pedido → Ítem → Producto → Receta → Ítem de receta → Insumo. Al **confirmar** un pedido (`PUT /api/orders/{id}/confirm` o pasar de PENDING a CONFIRMED) se verifica el stock (con opción `force`), **se descuentan los insumos** del inventario y el pedido se une a su `Customer` (que se crea automáticamente si su teléfono no existe).
+
+`OrderItem.cakeSizeId` es @Transient (solo viaja desde la tienda). El costo de una receta se calcula en `Recipe.getEstimatedCost()` / `isCostComplete()` (sin columna).
 
 Limitaciones conocidas del modelo (no las "arregles" sin que te lo pidan; son decisiones pendientes de la tesis):
-- `Order` no tiene relación con `Customer`; guarda nombre/teléfono/email como texto.
-- `InventoryItem` y `Recipe` no tienen costo, así que todavía no se calculan costos ni márgenes reales.
+- `Order` sigue guardando nombre/teléfono/email como texto además de la relación con `Customer` (los pedidos viejos se asocian por teléfono).
+- Las tortas del creador no tienen receta: no descuentan insumos ni entran en la ganancia estimada.
 - Los roles son un String en `User`, no una tabla.
 
 ## Convenciones

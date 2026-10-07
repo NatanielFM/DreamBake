@@ -2,8 +2,11 @@ package com.dreambake.controller;
 
 import com.dreambake.entity.Customer;
 import com.dreambake.entity.CustomerTag;
+import com.dreambake.entity.Order;
+import com.dreambake.entity.OrderStatus;
 import com.dreambake.repository.CustomerRepository;
 import com.dreambake.repository.CustomerTagRepository;
+import com.dreambake.repository.OrderRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,7 +14,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -24,11 +29,47 @@ public class CustomerRestController {
     @Autowired
     private CustomerTagRepository tagRepo;
 
+    @Autowired
+    private OrderRepository orderRepo;
+
+    // Pedidos que cuentan como compra (los nuevos sin confirmar, cancelados y rechazados no)
+    private static final List<OrderStatus> PURCHASE_STATUSES =
+            List.of(OrderStatus.CONFIRMED, OrderStatus.IN_PROGRESS, OrderStatus.COMPLETED);
+
     // ================= CLIENTES =================
 
     @GetMapping("/customers")
     public List<Customer> getAllCustomers() {
-        return customerRepo.findAll();
+        List<Customer> customers = customerRepo.findAll();
+
+        // Cantidad de pedidos y total gastado de cada cliente. Un pedido es de un cliente si
+        // está unido a él (relación Pedido–Cliente) o, en los pedidos viejos, si tiene su teléfono.
+        Map<Long, Customer> byId = new HashMap<>();
+        Map<String, Customer> byPhone = new HashMap<>();
+        for (Customer c : customers) {
+            c.setOrdersCount(0);
+            c.setTotalSpent(0.0);
+            byId.put(c.getId(), c);
+            if (c.getPhone() != null && !c.getPhone().isBlank()) byPhone.putIfAbsent(c.getPhone().trim(), c);
+        }
+        for (Order o : orderRepo.findAll()) {
+            if (!PURCHASE_STATUSES.contains(o.getStatus())) continue;
+            Customer owner = o.getCustomer() != null ? byId.get(o.getCustomer().getId())
+                    : (o.getCustomerPhone() != null ? byPhone.get(o.getCustomerPhone().trim()) : null);
+            if (owner == null) continue;
+            owner.setOrdersCount(owner.getOrdersCount() + 1);
+            owner.setTotalSpent(owner.getTotalSpent() + (o.getTotalPrice() != null ? o.getTotalPrice() : 0));
+        }
+        return customers;
+    }
+
+    // Historial de pedidos de un cliente (botón "Pedidos" de la tabla de Clientes)
+    @GetMapping("/customers/{id}/orders")
+    public ResponseEntity<List<Order>> getCustomerOrders(@PathVariable Long id) {
+        return customerRepo.findById(id)
+                .map(c -> ResponseEntity.ok(orderRepo.findByCustomerOrCustomerPhoneOrderByDeliveryDateDesc(
+                        c, c.getPhone() != null && !c.getPhone().isBlank() ? c.getPhone().trim() : null)))
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping("/customers")
@@ -44,12 +85,16 @@ public class CustomerRestController {
     }
 
     @DeleteMapping("/customers/{id}")
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<Void> deleteCustomer(@PathVariable Long id) {
-        if (customerRepo.existsById(id)) {
-            customerRepo.deleteById(id);
-            return ResponseEntity.ok().build();
-        }
-        return ResponseEntity.notFound().build();
+        return customerRepo.findById(id).map(customer -> {
+            // Los pedidos del cliente NO se borran: solo se desvinculan (siguen con su nombre y teléfono)
+            for (Order o : orderRepo.findByCustomer(customer)) {
+                o.setCustomer(null);
+            }
+            customerRepo.delete(customer);
+            return ResponseEntity.ok().<Void>build();
+        }).orElse(ResponseEntity.notFound().build());
     }
 
     private Customer saveOrUpdateCustomer(Customer customer, CustomerRequest req) {

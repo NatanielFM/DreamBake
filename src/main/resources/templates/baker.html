@@ -14,12 +14,8 @@
   <link rel="stylesheet" th:href="@{/css/tokens.css}">
   <link rel="stylesheet" th:href="@{/css/components.css}">
   <link rel="stylesheet" th:href="@{/css/admin.css}">
-  <script>
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-        document.documentElement.setAttribute('data-theme', savedTheme);
-    }
-  </script>
+  <!-- Modo oscuro guardado: se aplica antes de dibujar la página (sin "defer") -->
+  <script th:src="@{/js/admin/theme-init.js}"></script>
   <style>
     /* Hide admin financial data and actions for bakers */
     #pedidos table.admin-table th:nth-child(5),
@@ -34,14 +30,14 @@
     #mo-deposit,
     #co-deposit-group,
     #co-payment-type,
-    .order-details-box:nth-child(2),
+    .order-details-box--money,
     #inventario td.cell-actions,
     #inventario thead th:last-child {
       display: none !important;
     }
   </style>
 </head>
-<body>
+<body data-panel="baker">
 
   <header class="site-header admin-header" role="banner">
     <div class="header-inner">
@@ -250,7 +246,7 @@
     <div class="modal-card modal-large">
       <div class="modal-header">
         <h3>Nuevo pedido</h3>
-        <button type="button" class="close-modal" aria-label="Cerrar" onclick="document.getElementById('modal-manual-order').hidden = true">&times;</button>
+        <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-manual-order">&times;</button>
       </div>
       <div class="modal-body">
         <form id="form-manual-order">
@@ -258,6 +254,25 @@
             <div class="form-group"><label for="mo-name">Nombre del cliente</label><input type="text" id="mo-name" class="form-input" autocomplete="off" required></div>
             <div class="form-group"><label for="mo-phone">Teléfono</label><input type="tel" id="mo-phone" class="form-input" inputmode="tel" required></div>
             <div class="form-group"><label for="mo-date">Fecha de entrega</label><input type="date" id="mo-date" class="form-input" required></div>
+            <div class="form-group">
+              <label for="mo-shift">Turno <span class="label-hint">(opcional)</span></label>
+              <select id="mo-shift" class="form-input">
+                <option value="">Sin turno</option>
+                <option value="Por la mañana">Por la mañana</option>
+                <option value="Por la tarde">Por la tarde</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="mo-delivery">Cómo se entrega</label>
+              <select id="mo-delivery" class="form-input">
+                <option value="Retiro">Retira en el local</option>
+                <option value="Envío">Envío a domicilio</option>
+              </select>
+            </div>
+            <div class="form-group form-group--full" id="mo-address-group" hidden>
+              <label for="mo-address">Dirección de entrega</label>
+              <input type="text" id="mo-address" class="form-input" autocomplete="off" maxlength="250" placeholder="Calle, número, barrio">
+            </div>
             <div class="form-group">
               <label for="mo-status">Estado</label>
               <select id="mo-status" class="form-input" required>
@@ -271,7 +286,7 @@
           <div class="form-group mo-items">
             <div class="mo-items-head">
               <span class="form-label">Productos del pedido</span>
-              <button type="button" class="btn btn-grey btn-sm" onclick="addManualOrderItem()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg> Agregar producto</button>
+              <button type="button" class="btn btn-grey btn-sm" id="btn-add-manual-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg> Agregar producto</button>
             </div>
             <div id="mo-items-container" class="mo-items-list">
               <!-- Los productos se agregan acá (orders.js) -->
@@ -293,7 +308,7 @@
       <div class="modal-body">
         <p class="modal-message">El pedido pasa a "Cancelados". El cliente no recibe ningún aviso automático.</p>
         <div class="form-actions">
-          <button type="button" class="btn btn-grey" onclick="document.getElementById('modal-reject-order').hidden = true">Volver</button>
+          <button type="button" class="btn btn-grey" data-close-modal="modal-reject-order">Volver</button>
           <button type="button" class="btn btn-red" id="btn-confirm-reject">Sí, rechazar</button>
         </div>
       </div>
@@ -308,7 +323,7 @@
       <div class="modal-body">
         <p class="modal-message">La fecha de entrega que pusiste es anterior a hoy. ¿Querés guardarla igual?</p>
         <div class="form-actions">
-          <button type="button" class="btn btn-grey" onclick="document.getElementById('modal-past-date').hidden = true">Cambiar la fecha</button>
+          <button type="button" class="btn btn-grey" data-close-modal="modal-past-date">Cambiar la fecha</button>
           <button type="button" class="btn btn-pink" id="btn-confirm-past-date">Sí, guardar</button>
         </div>
       </div>
@@ -319,7 +334,7 @@
     <div class="modal-card">
       <div class="modal-header">
         <h3>Confirmar pedido #<span id="co-id-label"></span></h3>
-        <button type="button" class="close-modal" aria-label="Cerrar" onclick="document.getElementById('modal-confirm-order').hidden = true">&times;</button>
+        <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-confirm-order">&times;</button>
       </div>
       <div class="modal-body">
         <p class="modal-message">Revisá la fecha de entrega y anotá cuánto pagó el cliente.</p>
@@ -327,7 +342,7 @@
           <div class="form-group"><label for="co-date">Fecha de entrega</label><input type="date" id="co-date" class="form-input"></div>
           <div class="form-group">
             <label for="co-payment-type">El cliente pagó</label>
-            <select id="co-payment-type" class="form-input" onchange="toggleDepositInput()">
+            <select id="co-payment-type" class="form-input">
               <option value="total">El total del pedido</option>
               <option value="sena">Una seña (adelanto)</option>
             </select>
@@ -349,36 +364,61 @@
     <div class="modal-card modal-large">
       <div class="modal-header">
         <h3 id="view-order-title">Pedido #</h3>
-        <button type="button" class="close-modal" aria-label="Cerrar" onclick="document.getElementById('modal-view-order').hidden = true">&times;</button>
+        <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-view-order">&times;</button>
       </div>
       <div class="modal-body">
         <!-- Acciones del pedido (orders.js muestra u oculta cada una según el estado) -->
         <div class="order-actions-bar">
-          <button type="button" class="btn btn-pink btn-sm" id="btn-complete-view-order" style="display: none;" onclick="actionToggleCompleteViewingOrder()"></button>
+          <button type="button" class="btn btn-pink btn-sm" id="btn-complete-view-order" style="display: none;"></button>
           <button type="button" class="btn btn-grey btn-sm" id="btn-print-receipt" style="display: none;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
             Imprimir recibo
           </button>
-          <button type="button" class="btn btn-grey btn-sm" id="btn-enable-edit" onclick="enableEditMode()">
+          <button type="button" class="btn btn-grey btn-sm" id="btn-enable-edit">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
             Editar
           </button>
-          <button type="button" class="btn btn-red btn-sm" id="btn-cancel-view-order" style="display: none;" onclick="actionCancelViewingOrder()">Cancelar pedido</button>
+          <button type="button" class="btn btn-red btn-sm" id="btn-cancel-view-order" style="display: none;">Cancelar pedido</button>
         </div>
 
-        <!-- Las dos cajas van en este orden: baker.html oculta la segunda (dinero) -->
+        <!-- Cajas del pedido. La de pago lleva .order-details-box--money: baker.html la oculta (sin precios) -->
         <div class="order-details-grid">
           <div class="order-details-box">
             <h4>Cliente</h4>
             <div class="form-group"><label for="vo-name">Nombre</label><input type="text" id="vo-name" class="form-input readonly-mode" readonly></div>
             <div class="form-group"><label for="vo-phone">Teléfono</label><input type="text" id="vo-phone" class="form-input readonly-mode" readonly></div>
+            <div class="form-group"><label for="vo-email">Email</label><input type="email" id="vo-email" class="form-input readonly-mode" readonly placeholder="Sin email"></div>
           </div>
 
           <div class="order-details-box">
-            <h4>Entrega y pago</h4>
+            <h4>Entrega</h4>
             <div class="form-group"><label for="vo-date-input">Fecha de entrega</label><input type="date" id="vo-date-input" class="form-input readonly-mode" readonly></div>
-            <div class="form-group"><label for="vo-total">Total ($)</label><input type="number" id="vo-total" class="form-input readonly-mode" readonly></div>
-            <div class="form-group"><label for="vo-deposit">Seña cobrada ($)</label><input type="number" id="vo-deposit" class="form-input readonly-mode" readonly></div>
+            <div class="form-group">
+              <label for="vo-shift">Turno</label>
+              <select id="vo-shift" class="form-input readonly-mode" disabled>
+                <option value="">Sin turno</option>
+                <option value="Por la mañana">Por la mañana</option>
+                <option value="Por la tarde">Por la tarde</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="vo-delivery">Cómo se entrega</label>
+              <select id="vo-delivery" class="form-input readonly-mode" disabled>
+                <option value="">Sin dato</option>
+                <option value="Retiro">Retira en el local</option>
+                <option value="Envío">Envío a domicilio</option>
+              </select>
+            </div>
+            <div class="form-group" id="vo-address-group" hidden><label for="vo-address">Dirección de entrega</label><input type="text" id="vo-address" class="form-input readonly-mode" readonly maxlength="250"></div>
+          </div>
+
+          <div class="order-details-box order-details-box--money">
+            <h4>Pago</h4>
+            <div class="money-row">
+              <div class="form-group"><label for="vo-total">Total ($)</label><input type="number" id="vo-total" class="form-input readonly-mode" readonly></div>
+              <div class="form-group"><label for="vo-deposit">Seña cobrada ($)</label><input type="number" id="vo-deposit" class="form-input readonly-mode" readonly></div>
+              <div class="form-group"><label for="vo-coupon">Cupón usado</label><input type="text" id="vo-coupon" class="form-input readonly-mode" readonly data-always-readonly placeholder="Sin cupón"></div>
+            </div>
           </div>
         </div>
 
@@ -388,8 +428,8 @@
         </div>
 
         <div class="form-actions" id="vo-save-container" hidden>
-          <button type="button" class="btn btn-grey" onclick="disableEditMode()">Descartar cambios</button>
-          <button type="button" class="btn btn-pink" onclick="saveEditedOrder()">Guardar cambios</button>
+          <button type="button" class="btn btn-grey" id="btn-discard-edit">Descartar cambios</button>
+          <button type="button" class="btn btn-pink" id="btn-save-edit">Guardar cambios</button>
         </div>
       </div>
     </div>
@@ -399,7 +439,7 @@
     <div class="modal-card modal-large">
       <div class="modal-header">
         <h3 id="day-orders-title">Entregas del día</h3>
-        <button type="button" class="close-modal" aria-label="Cerrar" onclick="document.getElementById('modal-day-orders').hidden = true">&times;</button>
+        <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-day-orders">&times;</button>
       </div>
       <div class="modal-body">
         <div class="table-responsive">
@@ -449,7 +489,7 @@
     <div class="modal-card">
       <div class="modal-header">
         <h3 id="view-recipe-title">Receta</h3>
-        <button type="button" class="close-modal" aria-label="Cerrar" onclick="document.getElementById('modal-view-recipe').hidden=true">&times;</button>
+        <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-view-recipe">&times;</button>
       </div>
       <div class="modal-body recipe-view">
         <h4 class="section-label">Ingredientes</h4>
@@ -457,7 +497,7 @@
         <h4 class="section-label">Preparación</h4>
         <p id="view-recipe-details" class="recipe-details"></p>
         <div class="form-actions">
-          <button type="button" class="btn btn-grey btn-uniform" onclick="document.getElementById('modal-view-recipe').hidden=true">Cerrar</button>
+          <button type="button" class="btn btn-grey btn-uniform" data-close-modal="modal-view-recipe">Cerrar</button>
         </div>
       </div>
     </div>
@@ -573,24 +613,6 @@
   <script th:src="@{/js/admin/orders.js}" defer></script>
   <!-- Campana de avisos: el pastelero también ve los pedidos nuevos -->
   <script th:src="@{/js/admin/notifications-simple.js}" defer></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const themeToggleBtn = document.getElementById('btn-theme-toggle');
-      if (themeToggleBtn) {
-          themeToggleBtn.addEventListener('click', () => {
-              const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-              if (isDark) {
-                  document.documentElement.removeAttribute('data-theme');
-                  localStorage.setItem('theme', 'light');
-              } else {
-                  document.documentElement.setAttribute('data-theme', 'dark');
-                  localStorage.setItem('theme', 'dark');
-              }
-              document.dispatchEvent(new Event('themechange')); // los gráficos se redibujan
-          });
-      }
-    });
-  </script>
 
   <!-- Print Order Receipt Section -->
   <div id="print-receipt-section" class="print-only" hidden></div>

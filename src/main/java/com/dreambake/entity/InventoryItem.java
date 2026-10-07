@@ -29,6 +29,10 @@ public class InventoryItem {
 
     private LocalDate expirationDate;
 
+    // Cuánto cuesta UNA unidad de medida del insumo (ej: el precio de 1 kg de harina).
+    // Es opcional: sin este dato no se puede calcular el costo de las recetas que lo usan.
+    private Double unitCost;
+
     @Column(name = "date_added")
     private LocalDate dateAdded;
 

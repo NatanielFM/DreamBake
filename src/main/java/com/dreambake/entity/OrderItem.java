@@ -36,4 +36,9 @@ public class OrderItem {
     private String details;
 
     private Double price;
+
+    // Solo viaja desde la tienda (no se guarda en la base): qué tamaño de torta eligió el cliente.
+    // El servidor lo usa para buscar el precio real en cake_sizes y no confiar en el del navegador.
+    @Transient
+    private Long cakeSizeId;
 }

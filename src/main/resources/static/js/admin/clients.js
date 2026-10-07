@@ -133,7 +133,9 @@ document.addEventListener('DOMContentLoaded', () => {
       
       const tagBadge = c.tag ? `<span class="tag-badge">${c.tag.name}</span>` : '';
       const birthStr = c.birthDate ? formatDateToLatam(c.birthDate) : '<span class="cell-soft">Sin fecha</span>';
-      const totalP = c.totalPurchases || 0;
+      // Pedidos confirmados o entregados del cliente y lo que gastó (lo calcula el servidor)
+      const totalP = c.ordersCount || 0;
+      const spent = c.totalSpent ? ` · $${Math.round(c.totalSpent).toLocaleString('es-AR')}` : '';
 
       tr.innerHTML = `
         <td class="cell-title cell-strong">${c.name}</td>
@@ -141,14 +143,16 @@ document.addEventListener('DOMContentLoaded', () => {
         <td data-label="Etiqueta">${tagBadge || '<span class="cell-soft">—</span>'}</td>
         <td data-label="Cumpleaños">${birthStr}</td>
         <td data-label="Registro" class="cell-soft">${formatDateToLatam(c.dateAdded)}</td>
-        <td data-label="Pedidos" class="cell-strong">${totalP} ${totalP === 1 ? 'pedido' : 'pedidos'}</td>
+        <td data-label="Pedidos" class="cell-strong">${totalP} ${totalP === 1 ? 'pedido' : 'pedidos'}<span class="cell-soft">${spent}</span></td>
         <td class="cell-actions"><div class="action-buttons-container">
+          <button type="button" class="btn btn-grey btn-sm btn-client-orders">Ver pedidos</button>
           <button type="button" class="btn btn-grey btn-sm btn-edit">${iconEdit} Editar</button>
           <button type="button" class="btn btn-red btn-sm btn-delete">${iconDelete} Eliminar</button>
         </div>
         </td>
       `;
 
+      tr.querySelector('.btn-client-orders').addEventListener('click', () => openClientOrders(c));
       tr.querySelector('.btn-edit').addEventListener('click', () => openClientForm(c));
       tr.querySelector('.btn-delete').addEventListener('click', () => deleteClient(c));
 
@@ -157,6 +161,48 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if(searchClient) searchClient.addEventListener('input', renderClients);
+
+  // ================= HISTORIAL DE PEDIDOS DEL CLIENTE =================
+  // Relación Pedido–Cliente: el servidor devuelve los pedidos unidos al cliente
+  // y también los viejos que tienen su mismo teléfono.
+  const ORDER_STATUS = {
+    PENDING: ['Nuevo', 'status-pending'], CONFIRMED: ['Agendado', 'status-agendado'],
+    IN_PROGRESS: ['En preparación', 'status-progress'], COMPLETED: ['Entregado', 'status-completado'],
+    CANCELLED: ['Cancelado', 'status-cancelled'], REJECTED: ['Rechazado', 'status-cancelled']
+  };
+  const escHtml = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+
+  async function openClientOrders(c) {
+    const tbody = document.getElementById('client-orders-tbody');
+    const summary = document.getElementById('client-orders-summary');
+    document.getElementById('client-orders-title').textContent = `Pedidos de ${c.name}`;
+    tbody.innerHTML = '<tr><td colspan="5" class="cell-empty">Cargando…</td></tr>';
+    summary.textContent = '';
+    document.getElementById('modal-client-orders').hidden = false;
+
+    try {
+      const res = await fetch(`/api/customers/${c.id}/orders`);
+      if (!res.ok) throw new Error();
+      const orders = await res.json();
+      const totalP = c.ordersCount || 0;
+      summary.textContent = orders.length === 0
+        ? 'Este cliente todavía no tiene pedidos.'
+        : `${totalP} ${totalP === 1 ? 'pedido confirmado o entregado' : 'pedidos confirmados o entregados'} · Total: $${Math.round(c.totalSpent || 0).toLocaleString('es-AR')}`;
+      tbody.innerHTML = orders.length === 0 ? '<tr><td colspan="5" class="cell-empty">Sin pedidos.</td></tr>' : orders.map(o => {
+        const [label, cls] = ORDER_STATUS[o.status] || [o.status, 'status-pending'];
+        const items = (o.items || []).map(i => escHtml(i.productType)).join(', ') || '—';
+        return `<tr>
+          <td class="cell-id" data-label="Pedido">#${o.id}</td>
+          <td data-label="Entrega">${o.deliveryDate ? formatDateToLatam(o.deliveryDate) : 'Sin fecha'}</td>
+          <td data-label="Productos">${items}</td>
+          <td class="cell-money" data-label="Total">$${Number(o.totalPrice || 0).toLocaleString('es-AR')}</td>
+          <td data-label="Estado"><span class="status-badge is-small ${cls}">${label}</span></td>
+        </tr>`;
+      }).join('');
+    } catch (e) {
+      tbody.innerHTML = '<tr><td colspan="5" class="cell-empty">No se pudieron cargar los pedidos.</td></tr>';
+    }
+  }
 
   // Formulario de Cliente
   const clientForm = document.getElementById('client-form');

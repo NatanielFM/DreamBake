@@ -1588,6 +1588,52 @@ p.empty-state strong { display: block; }
 
 
 /* =========================================================
+   16b. ENTREGA, COSTOS, HISTORIAL Y AJUSTES
+   ========================================================= */
+/* Ventana "Ver pedido": la caja de pago ocupa todo el ancho, con sus 3 datos en fila */
+.order-details-box--money { grid-column: 1 / -1; }
+/* Si una caja es más baja que su vecina, sus renglones quedan arriba (no se reparten el alto) */
+.order-details-grid .order-details-box { align-content: start; }
+.money-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
+/* Las listas desactivadas (modo lectura) se ven igual que los campos de solo lectura */
+select.form-input.readonly-mode:disabled { opacity: 1; background-image: none; padding-right: 14px; }
+
+/* Un campo que ocupa las dos columnas del formulario (ej: dirección del pedido manual) */
+.form-grid-2 > .form-group--full, .form-grid > .form-group--full { grid-column: 1 / -1; }
+
+/* Segundo renglón chico dentro de una celda (turno y forma de entrega debajo de la fecha) */
+.cell-sub { display: block; margin-top: 2px; font-size: var(--fs-small); }
+
+/* Productos: costo y ganancia debajo de la receta */
+.margin-hint:empty { display: none; }
+.margin-hint.is-negative { color: var(--st-cancel-text); font-weight: var(--fw-semibold); }
+
+/* Recetas: renglón del costo total en "Ver receta" */
+.recipe-ingredients li.recipe-cost-total { background: transparent; padding-top: 0; color: var(--admin-heading); font-weight: var(--fw-semibold); }
+.recipe-ingredients li.recipe-cost-total:empty { display: none; }
+
+/* Resumen: frase de la ganancia estimada */
+.margin-summary { margin: 0 0 var(--space-4); color: var(--admin-text); line-height: 1.5; }
+.margin-summary:empty { display: none; }
+
+/* Galería: botón de borrar arriba a la derecha de cada foto */
+.gallery-delete { position: absolute; top: var(--space-2); right: var(--space-2); z-index: 1; box-shadow: var(--shadow-1); }
+
+/* Ajustes */
+.settings-form { max-width: 560px; }
+.settings-form .section-label { margin: 0 0 var(--space-3); }
+.settings-form .form-actions { justify-content: flex-start; }
+.form-error { margin: 6px 0 0; color: var(--st-cancel-text); font-size: var(--fs-small); font-weight: var(--fw-semibold); }
+.settings-status { margin: var(--space-3) 0 0; padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm);
+  background: var(--st-done-bg); color: var(--st-done-text); font-weight: var(--fw-semibold); }
+#setting-whatsapp-test[aria-disabled="true"] { opacity: 0.5; pointer-events: none; }
+
+@media (max-width: 47.99rem) {
+  .money-row { grid-template-columns: minmax(0, 1fr); }
+}
+
+
+/* =========================================================
    17. IMPRESIÓN DEL RECIBO (sin cambios de comportamiento)
    ========================================================= */
 .print-area, .print-only { display: none; }

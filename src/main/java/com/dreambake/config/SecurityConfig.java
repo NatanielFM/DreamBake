@@ -1,6 +1,7 @@
 package com.dreambake.config;
 
 import com.dreambake.service.LoginAttemptService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.server.servlet.CookieSameSiteSupplier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -8,6 +9,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -15,6 +17,8 @@ import org.springframework.security.web.authentication.AuthenticationFailureHand
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+
+import java.util.UUID;
 
 /**
  * Configuración de seguridad de DreamBake.
@@ -30,26 +34,38 @@ import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWrite
  *  4. Login: bloqueo temporal después de varios intentos fallidos.
  *  5. Límite de pedidos/cupones por minuto desde una misma IP (RateLimitFilter).
  *  6. Cookie de sesión con SameSite=Lax.
+ *  7. "Mantener la sesión iniciada" (remember-me) con una cookie firmada que dura 14 días.
  */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     private final LoginAttemptService loginAttemptService;
+    private final UserDetailsService userDetailsService;
+    private final String rememberMeKey;
 
-    public SecurityConfig(LoginAttemptService loginAttemptService) {
+    // La clave que firma la cookie de "Mantener la sesión iniciada" se toma de la propiedad
+    // dreambake.remember-me-key (en producción, de la variable de entorno DREAMBAKE_REMEMBER_ME_KEY,
+    // ver application-prod.properties). Si no está configurada, se genera una al azar cada vez que
+    // arranca la app: funciona igual, pero al reiniciar el servidor hay que volver a iniciar sesión.
+    public SecurityConfig(LoginAttemptService loginAttemptService, UserDetailsService userDetailsService,
+            @Value("${dreambake.remember-me-key:}") String configuredKey) {
         this.loginAttemptService = loginAttemptService;
+        this.userDetailsService = userDetailsService;
+        this.rememberMeKey = configuredKey.isBlank() ? UUID.randomUUID().toString() : configuredKey;
     }
 
     // Política de contenido: de dónde puede cargar cosas el navegador.
-    // 'unsafe-inline' se mantiene porque las páginas todavía usan scripts y estilos en línea
-    // (onclick, <script> en el HTML); el resto queda limitado a nuestro sitio y a los CDN que usamos.
+    // Scripts: solo archivos .js de nuestro sitio y de jsDelivr (Chart.js). Ya no se permite
+    // código JavaScript escrito dentro del HTML (onclick="…", <script>…</script>): si alguien
+    // lograra meter código en una página, el navegador no lo ejecutaría.
+    // Estilos: se mantiene 'unsafe-inline' porque todavía hay atributos style="…" (no ejecutan código).
     private static final String CONTENT_SECURITY_POLICY = String.join("; ",
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+            "script-src 'self' https://cdn.jsdelivr.net",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             "font-src 'self' https://fonts.gstatic.com",
-            "img-src 'self' data: blob: https://via.placeholder.com",
+            "img-src 'self' data: blob:",
             "connect-src 'self'",
             "object-src 'none'",
             "base-uri 'self'",
@@ -72,8 +88,7 @@ public class SecurityConfig {
                         // API que usa la tienda sin iniciar sesión
                         .requestMatchers(HttpMethod.POST, "/api/orders").permitAll()          // crear pedido (checkout)
                         .requestMatchers(HttpMethod.GET, "/api/cake-config/public").permitAll() // opciones del creador
-                        .requestMatchers(HttpMethod.GET, "/api/coupons/validate/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/coupons/consume/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/coupons/validate/**").permitAll() // ver si un cupón sirve
 
                         // Paneles
                         .requestMatchers("/admin/**").hasAuthority("ADMIN")
@@ -106,9 +121,18 @@ public class SecurityConfig {
                         .successHandler(authenticationSuccessHandler())
                         .failureHandler(authenticationFailureHandler())
                         .permitAll())
+                // 7. "Mantener la sesión iniciada": si se marca la casilla del login, el navegador guarda
+                //    una cookie firmada (con la clave de abajo y la contraseña cifrada del usuario) que
+                //    vuelve a iniciar la sesión durante 14 días. Si el usuario cambia la contraseña,
+                //    la cookie deja de servir.
+                .rememberMe(remember -> remember
+                        .key(rememberMeKey)
+                        .rememberMeParameter("remember-me")
+                        .tokenValiditySeconds(14 * 24 * 60 * 60)
+                        .userDetailsService(userDetailsService))
                 .logout(logout -> logout
                         .logoutSuccessUrl("/login?logout")
-                        .deleteCookies("JSESSIONID")
+                        .deleteCookies("JSESSIONID", "remember-me")
                         .permitAll());
 
         return http.build();

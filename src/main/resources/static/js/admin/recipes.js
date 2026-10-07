@@ -10,6 +10,17 @@ document.addEventListener('DOMContentLoaded', () => {
   let dbRecipes = [];
   let dbInventory = [];
 
+  // El costo se muestra solo en el panel del admin (el del pastelero no ve dinero)
+  const showCost = document.body.dataset.panel === 'admin';
+  const money = (n) => '$' + Number(n || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 });
+
+  // "Costo: $1.250" o, si algún insumo no tiene costo cargado, "Costo parcial: $800"
+  function costLabel(r) {
+    if (!r.items || r.items.length === 0) return '';
+    if (!r.costComplete && !r.estimatedCost) return 'Sin costo (cargalo en Inventario)';
+    return `${r.costComplete ? 'Costo' : 'Costo parcial'}: ${money(r.estimatedCost)}`;
+  }
+
   async function loadInventoryForRecipes() {
     try {
       const res = await fetch('/api/inventory');
@@ -40,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     dbRecipes.forEach(r => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td class="cell-title cell-strong">${r.name}<span class="cell-soft recipe-count">${(r.items || []).length} ${(r.items || []).length === 1 ? 'insumo' : 'insumos'}</span></td>
+        <td class="cell-title cell-strong">${r.name}<span class="cell-soft recipe-count">${(r.items || []).length} ${(r.items || []).length === 1 ? 'insumo' : 'insumos'}${showCost && costLabel(r) ? ` · ${costLabel(r)}` : ''}</span></td>
         <td class="cell-actions"><div class="action-buttons-container">
           <button type="button" class="btn btn-grey btn-sm btn-view">Ver receta</button>
           <button type="button" class="btn btn-grey btn-sm btn-edit">Editar</button>
@@ -113,8 +124,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const unit = inv ? inv.unit : '';
         const li = document.createElement('li');
         li.innerText = `${item.quantityRequired} ${unit} de ${name}`;
+        // Admin: cuánto cuesta esa cantidad (cantidad × costo por unidad del insumo)
+        if (showCost && inv && inv.unitCost != null) li.innerText += ` · ${money(item.quantityRequired * inv.unitCost)}`;
         list.appendChild(li);
       });
+      if (showCost) {
+        const total = document.createElement('li');
+        total.className = 'recipe-cost-total';
+        total.innerText = costLabel(r);
+        list.appendChild(total);
+      }
     } else {
       list.innerHTML = '<li>Todavía no tiene insumos cargados.</li>';
     }
@@ -195,8 +214,18 @@ document.addEventListener('DOMContentLoaded', () => {
   loadInventoryForRecipes();
   loadRecipes();
 
+  // Al abrir Recetas o Productos se vuelven a pedir las recetas: el costo de los insumos
+  // pudo cambiar en Inventario (y con él el costo de cada receta y la ganancia del producto)
+  document.addEventListener('tabChanged', async (e) => {
+    if (e.detail === 'recetas' || e.detail === 'productos') {
+      await loadInventoryForRecipes();
+      loadRecipes();
+    }
+  });
+
   document.addEventListener('inventoryUpdated', async () => {
     await loadInventoryForRecipes();
+    loadRecipes();   // el costo de las recetas depende del costo de los insumos
     // Update any existing selects in the open modal
     const selects = itemsContainer.querySelectorAll('.recipe-inv-select');
     selects.forEach(select => {

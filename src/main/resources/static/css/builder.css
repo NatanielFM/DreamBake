@@ -415,3 +415,17 @@
   .step.is-current .step-dot { transform: none; }
   [data-sum="price"].is-bumped { animation: none; }
 }
+
+
+/* Aviso cuando no llegan los tamaños del servidor (store.js): ocupa toda la grilla */
+.builder-unavailable {
+  grid-column: 1 / -1;
+  display: grid;
+  justify-items: start;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--rose-100);
+  color: var(--text-strong);
+}
+.builder-unavailable p { margin: 0; }

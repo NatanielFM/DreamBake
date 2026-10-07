@@ -132,6 +132,29 @@
                 <p class="field__error" id="chk-shift-error" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span></span></p>
               </fieldset>
 
+              <!-- Retiro o envío: se guarda en el pedido (deliveryMethod / deliveryAddress) -->
+              <fieldset class="field choice-group">
+                <legend class="field__label">¿Cómo lo recibís?</legend>
+                <div class="choice-grid">
+                  <label class="choice-card">
+                    <input type="radio" name="delivery" value="Retiro" checked>
+                    <span class="choice-title">Lo retiro</span>
+                    <span class="choice-desc">Te pasamos la dirección por WhatsApp</span>
+                  </label>
+                  <label class="choice-card">
+                    <input type="radio" name="delivery" value="Envío">
+                    <span class="choice-title">Envío a domicilio</span>
+                    <span class="choice-desc">El costo del envío se arregla por WhatsApp</span>
+                  </label>
+                </div>
+              </fieldset>
+
+              <div class="field" id="chk-address-field" hidden>
+                <label class="field__label" for="chk-address">Dirección de entrega</label>
+                <input type="text" id="chk-address" class="input" autocomplete="street-address" maxlength="250" placeholder="Calle, número, barrio" aria-describedby="chk-address-error">
+                <p class="field__error" id="chk-address-error" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span></span></p>
+              </div>
+
               <fieldset class="field choice-group">
                 <legend class="field__label">Medio de pago</legend>
                 <div class="choice-grid">
@@ -150,7 +173,7 @@
 
               <div class="field">
                 <label class="field__label" for="chk-general-details">Aclaraciones <span class="field__optional">(opcional)</span></label>
-                <textarea id="chk-general-details" class="input" rows="3" maxlength="500" placeholder="Alergias, dirección de envío, a qué hora pasás a retirar…"></textarea>
+                <textarea id="chk-general-details" class="input" rows="3" maxlength="500" placeholder="Alergias, a qué hora pasás a retirar, quién recibe el pedido…"></textarea>
               </div>
             </div>
           </section>
@@ -195,7 +218,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
       <h2 id="alert-v1-title">No pudimos continuar</h2>
       <p id="alert-v1-msg"></p>
-      <button type="button" class="button button--primary" onclick="document.getElementById('modal-alert-v1').hidden = true">Entendido</button>
+      <button type="button" class="button button--primary" data-close-alert>Entendido</button>
     </div>
   </div>
 
