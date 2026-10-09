@@ -132,6 +132,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const contactInfo = (phone || email || address) ? (phone + email + address) : '<span class="cell-soft">Sin datos</span>';
       
       const tagBadge = c.tag ? `<span class="tag-badge">${c.tag.name}</span>` : '';
+      // Insignia si el cliente aceptó recibir promociones por email
+      const consentBadge = c.marketingConsent ? '<span class="status-badge is-small status-sent">Recibe promociones</span>' : '';
       const birthStr = c.birthDate ? formatDateToLatam(c.birthDate) : '<span class="cell-soft">Sin fecha</span>';
       // Pedidos confirmados o entregados del cliente y lo que gastó (lo calcula el servidor)
       const totalP = c.ordersCount || 0;
@@ -139,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       tr.innerHTML = `
         <td class="cell-title cell-strong">${c.name}</td>
-        <td data-label="Contacto"><span class="contact-lines">${contactInfo}</span></td>
+        <td data-label="Contacto"><span class="contact-lines">${contactInfo}${consentBadge}</span></td>
         <td data-label="Etiqueta">${tagBadge || '<span class="cell-soft">—</span>'}</td>
         <td data-label="Cumpleaños">${birthStr}</td>
         <td data-label="Registro" class="cell-soft">${formatDateToLatam(c.dateAdded)}</td>
@@ -213,6 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
       clientForm.reset();
       document.getElementById('client-id').value = '';
       document.getElementById('client-modal-title').innerText = "Nuevo cliente";
+      document.getElementById('client-emails-block').hidden = true;   // un cliente nuevo no tiene emails
       document.getElementById('modal-client-form').hidden = false;
     });
   }
@@ -229,6 +232,75 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.getElementById('client-modal-title').innerText = "Editar cliente";
     document.getElementById('modal-client-form').hidden = false;
+    showClientEmails(c);
+  }
+
+  // ================= EMAILS DEL CLIENTE (ficha) =================
+  // Muestra si aceptó recibir promociones (y desde cuándo) y el historial de emails que se le mandaron.
+  const EMAIL_STATUS = { 'Enviado': 'status-sent', 'No se envió': 'status-cancelled' };
+
+  async function showClientEmails(c) {
+    const block = document.getElementById('client-emails-block');
+    const status = document.getElementById('client-consent-status');
+    const tbody = document.getElementById('client-emails-tbody');
+    block.hidden = false;
+
+    // Se reemplaza el botón para no acumular "clicks" de otros clientes abiertos antes
+    const oldBtn = document.getElementById('btn-client-unsubscribe');
+    const btnUnsub = oldBtn.cloneNode(true);
+    oldBtn.replaceWith(btnUnsub);
+    btnUnsub.addEventListener('click', () => unsubscribeClient(c));
+
+    if (c.marketingConsent) {
+      const since = c.consentDate ? ` desde el ${formatDateToLatam(c.consentDate.slice(0, 10))}` : '';
+      status.textContent = `Acepta recibir promociones${since}.`;
+      btnUnsub.hidden = false;
+    } else {
+      status.textContent = 'No acepta recibir promociones.';
+      btnUnsub.hidden = true;
+    }
+
+    tbody.innerHTML = '<tr><td colspan="4" class="cell-empty">Cargando…</td></tr>';
+    try {
+      const res = await fetch(`/api/customers/${c.id}/emails`);
+      if (!res.ok) throw new Error();
+      const emails = await res.json();
+      if (emails.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="cell-empty">Todavía no se le mandó ningún email.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = emails.map(e => {
+        const date = e.sentAt ? `${formatDateToLatam(e.sentAt.slice(0, 10))} ${e.sentAt.slice(11, 16)}` : '—';
+        const cls = EMAIL_STATUS[e.status] || 'status-cancelled';
+        const error = e.error ? `<span class="cell-soft">${escHtml(e.error)}</span>` : '';
+        return `<tr>
+          <td data-label="Fecha">${date}</td>
+          <td data-label="Tipo">${escHtml(e.type)}</td>
+          <td data-label="Asunto">${escHtml(e.subject)}</td>
+          <td data-label="Estado"><span class="status-stack"><span class="status-badge is-small ${cls}">${escHtml(e.status)}</span>${error}</span></td>
+        </tr>`;
+      }).join('');
+    } catch (err) {
+      tbody.innerHTML = '<tr><td colspan="4" class="cell-empty">No se pudo cargar el historial de emails.</td></tr>';
+    }
+  }
+
+  // Dar de baja de las promociones (el panel puede desactivar el permiso, nunca activarlo)
+  function unsubscribeClient(c) {
+    window.showConfirmModal('Dar de baja de promociones',
+      `${c.name} va a dejar de recibir promociones y el saludo de cumpleaños por email. Solo vuelve a recibirlos si lo acepta en un próximo pedido.`,
+      'Dar de baja', 'btn-red', async () => {
+        try {
+          const res = await fetch(`/api/customers/${c.id}/unsubscribe`, { method: 'POST' });
+          if (!res.ok) throw new Error();
+          const updated = await res.json();
+          c.marketingConsent = updated.marketingConsent;
+          showClientEmails(c);
+          loadClientsFromServer();
+        } catch (err) {
+          window.showErrorAlert('No se pudo dar de baja. Probá de nuevo.');
+        }
+      });
   }
 
   if(clientForm) {

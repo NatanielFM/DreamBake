@@ -14,4 +14,7 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
     // Igual que findByPhone, pero no falla si por error hay dos clientes con el mismo teléfono
     Optional<Customer> findFirstByPhone(String phone);
+
+    // Cliente dueño de un link de baja (/baja?token=...)
+    Optional<Customer> findByUnsubscribeToken(String unsubscribeToken);
 }

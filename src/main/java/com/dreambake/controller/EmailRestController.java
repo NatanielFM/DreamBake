@@ -1,5 +1,6 @@
 package com.dreambake.controller;
 
+import com.dreambake.entity.EmailType;
 import com.dreambake.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +31,7 @@ public class EmailRestController {
             // El envío es asíncrono; acá se espera el resultado (hasta 25 s) para avisarle al administrador.
             // La pantalla no se traba: el navegador espera con el botón en "Enviando…".
             EmailService.Resultado r = emailService
-                    .enviar(destino, "Email de prueba de DreamBake", "email/prueba", Map.of(), null)
+                    .enviar(destino, "Email de prueba de DreamBake", "email/prueba", Map.of(), EmailType.TEST, null, null)
                     .get(25, TimeUnit.SECONDS);
             if (r.ok()) {
                 return ResponseEntity.ok(Map.of("message", "Te enviamos un email de prueba a " + destino

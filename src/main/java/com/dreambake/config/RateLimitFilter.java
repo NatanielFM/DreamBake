@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Límite de envíos por IP para las acciones públicas (sin iniciar sesión):
- * crear pedidos, validar/consumir cupones, registrarse e iniciar sesión.
+ * crear pedidos, validar/consumir cupones, registrarse, iniciar sesión y darse de baja de los emails.
  *
  * Evita que alguien llene la base de pedidos falsos, pruebe miles de códigos
  * de cupón o pruebe contraseñas en muchas cuentas con un programa. Funciona con
@@ -36,6 +36,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private static final int MAX_COUPONS = 30;               // validaciones/consumos de cupón
     private static final int MAX_REGISTERS = 10;             // cuentas nuevas
     private static final int MAX_LOGINS = 20;                // intentos de inicio de sesión (cualquier cuenta)
+    private static final int MAX_UNSUBSCRIBES = 20;          // bajas de emails (botón de /baja)
 
     private final Map<String, Deque<Long>> hits = new ConcurrentHashMap<>();
 
@@ -55,6 +56,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         // Frena a quien prueba contraseñas en muchas cuentas distintas desde la misma IP
         // (el bloqueo por cuenta de LoginAttemptService no lo detecta porque cambia de email)
         else if ("POST".equals(method) && "/login".equals(path)) { limit = MAX_LOGINS; bucket = "login"; }
+        else if ("POST".equals(method) && "/baja".equals(path)) { limit = MAX_UNSUBSCRIBES; bucket = "baja"; }
 
         if (limit != null && tooMany(bucket + ":" + ClientIpResolver.resolve(request), limit)) {
             response.setStatus(429);

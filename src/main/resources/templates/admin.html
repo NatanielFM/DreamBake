@@ -1103,7 +1103,7 @@
   </div>
 
   <div id="modal-client-form" class="modal-overlay" hidden>
-    <div class="modal-card">
+    <div class="modal-card modal-large">
       <div class="modal-header">
         <h3 id="client-modal-title">Nuevo cliente</h3>
         <button type="button" class="close-modal" aria-label="Cerrar">&times;</button>
@@ -1144,6 +1144,23 @@
             <button type="submit" class="btn btn-pink btn-uniform">Guardar</button>
           </div>
         </form>
+
+        <!-- Emails del cliente (solo al editar): permiso para promociones e historial de envíos (clients.js).
+             El panel solo puede DESACTIVAR el permiso; activarlo lo hace el cliente en la tienda (Ley 25.326). -->
+        <div class="config-block client-emails" id="client-emails-block" hidden>
+          <h3 class="section-label">Emails</h3>
+          <div class="client-consent-row">
+            <p class="modal-message" id="client-consent-status"></p>
+            <button type="button" class="btn btn-grey btn-sm" id="btn-client-unsubscribe" hidden>Dar de baja de promociones</button>
+          </div>
+          <p class="form-hint">Solo el cliente puede aceptar recibir promociones, tildando la casilla al hacer un pedido en la tienda.</p>
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead><tr><th>Fecha</th><th>Tipo</th><th>Asunto</th><th>Estado</th></tr></thead>
+              <tbody id="client-emails-tbody"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   </div>

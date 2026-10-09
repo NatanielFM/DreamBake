@@ -872,7 +872,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   const validators = {
     'chk-name': (v) => v.trim().length >= 3 ? '' : 'Escribí tu nombre y apellido.',
     'chk-phone': (v) => /^[+\d][\d\s\-()]{7,19}$/.test(v.trim()) && (v.match(/\d/g) || []).length >= 8 ? '' : 'Escribí un celular válido, con código de área (por ejemplo 3764 123456).',
-    'chk-email': (v) => !v.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? '' : 'Revisá el email (por ejemplo nombre@gmail.com) o dejalo vacío.',
+    'chk-email': (v) => {
+      if (!v.trim()) {
+        // El email es opcional, salvo que pida promociones (es a donde se las mandamos)
+        const wantsPromos = document.getElementById('chk-marketing')?.checked;
+        return wantsPromos ? 'Para recibir promociones necesitamos tu email.' : '';
+      }
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? '' : 'Revisá el email (por ejemplo nombre@gmail.com) o dejalo vacío.';
+    },
+    // Cumpleaños (opcional): no puede ser una fecha futura
+    'chk-birthdate': (v) => {
+      if (!v) return '';
+      const today = new Date().toISOString().slice(0, 10);
+      return v > today || v < '1900-01-01' ? 'Revisá la fecha de tu cumpleaños.' : '';
+    },
     'chk-date': (v) => !v ? 'Elegí la fecha de entrega.' : (minDate && v < minDate ? `La fecha tiene que ser desde el ${minDate.split('-').reverse().join('/')} (3 días de anticipación).` : '')
   };
 
@@ -916,6 +929,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     input.addEventListener('input', () => { if (input.getAttribute('aria-invalid') === 'true') validateField(id); });
   });
   document.querySelectorAll('input[name="shift"]').forEach(r => r.addEventListener('change', () => validateChoice('shift', 'chk-shift-error', '')));
+  // Al destildar "Quiero recibir promociones", el email deja de ser obligatorio: se borra el error
+  document.getElementById('chk-marketing')?.addEventListener('change', () => {
+    const email = document.getElementById('chk-email');
+    if (email && (email.getAttribute('aria-invalid') === 'true' || email.value)) validateField('chk-email');
+  });
 
   // Retiro o envío: la dirección se pide solo si es envío
   const addressField = document.getElementById('chk-address-field');
@@ -960,6 +978,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const cPay = (document.querySelector('input[name="payment"]:checked') || {}).value || 'Transferencia';
       const cDelivery = isDelivery() ? 'Envío' : 'Retiro';
       const cAddress = isDelivery() ? document.getElementById('chk-address').value.trim() : '';
+      const cBirthDate = document.getElementById('chk-birthdate')?.value || null;
+      const cMarketing = Boolean(document.getElementById('chk-marketing')?.checked);
 
       // Texto de los ítems para el mensaje de WhatsApp
       const itemsText = cart.map(item => `> *${item.productType}*\n${item.details}`).join('\n\n');
@@ -975,6 +995,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         deliveryMethod: cDelivery,
         deliveryAddress: cAddress,
         couponCode: appliedCoupon ? appliedCoupon.code : null,
+        customerBirthDate: cBirthDate,
+        marketingConsent: cMarketing,
         items: cart.map((item, index) => {
           const extra = (index === 0 && cDetails) ? `\n\n> *Aclaraciones:* ${cDetails}` : '';
           const isCake = item.productType === 'Torta Personalizada';

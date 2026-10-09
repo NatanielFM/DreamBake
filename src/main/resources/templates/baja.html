@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#fef9f9" />
+  <!-- Es una página personal (viene de un link con código): que los buscadores no la indexen -->
+  <meta name="robots" content="noindex" />
+  <link rel="icon" type="image/svg+xml" th:href="@{/img/favicon.svg}" />
+  <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
+  <script th:src="@{/js/csrf.js}"></script>
+  <title>Emails promocionales — Dulce Sueños Posadas</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Usa la base de las páginas de acceso (login.css) y suma lo propio en baja.css -->
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+  <link rel="stylesheet" th:href="@{/css/tokens.css}">
+  <link rel="stylesheet" th:href="@{/css/components.css}">
+  <link rel="stylesheet" th:href="@{/css/header.css}">
+  <link rel="stylesheet" th:href="@{/css/login.css}">
+  <link rel="stylesheet" th:href="@{/css/baja.css}">
+  <link rel="stylesheet" th:href="@{/css/footer.css}">
+</head>
+<body class="page-auth page-baja">
+
+  <div th:replace="~{fragments/header :: header}"></div>
+
+  <!-- Baja de los emails promocionales (UnsubscribeController). Cuatro estados posibles. -->
+  <main id="main" class="auth-main">
+    <section class="auth-panel baja-panel" aria-labelledby="baja-title">
+      <div class="auth-card baja-card">
+
+        <!-- 1. Pregunta: todavía no se dio de baja -->
+        <th:block th:if="${state == 'confirm'}">
+          <h1 id="baja-title" class="auth-title">¿Dejás de recibir nuestras promociones?</h1>
+          <p class="auth-lead">
+            <span th:if="${firstName != null}" th:text="'Hola, ' + ${firstName} + '.'">Hola, Ana.</span>
+            Si confirmás, no te vamos a mandar más promociones ni el saludo de cumpleaños por email.
+            Tus pedidos siguen funcionando igual.
+          </p>
+          <form th:action="@{/baja}" method="post" class="baja-actions">
+            <input type="hidden" name="token" th:value="${token}">
+            <button type="submit" class="button button--primary button--lg button--block">Sí, darme de baja</button>
+            <a class="button button--ghost button--lg button--block" th:href="@{/}">No, seguir recibiéndolas</a>
+          </form>
+        </th:block>
+
+        <!-- 2. Listo -->
+        <th:block th:if="${state == 'done'}">
+          <h1 id="baja-title" class="auth-title">Te diste de baja</h1>
+          <p class="auth-lead">
+            Listo: no vas a recibir más promociones por email. Si algún día querés volver a recibirlas,
+            tildá la casilla de promociones en tu próximo pedido.
+          </p>
+          <a class="button button--primary button--lg button--block" th:href="@{/}">Volver a la tienda</a>
+        </th:block>
+
+        <!-- 3. Ya estaba dado de baja -->
+        <th:block th:if="${state == 'already'}">
+          <h1 id="baja-title" class="auth-title">Ya estás dado de baja</h1>
+          <p class="auth-lead">No te vamos a mandar promociones por email. No hace falta hacer nada más.</p>
+          <a class="button button--primary button--lg button--block" th:href="@{/}">Volver a la tienda</a>
+        </th:block>
+
+        <!-- 4. Link incompleto o que no corresponde a ningún cliente -->
+        <th:block th:if="${state == 'invalid'}">
+          <h1 id="baja-title" class="auth-title">No encontramos tu suscripción</h1>
+          <p class="auth-lead">
+            El link está incompleto o ya no es válido. Probá abrirlo de nuevo desde el último email que te mandamos,
+            o escribinos por WhatsApp y te damos de baja nosotros.
+          </p>
+          <a class="button button--primary button--lg button--block" th:href="@{/}">Volver a la tienda</a>
+        </th:block>
+
+      </div>
+    </section>
+  </main>
+
+  <div th:replace="~{fragments/footer :: footer}"></div>
+
+  <script th:src="@{/js/header.js}" defer></script>
+</body>
+</html>

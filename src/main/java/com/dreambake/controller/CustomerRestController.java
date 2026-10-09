@@ -2,10 +2,13 @@ package com.dreambake.controller;
 
 import com.dreambake.entity.Customer;
 import com.dreambake.entity.CustomerTag;
+import com.dreambake.entity.EmailStatus;
+import com.dreambake.entity.EmailType;
 import com.dreambake.entity.Order;
 import com.dreambake.entity.OrderStatus;
 import com.dreambake.repository.CustomerRepository;
 import com.dreambake.repository.CustomerTagRepository;
+import com.dreambake.repository.EmailLogRepository;
 import com.dreambake.repository.OrderRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -14,6 +17,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +36,9 @@ public class CustomerRestController {
 
     @Autowired
     private OrderRepository orderRepo;
+
+    @Autowired
+    private EmailLogRepository emailLogRepo;
 
     // Pedidos que cuentan como compra (los nuevos sin confirmar, cancelados y rechazados no)
     private static final List<OrderStatus> PURCHASE_STATUSES =
@@ -72,6 +80,45 @@ public class CustomerRestController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    // Dar de baja de los emails promocionales (botón "Dar de baja" de la ficha del cliente).
+    // Es lo ÚNICO que el panel puede hacer con el consentimiento: desactivarlo. Activarlo solo
+    // lo puede hacer el propio cliente, tildando la casilla en la tienda (Ley 25.326).
+    @PostMapping("/customers/{id}/unsubscribe")
+    public ResponseEntity<Customer> unsubscribeCustomer(@PathVariable Long id) {
+        return customerRepo.findById(id).map(c -> {
+            c.setMarketingConsent(false);
+            return ResponseEntity.ok(customerRepo.save(c));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    // Lo que se muestra de cada email en la ficha del cliente
+    public record EmailHistoryItem(LocalDateTime sentAt, String type, String subject, String status, String error) {
+    }
+
+    // Historial de emails de un cliente, del más nuevo al más viejo
+    @GetMapping("/customers/{id}/emails")
+    public ResponseEntity<List<EmailHistoryItem>> getCustomerEmails(@PathVariable Long id) {
+        return customerRepo.findById(id)
+                .map(c -> ResponseEntity.ok(emailLogRepo.findByCustomerOrderBySentAtDesc(c).stream()
+                        .map(e -> new EmailHistoryItem(e.getSentAt(), typeLabel(e.getType()), e.getSubject(),
+                                e.getStatus() == EmailStatus.SENT ? "Enviado" : "No se envió", e.getErrorMessage()))
+                        .toList()))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // Nombre en español de cada tipo de email (para la ficha del cliente)
+    private String typeLabel(EmailType type) {
+        if (type == null) return "Email";
+        return switch (type) {
+            case BIRTHDAY -> "Cumpleaños";
+            case PROMOTION -> "Promoción";
+            case ORDER_REMINDER -> "Recordatorio de pedido";
+            case ORDER_CONFIRMATION -> "Pedido confirmado";
+            case TEST -> "Prueba";
+            case PASSWORD_RESET -> "Recuperar contraseña";
+        };
+    }
+
     @PostMapping("/customers")
     public Customer createCustomer(@Valid @RequestBody CustomerRequest request) {
         return saveOrUpdateCustomer(new Customer(), request);
@@ -99,9 +146,19 @@ public class CustomerRestController {
 
     private Customer saveOrUpdateCustomer(Customer customer, CustomerRequest req) {
         customer.setName(req.name());
+        // El cliente aceptó promociones para SU email: si acá se cambia por otro, ese permiso
+        // no pasa al email nuevo (el cliente lo puede volver a dar en su próximo pedido)
+        String oldEmail = customer.getEmail() == null ? "" : customer.getEmail().trim();
+        String newEmail = req.email() == null ? "" : req.email().trim();
+        if (Boolean.TRUE.equals(customer.getMarketingConsent()) && !oldEmail.equalsIgnoreCase(newEmail)) {
+            customer.setMarketingConsent(false);
+        }
         customer.setEmail(req.email());
         customer.setPhone(req.phone());
         customer.setAddress(req.address());
+        // Cumpleaños: el administrador lo puede cargar o corregir (no puede ser una fecha futura)
+        customer.setBirthDate(req.birthDate() != null && req.birthDate().isAfter(LocalDate.now()) ? null : req.birthDate());
+        // OJO: el consentimiento de emails NO se toca acá (ver unsubscribeCustomer)
 
         CustomerTag tag = tagRepo.findByName(req.tagName())
                 .orElseGet(() -> tagRepo.findByName("Sin etiqueta").orElse(null));
@@ -112,7 +169,7 @@ public class CustomerRestController {
 
     public record CustomerRequest(
             @NotBlank(message = "El nombre del cliente es obligatorio.") String name,
-            String email, String phone, String address, String tagName) {
+            String email, String phone, String address, String tagName, LocalDate birthDate) {
     }
 
     // ================= ETIQUETAS (TAGS) =================

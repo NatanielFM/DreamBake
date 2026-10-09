@@ -1,0 +1,23 @@
+/* =========================================================
+   baja.css — Página /baja (darse de baja de los emails promocionales)
+   ---------------------------------------------------------
+   Se apoya en login.css (auth-main, auth-panel, auth-card, auth-title, auth-lead).
+   Acá solo se centra la tarjeta y se separan los botones.
+   ========================================================= */
+
+.baja-panel {
+  align-items: center;
+  min-height: calc(100svh - var(--header-height));
+}
+
+.baja-card {
+  padding: var(--space-6) var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--rose-50);
+  border: 1px solid var(--rose-200);
+}
+
+.baja-actions {
+  display: grid;
+  gap: var(--space-3);
+}

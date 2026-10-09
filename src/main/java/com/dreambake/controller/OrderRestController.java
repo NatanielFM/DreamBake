@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Map;
@@ -135,8 +136,28 @@ public class OrderRestController {
                 item.setProductType(InputSanitizer.clean(item.getProductType(), 200));
                 item.setDetails(InputSanitizer.clean(item.getDetails(), 3000));
             }
-        } else if (deliveryError != null) {
-            return ResponseEntity.badRequest().body(Map.of("message", deliveryError));
+
+            // Fidelización (opcional): cumpleaños y consentimiento para recibir promociones.
+            // El consentimiento necesita un email (es a donde se mandan) y se guarda con su fecha.
+            if (Boolean.TRUE.equals(order.getMarketingConsent())) {
+                if (order.getCustomerEmail() == null || order.getCustomerEmail().isBlank()) {
+                    return ResponseEntity.badRequest().body(Map.of("message",
+                            "Para recibir promociones necesitamos tu email."));
+                }
+                order.setMarketingConsentAt(LocalDateTime.now());
+            } else {
+                order.setMarketingConsent(false);
+                order.setMarketingConsentAt(null);
+            }
+            order.setCustomerBirthDate(validBirthDate(order.getCustomerBirthDate()));
+        } else {
+            if (deliveryError != null) {
+                return ResponseEntity.badRequest().body(Map.of("message", deliveryError));
+            }
+            // El personal no puede dar el consentimiento en nombre de un cliente: lo da el cliente en la tienda
+            order.setMarketingConsent(false);
+            order.setMarketingConsentAt(null);
+            order.setCustomerBirthDate(validBirthDate(order.getCustomerBirthDate()));
         }
 
         if (order.getItems() != null) {
@@ -210,7 +231,17 @@ public class OrderRestController {
 
             // Estos datos solo se cambian si vienen en la petición
             // (antes el email se borraba al editar porque el panel no lo mandaba)
-            if (updatedOrder.getCustomerEmail() != null) order.setCustomerEmail(updatedOrder.getCustomerEmail());
+            if (updatedOrder.getCustomerEmail() != null) {
+                // El consentimiento para promociones se dio para el email que escribió el cliente:
+                // si el panel lo cambia por otro, ese consentimiento ya no vale para el email nuevo
+                boolean changed = !updatedOrder.getCustomerEmail().trim()
+                        .equalsIgnoreCase(order.getCustomerEmail() == null ? "" : order.getCustomerEmail().trim());
+                if (changed) {
+                    order.setMarketingConsent(false);
+                    order.setMarketingConsentAt(null);
+                }
+                order.setCustomerEmail(updatedOrder.getCustomerEmail());
+            }
             if (updatedOrder.getDeliveryShift() != null) order.setDeliveryShift(updatedOrder.getDeliveryShift());
             if (updatedOrder.getDeliveryMethod() != null) {
                 order.setDeliveryMethod(updatedOrder.getDeliveryMethod());
@@ -401,12 +432,33 @@ public class OrderRestController {
             newCustomer.setTag(tagRepo.findByName("Sin etiqueta").orElse(null));
             return newCustomer;
         });
+        // Fidelización: el cumpleaños que dejó en el checkout pasa a su ficha
+        if (order.getCustomerBirthDate() != null) {
+            customer.setBirthDate(order.getCustomerBirthDate());
+        }
+        // Si en este pedido aceptó recibir promociones, queda registrado con la fecha en que lo aceptó
+        // y con el email que dio (a ese email se le mandan). Si NO tildó la casilla no se cambia nada:
+        // no tildarla no es pedir la baja (para eso está el link de baja de cada email).
+        if (Boolean.TRUE.equals(order.getMarketingConsent())
+                && order.getCustomerEmail() != null && !order.getCustomerEmail().isBlank()) {
+            customer.setEmail(order.getCustomerEmail().trim());
+            customer.setMarketingConsent(true);
+            customer.setConsentDate(order.getMarketingConsentAt() != null
+                    ? order.getMarketingConsentAt() : LocalDateTime.now());
+        }
         // Si pidió envío y el cliente todavía no tenía dirección, se guarda la del pedido
         if ((customer.getAddress() == null || customer.getAddress().isBlank())
                 && "Envío".equals(order.getDeliveryMethod()) && order.getDeliveryAddress() != null) {
             customer.setAddress(order.getDeliveryAddress());
         }
         order.setCustomer(customerRepo.save(customer));
+    }
+
+    // Fecha de cumpleaños razonable (entre 1900 y hoy); si no lo es, se descarta (es un dato opcional)
+    private LocalDate validBirthDate(LocalDate date) {
+        if (date == null) return null;
+        if (date.isAfter(LocalDate.now()) || date.isBefore(LocalDate.of(1900, 1, 1))) return null;
+        return date;
     }
 
     // Deja el método de entrega en uno de los dos valores válidos ("Retiro" o "Envío").

@@ -1,6 +1,11 @@
 package com.dreambake.service;
 
 import com.dreambake.config.AppProperties;
+import com.dreambake.entity.Customer;
+import com.dreambake.entity.EmailLog;
+import com.dreambake.entity.EmailStatus;
+import com.dreambake.entity.EmailType;
+import com.dreambake.repository.EmailLogRepository;
 import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +20,7 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -24,14 +30,18 @@ import java.util.concurrent.CompletableFuture;
  *
  * Cómo se usa desde otra clase:
  *
- *     emailService.enviar("clienta@mail.com", "Asunto", "email/prueba", Map.of("nombre", "Ana"), null);
+ *     emailService.enviar(cliente.getEmail(), "¡Feliz cumpleaños!", "email/cumpleanos",
+ *                         Map.of("nombre", "Ana"), EmailType.BIRTHDAY, cliente, null);
  *
- * - "email/prueba" es una plantilla de src/main/resources/templates/email/. Todas usan el
+ * - "email/cumpleanos" es una plantilla de src/main/resources/templates/email/. Todas usan el
  *   diseño común de email/base.html (logo, colores, pie con los datos del negocio).
  * - El método es @Async: se ejecuta en otro hilo y devuelve enseguida. Quien necesite saber
  *   si salió bien puede esperar el resultado (CompletableFuture); quien no, lo ignora.
  * - Nunca tira error hacia afuera: si el correo no está configurado o falla el servidor,
  *   se avisa en el log y el resultado queda como fallido (Resultado.ok = false).
+ * - Cada intento queda guardado en el historial (tabla email_logs), salga bien o mal.
+ * - Los emails promocionales (cumpleaños y promociones) solo se mandan a clientes que
+ *   aceptaron recibirlos, y llevan el link para darse de baja (Ley 25.326).
  */
 @Service
 public class EmailService {
@@ -50,13 +60,16 @@ public class EmailService {
     private final ObjectProvider<JavaMailSender> mailSender;
     private final TemplateEngine templateEngine;
     private final AppProperties app;
+    private final EmailLogRepository emailLogRepository;
     private final String username;
 
     public EmailService(ObjectProvider<JavaMailSender> mailSender, TemplateEngine templateEngine,
-                        AppProperties app, @Value("${spring.mail.username:}") String username) {
+                        AppProperties app, EmailLogRepository emailLogRepository,
+                        @Value("${spring.mail.username:}") String username) {
         this.mailSender = mailSender;
         this.templateEngine = templateEngine;
         this.app = app;
+        this.emailLogRepository = emailLogRepository;
         this.username = username == null ? "" : username.trim();
     }
 
@@ -65,28 +78,60 @@ public class EmailService {
         return mailSender.getIfAvailable() != null && !username.isBlank();
     }
 
+    // Link para darse de baja de un cliente: <dirección pública>/baja?token=<su código>
+    public String bajaUrl(Customer cliente) {
+        if (cliente == null || cliente.getUnsubscribeToken() == null) return null;
+        return app.getPublicUrl() + "/baja?token=" + cliente.getUnsubscribeToken();
+    }
+
     /**
-     * Envía un email HTML armado con una plantilla.
+     * Envía un email HTML armado con una plantilla y lo registra en el historial.
      *
      * @param destinatario email de quien lo recibe
      * @param asunto       asunto del mensaje
      * @param plantilla    nombre de la plantilla, por ejemplo "email/prueba"
      * @param variables    datos que usa la plantilla (por ejemplo "nombre"); puede ser null
-     * @param bajaUrl      link para darse de baja de los mails promocionales; null si no corresponde
+     * @param tipo         tipo de email (cumpleaños, promoción, prueba…)
+     * @param cliente      cliente al que va dirigido; null si no es un cliente (ej: email de prueba)
+     * @param campaignId   campaña de promociones a la que pertenece; null si no corresponde
      */
     @Async
     public CompletableFuture<Resultado> enviar(String destinatario, String asunto, String plantilla,
-                                               Map<String, Object> variables, String bajaUrl) {
+                                               Map<String, Object> variables, EmailType tipo,
+                                               Customer cliente, Long campaignId) {
+        Resultado resultado = enviarAhora(destinatario, asunto, plantilla, variables, tipo, cliente);
+        registrar(destinatario, asunto, tipo, cliente, campaignId, resultado);
+        return CompletableFuture.completedFuture(resultado);
+    }
+
+    // Hace el envío y devuelve cómo salió (sin registrar nada)
+    private Resultado enviarAhora(String destinatario, String asunto, String plantilla,
+                                  Map<String, Object> variables, EmailType tipo, Customer cliente) {
         if (destinatario == null || destinatario.isBlank()) {
             log.warn("Email '{}' no enviado: no hay dirección de destino.", asunto);
-            return CompletableFuture.completedFuture(Resultado.fallo("No hay una dirección de email de destino."));
+            return Resultado.fallo("No hay una dirección de email de destino.");
         }
+
+        // Promociones y cumpleaños: solo con consentimiento del cliente, y siempre con link de baja
+        String bajaUrl = null;
+        if (tipo != null && tipo.isPromotional()) {
+            if (cliente == null || !Boolean.TRUE.equals(cliente.getMarketingConsent())) {
+                log.warn("Email '{}' para {} NO enviado: el cliente no aceptó recibir promociones.", asunto, destinatario);
+                return Resultado.fallo("El cliente no aceptó recibir promociones.");
+            }
+            bajaUrl = bajaUrl(cliente);
+            if (bajaUrl == null) {
+                log.warn("Email '{}' para {} NO enviado: el cliente no tiene código de baja.", asunto, destinatario);
+                return Resultado.fallo("El cliente no tiene link para darse de baja.");
+            }
+        }
+
         JavaMailSender sender = mailSender.getIfAvailable();
         if (sender == null || username.isBlank()) {
             log.warn("Email '{}' para {} NO enviado: falta configurar spring.mail.* en config/application.properties.",
                     asunto, destinatario);
-            return CompletableFuture.completedFuture(Resultado.fallo(
-                    "El correo no está configurado. Cargá los datos del servidor de correo en config/application.properties."));
+            return Resultado.fallo(
+                    "El correo no está configurado. Cargá los datos del servidor de correo en config/application.properties.");
         }
         try {
             // 1. Se arma el HTML con la plantilla
@@ -112,14 +157,42 @@ public class EmailService {
             helper.setText(html, true);
             // El logo va dentro del mensaje (cid:logo): así se ve aunque el sitio no sea público todavía
             helper.addInline("logo", new ClassPathResource("static/img/logo-email.png"));
+            // Encabezado estándar de baja: Gmail y otros muestran un botón "Anular suscripción"
+            // que lleva a este link. Ayuda a que los mails no terminen en spam.
+            if (bajaUrl != null) {
+                mensaje.setHeader("List-Unsubscribe", "<" + bajaUrl + ">");
+            }
 
             // 3. Se envía
             sender.send(mensaje);
             log.info("Email '{}' enviado a {}.", asunto, destinatario);
-            return CompletableFuture.completedFuture(Resultado.exito());
+            return Resultado.exito();
         } catch (Exception e) {
             log.error("No se pudo enviar el email '{}' a {}: {}", asunto, destinatario, e.getMessage());
-            return CompletableFuture.completedFuture(Resultado.fallo(explicar(e)));
+            return Resultado.fallo(explicar(e));
+        }
+    }
+
+    // Guarda el intento en el historial (email_logs). Si eso falla, solo se avisa en el log:
+    // un problema con el historial no tiene que impedir que el email salga.
+    private void registrar(String destinatario, String asunto, EmailType tipo, Customer cliente,
+                           Long campaignId, Resultado resultado) {
+        try {
+            EmailLog entrada = new EmailLog();
+            entrada.setCustomer(cliente != null && cliente.getId() != null ? cliente : null);
+            entrada.setRecipientEmail(destinatario);
+            entrada.setType(tipo);
+            entrada.setSubject(asunto);
+            entrada.setStatus(resultado.ok() ? EmailStatus.SENT : EmailStatus.FAILED);
+            if (!resultado.ok()) {
+                String error = resultado.mensaje();
+                entrada.setErrorMessage(error != null && error.length() > 500 ? error.substring(0, 500) : error);
+            }
+            entrada.setSentAt(LocalDateTime.now());
+            entrada.setCampaignId(campaignId);
+            emailLogRepository.save(entrada);
+        } catch (Exception e) {
+            log.error("No se pudo guardar el historial del email '{}' a {}: {}", asunto, destinatario, e.getMessage());
         }
     }
 

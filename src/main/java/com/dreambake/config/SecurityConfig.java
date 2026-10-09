@@ -83,7 +83,8 @@ public class SecurityConfig {
                 // 1. Quién puede entrar a cada ruta
                 .authorizeHttpRequests(auth -> auth
                         // Tienda pública y archivos estáticos
-                        .requestMatchers("/", "/builder", "/products", "/cart", "/register", "/login",
+                        // /baja: página para darse de baja de los emails promocionales (link de cada email)
+                        .requestMatchers("/", "/builder", "/products", "/cart", "/register", "/login", "/baja",
                                 "/css/**", "/js/**", "/img/**", "/uploads/**", "/error").permitAll()
 
                         // API que usa la tienda sin iniciar sesión

@@ -2,6 +2,7 @@ package com.dreambake.config;
 
 import com.dreambake.controller.AuthController;
 import com.dreambake.controller.ProfileController;
+import com.dreambake.controller.UnsubscribeController;
 import com.dreambake.controller.WebController;
 import com.dreambake.service.BusinessSettingService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +13,8 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 // Datos que necesitan todas las páginas públicas (header, footer y etiquetas para compartir).
 // Se limita a los controladores de vistas públicas (assignableTypes) para no hacer
 // consultas de más en cada llamada a la API.
-@ControllerAdvice(assignableTypes = { WebController.class, AuthController.class, ProfileController.class })
+@ControllerAdvice(assignableTypes = { WebController.class, AuthController.class, ProfileController.class,
+        UnsubscribeController.class })
 public class PublicViewAdvice {
 
     @Autowired
