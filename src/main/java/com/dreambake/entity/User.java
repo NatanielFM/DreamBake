@@ -1,5 +1,6 @@
 package com.dreambake.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -24,6 +25,9 @@ public class User {
     @NotBlank(message = "El email no puede estar vacío")
     private String email;
 
+    // WRITE_ONLY: la contraseña se puede RECIBIR en JSON (al crear o editar un pastelero),
+    // pero nunca se ENVÍA en las respuestas de la API (ni siquiera cifrada).
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(nullable = false)
     @NotBlank(message = "La contraseña no puede estar vacía")
     @Size(min = 6, message = "La contraseña debe tener al menos 6 caracteres")

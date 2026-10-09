@@ -5,9 +5,12 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.dreambake.entity.User;
 import com.dreambake.repository.UserRepository;
+import com.dreambake.util.ClientIpResolver;
 
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
@@ -31,8 +34,17 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .authorities(user.getRoles() != null ? user.getRoles() : "")
                 // Cuenta deshabilitada desde la base (enabled = false): no puede entrar
                 .disabled(Boolean.FALSE.equals(user.getEnabled()))
-                // Bloqueada 15 minutos después de 5 contraseñas incorrectas (LoginAttemptService)
-                .accountLocked(loginAttemptService.isBlocked(email))
+                // Bloqueada 15 minutos después de 5 contraseñas incorrectas desde esta IP (LoginAttemptService)
+                .accountLocked(loginAttemptService.isBlocked(email, currentClientIp()))
                 .build();
+    }
+
+    // Este método no recibe el pedido HTTP; se lo pide a Spring (RequestContextHolder),
+    // que guarda el pedido en curso. Si no hay pedido (no debería pasar en el login), se usa "desconocida".
+    private String currentClientIp() {
+        if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attrs) {
+            return ClientIpResolver.resolve(attrs.getRequest());
+        }
+        return "desconocida";
     }
 }

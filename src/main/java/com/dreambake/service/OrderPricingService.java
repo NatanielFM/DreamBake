@@ -78,7 +78,11 @@ public class OrderPricingService {
                 int percentage = Math.max(0, Math.min(100, c.getDiscountPercentage()));
                 discount = subtotal * percentage / 100.0;
             }
-            couponService.consume(c);         // se descuenta un uso del cupón
+            // Se descuenta un uso del cupón. Si otro cliente usó el último uso un instante antes,
+            // el pedido no se guarda y se avisa (así nadie obtiene un descuento que ya no existe).
+            if (!couponService.consume(c)) {
+                return "El cupón " + c.getCode() + " se acaba de agotar. Quitalo y volvé a enviar el pedido.";
+            }
             order.setCouponCode(c.getCode());
         }
 

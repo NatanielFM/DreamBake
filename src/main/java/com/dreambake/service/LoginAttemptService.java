@@ -8,9 +8,16 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Bloqueo temporal del login por intentos fallidos.
  *
- * Si alguien se equivoca de contraseña 5 veces seguidas con el mismo email,
- * esa cuenta queda bloqueada 15 minutos. Así no se puede adivinar una
- * contraseña probando miles de combinaciones.
+ * Si alguien se equivoca de contraseña 5 veces seguidas con el mismo email
+ * DESDE LA MISMA IP, esa combinación queda bloqueada 15 minutos. Así no se
+ * puede adivinar una contraseña probando miles de combinaciones.
+ *
+ * Se cuenta por email + IP (y no solo por email) para que nadie pueda dejar
+ * a la dueña sin poder entrar escribiendo mal su contraseña a propósito:
+ * el bloqueo afecta solo a la IP del que se equivoca, no a la cuenta entera.
+ * A quien prueba muchas cuentas desde una IP lo frena RateLimitFilter
+ * (límite de envíos a /login por IP).
+ *
  * Un login correcto borra el contador. Los datos viven en memoria.
  */
 @Service
@@ -23,26 +30,31 @@ public class LoginAttemptService {
 
     private final Map<String, Attempts> attempts = new ConcurrentHashMap<>();
 
-    public void loginFailed(String email) {
+    public void loginFailed(String email, String ip) {
         if (email == null) return;
-        String key = email.trim().toLowerCase();
-        attempts.merge(key, new Attempts(1, System.currentTimeMillis()),
+        attempts.merge(key(email, ip), new Attempts(1, System.currentTimeMillis()),
                 (old, n) -> new Attempts(isExpired(old) ? 1 : old.count() + 1, n.lastFailure()));
     }
 
-    public void loginSucceeded(String email) {
-        if (email != null) attempts.remove(email.trim().toLowerCase());
+    public void loginSucceeded(String email, String ip) {
+        if (email != null) attempts.remove(key(email, ip));
     }
 
-    public boolean isBlocked(String email) {
+    public boolean isBlocked(String email, String ip) {
         if (email == null) return false;
-        Attempts a = attempts.get(email.trim().toLowerCase());
+        String key = key(email, ip);
+        Attempts a = attempts.get(key);
         if (a == null) return false;
         if (isExpired(a)) {
-            attempts.remove(email.trim().toLowerCase());
+            attempts.remove(key);
             return false;
         }
         return a.count() >= MAX_ATTEMPTS;
+    }
+
+    // Clave del contador: "email|ip" (el email en minúsculas, sin espacios)
+    private String key(String email, String ip) {
+        return email.trim().toLowerCase() + "|" + ip;
     }
 
     private boolean isExpired(Attempts a) {

@@ -1,6 +1,7 @@
 package com.dreambake.config;
 
 import com.dreambake.service.LoginAttemptService;
+import com.dreambake.util.ClientIpResolver;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.server.servlet.CookieSameSiteSupplier;
 import org.springframework.context.annotation.Bean;
@@ -31,8 +32,8 @@ import java.util.UUID;
  *     nombre de un usuario logueado.
  *  3. Encabezados de seguridad: política de contenido (CSP), no permitir que
  *     el sitio se muestre dentro de un iframe ajeno, referrer limitado.
- *  4. Login: bloqueo temporal después de varios intentos fallidos.
- *  5. Límite de pedidos/cupones por minuto desde una misma IP (RateLimitFilter).
+ *  4. Login: bloqueo temporal después de varios intentos fallidos (por email + IP).
+ *  5. Límite de pedidos, cupones, registros e inicios de sesión desde una misma IP (RateLimitFilter).
  *  6. Cookie de sesión con SameSite=Lax.
  *  7. "Mantener la sesión iniciada" (remember-me) con una cookie firmada que dura 14 días.
  */
@@ -141,8 +142,8 @@ public class SecurityConfig {
     @Bean
     public AuthenticationSuccessHandler authenticationSuccessHandler() {
         return (request, response, authentication) -> {
-            // Login correcto: se borran los intentos fallidos de ese email
-            loginAttemptService.loginSucceeded(authentication.getName());
+            // Login correcto: se borran los intentos fallidos de ese email desde esta IP
+            loginAttemptService.loginSucceeded(authentication.getName(), ClientIpResolver.resolve(request));
 
             boolean isAdmin = authentication.getAuthorities().stream()
                     .anyMatch(a -> a.getAuthority().equals("ADMIN"));
@@ -167,7 +168,7 @@ public class SecurityConfig {
                 response.sendRedirect("/login?blocked");
                 return;
             }
-            loginAttemptService.loginFailed(request.getParameter("username"));
+            loginAttemptService.loginFailed(request.getParameter("username"), ClientIpResolver.resolve(request));
             response.sendRedirect("/login?error");
         };
     }

@@ -1,6 +1,7 @@
 package com.dreambake.controller;
 
 import com.dreambake.entity.Coupon;
+import com.dreambake.entity.CouponType;
 import com.dreambake.repository.CouponRepository;
 import com.dreambake.service.CouponService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,16 +58,20 @@ public class CouponRestController {
         return ResponseEntity.notFound().build();
     }
 
+    // Lo que ve la tienda de un cupón: solo lo necesario para mostrar el beneficio.
+    // No incluye el id, los usos que le quedan ni si está activo (datos internos del negocio).
+    public record PublicCoupon(String code, CouponType type, Integer discountPercentage, String customText) {}
+
     // Lo usa el carrito de la tienda (público) para mostrar el descuento antes de enviar el pedido.
     // Solo consulta: el uso del cupón se descuenta en el servidor al guardar el pedido
     // (OrderRestController), así nadie puede gastar los usos de un código desde afuera.
+    // Si el cupón no existe, está inactivo o se agotó, la respuesta es la misma (404 vacío):
+    // así nadie puede averiguar qué códigos existen probando.
     @GetMapping("/validate/{code}")
-    public ResponseEntity<Coupon> validateCoupon(@PathVariable String code) {
-        if (couponRepository.findByCodeIgnoreCase(code).isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<PublicCoupon> validateCoupon(@PathVariable String code) {
         return couponService.findUsable(code)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.badRequest().build());
+                .map(c -> ResponseEntity.ok(new PublicCoupon(c.getCode(), c.getType(),
+                        c.getDiscountPercentage(), c.getCustomText())))
+                .orElse(ResponseEntity.notFound().build());
     }
 }
