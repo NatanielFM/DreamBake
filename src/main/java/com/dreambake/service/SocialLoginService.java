@@ -64,6 +64,9 @@ public class SocialLoginService {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
     public User resolve(AuthProvider provider, String providerId, String email, boolean emailVerified,
                         String name, String pictureUrl) {
         if (providerId == null || providerId.isBlank()) {
@@ -83,6 +86,10 @@ public class SocialLoginService {
             User user = byProvider.get();
             checkEnabled(user);
             if (pictureUrl != null) user.setAvatarUrl(pictureUrl); // la foto puede haber cambiado
+            // Si la red social confirma justo el email de la cuenta, queda comprobado
+            if (emailVerified && email != null && email.trim().equalsIgnoreCase(user.getEmail())) {
+                user.setEmailVerified(true);
+            }
             return userRepository.save(user);
         }
 
@@ -109,10 +116,18 @@ public class SocialLoginService {
                 throw error(ERROR_EMAIL_UNVERIFIED);
             }
             checkEnabled(user);
+            // Si esa cuenta se había creado con contraseña pero el email nunca se comprobó, la contraseña
+            // podría ser de otra persona que se registró con este email antes que el dueño. Como la red
+            // social acaba de probar que el email es de quien está entrando, esa contraseña se anula
+            // (se reemplaza por una al azar que nadie conoce): desde ahora entra con la red social.
+            if (!Boolean.TRUE.equals(user.getEmailVerified())) {
+                user.setPassword(passwordEncoder.encode(java.util.UUID.randomUUID().toString()));
+            }
+            // Si ya estaba comprobado, la contraseña que tenía no se toca: puede entrar de las dos formas
+            user.setEmailVerified(true);
             user.setAuthProvider(provider);
             user.setProviderId(providerId);
             if (pictureUrl != null) user.setAvatarUrl(pictureUrl);
-            // La contraseña que tenía no se toca: puede seguir entrando de las dos formas
             return userRepository.save(user);
         }
 

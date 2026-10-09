@@ -85,6 +85,11 @@
               <span>No pudimos conectar con <th:block th:text="${red}">Google</th:block>. Probá de nuevo en unos minutos o entrá con tu email y contraseña.</span>
             </div>
           </th:block>
+          <!-- Cuenta eliminada desde "Mi cuenta" (ProfileController.deleteAccount) -->
+          <div th:if="${param.deleted}" class="login-alert" role="status">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+            <span>Eliminamos tu cuenta y tus datos personales. ¡Gracias por haber sido parte!</span>
+          </div>
           <div th:if="${param.logout}" class="login-alert" role="status">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
             <span>Cerraste sesión. ¡Hasta pronto!</span>

@@ -74,3 +74,81 @@
 @media (max-width: 29.99rem) {
   .profile-google-button { width: 100%; }
 }
+
+/* ---------- Área del cliente (paso 2.4) ---------- */
+
+/* "Confirmá tu email": borde rosa para que se note que falta un paso */
+.profile-card--highlight { box-shadow: inset 0 0 0 2px var(--rose-200); }
+.profile-verify-text { margin: 0; color: var(--text-strong); line-height: 1.55; }
+
+/* Mis pedidos: una tarjeta por pedido */
+.my-orders-empty { margin: 0; color: var(--rose-800); }
+.my-orders-list { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+.my-order {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+.my-order__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.my-order__number { font-weight: var(--fw-semibold); color: var(--ink); }
+.my-order__date { margin: 0; color: var(--text-strong); }
+.my-order__items { margin: 0; color: var(--rose-800); font-size: var(--fs-small); overflow-wrap: anywhere; }
+.my-order__total { display: flex; justify-content: space-between; margin: var(--space-1) 0 0; color: var(--text-strong); }
+.my-order__total strong { color: var(--ink); }
+
+/* Estado: etiqueta tipo "pastilla" con los colores de la marca */
+.my-order__status {
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-semibold);
+}
+.my-order__status--pending   { background: var(--rose-100); color: var(--rose-800); }
+.my-order__status--active    { background: var(--color-primary); color: var(--white); }
+.my-order__status--done      { background: var(--ink); color: var(--white); }
+.my-order__status--cancelled { background: var(--cherry-50); color: var(--cherry-700); }
+
+/* Botón de peligro (eliminar cuenta): el rojo de la marca */
+.button--danger {
+  background: var(--cherry-700);
+  color: var(--white);
+}
+@media (hover: hover) and (pointer: fine) {
+  .button--danger:hover { background: var(--cherry-500); }
+}
+
+/* Ventana de confirmación (<dialog> del navegador) */
+.confirm-dialog {
+  width: min(28rem, calc(100vw - 2 * var(--space-4)));
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  color: var(--text-strong);
+  box-shadow: var(--shadow-3);
+}
+.confirm-dialog::backdrop { background: rgb(72 23 41 / 0.45); }
+.confirm-dialog__body { display: grid; gap: var(--space-4); padding: var(--space-6) var(--space-5) var(--space-5); }
+.confirm-dialog__body p { margin: 0; line-height: 1.55; }
+.confirm-dialog__title { margin: 0; color: var(--ink); font-size: var(--fs-h3); font-weight: var(--fw-bold); line-height: 1.2; }
+.confirm-dialog__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-3); }
+@media (max-width: 29.99rem) {
+  .confirm-dialog__actions { flex-direction: column-reverse; }
+  .confirm-dialog__actions .button { width: 100%; }
+}
+.confirm-dialog[open] { animation: dialog-in var(--dur-base) var(--ease-out); }
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .confirm-dialog[open] { animation: none; }
+}

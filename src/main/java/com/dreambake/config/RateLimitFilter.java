@@ -59,7 +59,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
         else if ("POST".equals(method) && "/login".equals(path)) { limit = MAX_LOGINS; bucket = "login"; }
         else if ("POST".equals(method) && "/baja".equals(path)) { limit = MAX_UNSUBSCRIBES; bucket = "baja"; }
         // Registro con Facebook sin email: cada envío manda un email o prueba un código
-        else if ("POST".equals(method) && path.startsWith("/login/completar-email")) { limit = MAX_EMAIL_CODES; bucket = "email-code"; }
+        else if ("POST".equals(method) && (path.startsWith("/login/completar-email") || path.startsWith("/profile/email/"))) {
+            limit = MAX_EMAIL_CODES; bucket = "email-code";   // también "Confirmá tu email" del perfil
+        }
 
         if (limit != null && tooMany(bucket + ":" + ClientIpResolver.resolve(request), limit)) {
             response.setStatus(429);

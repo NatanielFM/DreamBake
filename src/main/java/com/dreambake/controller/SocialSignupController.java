@@ -1,17 +1,14 @@
 package com.dreambake.controller;
 
-import com.dreambake.entity.EmailType;
 import com.dreambake.entity.User;
 import com.dreambake.repository.UserRepository;
-import com.dreambake.service.EmailService;
+import com.dreambake.service.EmailCodeService;
 import com.dreambake.service.PendingSocialSignup;
 import com.dreambake.service.SocialLoginService;
 import com.dreambake.service.SocialUserPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.event.AuthenticationSuccessEvent;
@@ -27,11 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.security.MessageDigest;
-import java.security.SecureRandom;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 /**
@@ -50,11 +43,8 @@ import java.util.regex.Pattern;
 @RequestMapping("/login/completar-email")
 public class SocialSignupController {
 
-    private static final Logger log = LoggerFactory.getLogger(SocialSignupController.class);
-
     // Mismo formato de email que se valida en el navegador (form-helpers.js)
     private static final Pattern EMAIL = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
-    private static final SecureRandom RANDOM = new SecureRandom();
 
     @Autowired
     private UserRepository userRepository;
@@ -63,7 +53,7 @@ public class SocialSignupController {
     private SocialLoginService socialLoginService;
 
     @Autowired
-    private EmailService emailService;
+    private EmailCodeService emailCodeService;
 
     // El mismo successHandler de SecurityConfig: decide a dónde va según el rol (un cliente → inicio)
     @Autowired
@@ -99,34 +89,12 @@ public class SocialSignupController {
         if (userRepository.findByEmail(email).isPresent()) {
             return showError(pending, model, "existing");
         }
-        if (pending.getSends() >= PendingSocialSignup.MAX_SENDS) {
-            return showError(pending, model, "Pediste demasiados códigos. Volvé a intentar entrar con Facebook más tarde.");
+        // Manda el código (EmailCodeService revisa la espera entre envíos, el máximo y si hay correo configurado)
+        String error = emailCodeService.send(pending, email, firstName(pending.getName()), "creación de cuenta");
+        if (error != null) {
+            session.setAttribute(PendingSocialSignup.SESSION_KEY, pending);
+            return showError(pending, model, error);
         }
-        long wait = pending.secondsUntilResend();
-        if (wait > 0) {
-            return showError(pending, model, "Esperá " + wait + " segundos para pedir otro código.");
-        }
-        // Sin cuenta de correo configurada no podemos mandar el código
-        if (!emailService.estaConfigurado()) {
-            return showError(pending, model, "nomail");
-        }
-
-        String code = String.format("%06d", RANDOM.nextInt(1_000_000));
-        boolean sent;
-        try {
-            // Se espera el resultado (hasta 20 s) para avisarle a la persona si el email no salió
-            sent = emailService.enviar(email, "Tu código para crear la cuenta", "email/codigo",
-                            Map.of("codigo", code, "nombre", firstName(pending.getName())),
-                            EmailType.ACCOUNT_VERIFICATION, null, null)
-                    .get(20, TimeUnit.SECONDS).ok();
-        } catch (Exception e) {
-            log.warn("No se pudo mandar el código de verificación a {}: {}", email, e.getMessage());
-            sent = false;
-        }
-        if (!sent) {
-            return showError(pending, model, "No pudimos mandarte el email. Revisá la dirección o probá en unos minutos.");
-        }
-        pending.codeSent(email, code);
         session.setAttribute(PendingSocialSignup.SESSION_KEY, pending); // se vuelve a guardar con los cambios
         return "redirect:/login/completar-email";
     }
@@ -144,14 +112,9 @@ public class SocialSignupController {
             session.setAttribute(PendingSocialSignup.SESSION_KEY, pending);
             return showError(pending, model, "El código venció o se usaron todos los intentos. Pedí uno nuevo.");
         }
-        String code = rawCode == null ? "" : rawCode.replaceAll("\\s", "");
-        // Comparación "de tiempo constante": no da pistas de cuántos números se acertaron
-        boolean ok = MessageDigest.isEqual(code.getBytes(StandardCharsets.UTF_8),
-                pending.getCode().getBytes(StandardCharsets.UTF_8));
-        if (!ok) {
-            pending.countAttempt();
+        if (!pending.checkCode(rawCode)) {
             session.setAttribute(PendingSocialSignup.SESSION_KEY, pending);
-            int left = PendingSocialSignup.MAX_CODE_ATTEMPTS - pending.getCodeAttempts();
+            int left = pending.attemptsLeft();
             return showError(pending, model, left > 0
                     ? "El código no es correcto. Te quedan " + left + (left == 1 ? " intento." : " intentos.")
                     : "El código no es correcto. Pedí uno nuevo.");

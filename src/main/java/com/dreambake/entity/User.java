@@ -57,6 +57,14 @@ public class User {
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
 
+    // ¿Comprobamos que el email es de esta persona? (paso 2.4)
+    // true si entró con Google o Facebook con ese mismo email, o si escribió el código que le mandamos
+    // ("Confirmá tu email" en el perfil). Mientras sea false, el perfil no muestra pedidos ni toca la
+    // ficha de cliente: así nadie puede ver datos ajenos registrándose con el email de otra persona.
+    // Los usuarios que ya existían quedan sin confirmar (el default de la columna es 0).
+    @Column(name = "email_verified", nullable = false, columnDefinition = "bit not null default 0")
+    private Boolean emailVerified = false;
+
     // Último ingreso exitoso (lo actualiza LoginTimestampListener)
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;

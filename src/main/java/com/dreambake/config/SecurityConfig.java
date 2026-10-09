@@ -132,6 +132,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/orders/**", "/api/inventory/**", "/api/recipes/**").hasAnyAuthority("ADMIN", "PASTELERO")
                         .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/categories/**").hasAnyAuthority("ADMIN", "PASTELERO")
 
+                        // Área del cliente ("Mis pedidos"): cualquier usuario logueado, y cada uno ve solo lo suyo
+                        // (AccountRestController toma el usuario de la sesión, nunca de un parámetro)
+                        .requestMatchers("/api/account/**").authenticated()
+
                         // Todo lo demás de la API (usuarios, clientes, cupones, galería, productos, configuración
                         // del creador…) es solo para el administrador
                         .requestMatchers("/api/**").hasAuthority("ADMIN")

@@ -34,12 +34,14 @@
     <section class="shop-hero">
       <div class="site-container site-container--narrow">
         <div class="profile-hero-title">
-          <!-- Foto de perfil de Google (no-referrer: Google a veces no la muestra si recibe de qué sitio viene) -->
+          <!-- Foto de perfil de Google o Facebook (no-referrer: Google a veces no la muestra si recibe de qué sitio viene) -->
           <img th:if="${currentUser != null and currentUser.avatarUrl != null}" class="profile-avatar"
                th:src="${currentUser.avatarUrl}" alt="" width="56" height="56" referrerpolicy="no-referrer">
           <h1 class="text-h1">Mi cuenta</h1>
         </div>
-        <p class="text-lead" th:if="${currentUser != null}">Hola, <strong th:text="${currentUser.name.split(' ')[0]}">Usuario</strong>. Acá podés actualizar tus datos y tu contraseña.</p>
+        <p class="text-lead" th:if="${currentUser != null}">Hola, <strong th:text="${currentUser.name.split(' ')[0]}">Usuario</strong>.
+          <th:block th:if="${isClient}">Acá están tus datos y tus pedidos.</th:block>
+          <th:block th:unless="${isClient}">Acá podés actualizar tus datos y tu contraseña.</th:block></p>
       </div>
     </section>
 
@@ -62,6 +64,54 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
         <span>Las contraseñas nuevas no coinciden o tienen menos de 6 caracteres.</span>
       </div>
+
+      <div th:if="${param.verified}" class="login-alert" role="status">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+        <span>¡Listo! Confirmaste tu email. Ya podés ver tus pedidos y guardar tu cumpleaños.</span>
+      </div>
+      <div th:if="${param.error != null and param.error[0] == 'name'}" class="login-alert login-alert--error" role="alert">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+        <span>Escribí tu nombre y apellido (al menos 3 letras). No se hizo ningún cambio.</span>
+      </div>
+
+      <!-- Área del cliente (paso 2.4): "Confirmá tu email" para cuentas creadas con email y contraseña.
+           Hasta confirmar no se muestran pedidos ni se guarda el cumpleaños: así nadie puede ver datos
+           ajenos registrándose con el email de otra persona. -->
+      <section class="profile-card profile-card--highlight" id="email-verify" aria-labelledby="verify-title" th:if="${isClient and !customerArea}">
+        <div class="profile-card-head">
+          <h2 id="verify-title" class="profile-card-title">Confirmá tu email</h2>
+          <p class="profile-card-text">Así podés ver tus pedidos y recibir tu regalo de cumpleaños.</p>
+        </div>
+        <div class="field-stack">
+          <div th:if="${verifyError}" class="login-alert login-alert--error" role="alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+            <span th:text="${verifyError}">Mensaje</span>
+          </div>
+          <th:block th:unless="${verifyCodeSent}">
+            <p class="profile-verify-text">Te mandamos un código de 6 números a <strong th:text="${currentUser.email}">nombre@gmail.com</strong>.</p>
+            <form th:action="@{/profile/email/code}" method="post" class="profile-actions">
+              <button type="submit" class="button button--primary button--lg">Mandarme el código</button>
+            </form>
+          </th:block>
+          <th:block th:if="${verifyCodeSent}">
+            <p class="profile-verify-text">Escribí el código que te mandamos a <strong th:text="${currentUser.email}">nombre@gmail.com</strong>. Si no lo ves, revisá la carpeta de spam.</p>
+            <form th:action="@{/profile/email/verify}" method="post" id="verify-form" class="field-stack" novalidate>
+              <div class="field">
+                <label for="verify-code" class="field__label">Código de 6 números</label>
+                <input id="verify-code" name="code" type="text" class="input input--code" autocomplete="one-time-code" inputmode="numeric"
+                       pattern="[0-9]{6}" maxlength="6" required aria-describedby="verify-code-error">
+                <p class="field__error" id="verify-code-error" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span></span></p>
+              </div>
+              <div class="profile-actions">
+                <button type="submit" class="button button--primary button--lg" id="verify-submit">Confirmar</button>
+              </div>
+            </form>
+            <form th:action="@{/profile/email/code}" method="post">
+              <button type="submit" class="button button--ghost">Mandarme otro código</button>
+            </form>
+          </th:block>
+        </div>
+      </section>
 
       <!-- Cuenta de Google (ProfileController y SecurityConfig.oauth2FailureHandler) -->
       <div th:if="${param.linked}" class="login-alert" role="status">
@@ -107,10 +157,45 @@
             <p class="field__error" id="phone-error" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span></span></p>
           </div>
 
+          <!-- Se guardan en su ficha de cliente (CustomerAccountService.saveProfile) -->
+          <th:block th:if="${customerArea}">
+            <div class="field">
+              <label class="field__label" for="birthDate">Fecha de cumpleaños <span class="field__optional">(opcional)</span></label>
+              <input id="birthDate" name="birthDate" type="date" class="input" autocomplete="bday"
+                     th:value="${birthDate}" th:max="${#temporals.format(#temporals.createToday(), 'yyyy-MM-dd')}"
+                     aria-describedby="birthDate-hint birthDate-error">
+              <p class="field__hint" id="birthDate-hint">Para mandarte un regalo en tu cumpleaños.</p>
+              <p class="field__error" id="birthDate-error" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span></span></p>
+            </div>
+
+            <div class="field">
+              <label class="check">
+                <input type="checkbox" id="marketingConsent" name="marketingConsent" th:checked="${marketingConsent}" aria-describedby="marketingConsent-hint">
+                <span>Quiero recibir promociones y un regalo en mi cumpleaños</span>
+              </label>
+              <p class="field__hint" id="marketingConsent-hint">Te escribimos a tu email. Podés sacar la marca cuando quieras, o darte de baja desde cualquier email.</p>
+            </div>
+          </th:block>
+
           <div class="profile-actions">
             <button type="submit" class="button button--primary button--lg" id="profile-submit">Guardar datos</button>
           </div>
         </form>
+      </section>
+
+      <!-- Mis pedidos (solo lectura). Los dibuja profile.js con GET /api/account/orders,
+           que devuelve únicamente los pedidos del usuario logueado. -->
+      <section class="profile-card" id="my-orders" aria-labelledby="orders-title" th:if="${isClient}">
+        <div class="profile-card-head">
+          <h2 id="orders-title" class="profile-card-title">Mis pedidos</h2>
+          <p class="profile-card-text">Cómo va cada pedido. Para cambiar algo, escribinos por WhatsApp.</p>
+        </div>
+        <div>
+          <div th:if="${customerArea}" class="my-orders" id="my-orders-list" aria-live="polite" data-loading="true">
+            <p class="my-orders-empty">Cargando tus pedidos…</p>
+          </div>
+          <p th:unless="${customerArea}" class="my-orders-empty">Confirmá tu email (arriba) para ver tus pedidos.</p>
+        </div>
       </section>
 
       <!-- Cambiar contraseña -->
@@ -189,6 +274,45 @@
           <p class="field__hint" th:unless="${passwordSession}">Para vincular o desvincular, cerrá sesión y entrá con tu email y contraseña.</p>
         </div>
       </section>
+
+      <!-- Eliminar mi cuenta (derecho de supresión, Ley 25.326). Borra el usuario y saca los datos
+           personales de la ficha y de los pedidos (CustomerAccountService.deleteAccount). -->
+      <section class="profile-card" id="delete-account" aria-labelledby="delete-title" th:if="${isClient}">
+        <div class="profile-card-head">
+          <h2 id="delete-title" class="profile-card-title">Eliminar mi cuenta</h2>
+          <p class="profile-card-text">Se borran tu cuenta y tus datos personales.</p>
+        </div>
+        <div class="field-stack">
+          <div th:if="${param.deleteError}" class="login-alert login-alert--error" role="alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+            <span>No pudimos eliminar tu cuenta porque tenés un pedido en curso.</span>
+          </div>
+          <th:block th:if="${#lists.isEmpty(activeOrders)}">
+            <p class="profile-verify-text">Tus pedidos quedan guardados sin tu nombre ni tus datos de contacto, solo para las cuentas del negocio. Esto no se puede deshacer.</p>
+            <div class="profile-actions">
+              <button type="button" class="button button--danger button--lg" id="delete-open">Eliminar mi cuenta</button>
+            </div>
+          </th:block>
+          <p th:unless="${#lists.isEmpty(activeOrders)}" class="profile-verify-text">
+            Tenés un pedido en curso (entrega el <strong th:text="${#temporals.format(activeOrders[0].deliveryDate, 'dd/MM/yyyy')}">12/10/2026</strong>).
+            Vas a poder eliminar tu cuenta cuando lo recibas. Si querés cancelarlo, escribinos por
+            <a class="link" th:href="|https://wa.me/${whatsappNumber}|" target="_blank" rel="noopener">WhatsApp</a>.
+          </p>
+        </div>
+      </section>
+
+      <!-- Ventana de confirmación (<dialog> del navegador; la abre profile.js) -->
+      <dialog class="confirm-dialog" id="delete-dialog" aria-labelledby="delete-dialog-title" th:if="${isClient and #lists.isEmpty(activeOrders)}">
+        <form th:action="@{/profile/delete}" method="post" class="confirm-dialog__body">
+          <h2 id="delete-dialog-title" class="confirm-dialog__title">¿Eliminar tu cuenta?</h2>
+          <p>Vamos a borrar tu cuenta, tu nombre, email, celular, dirección y cumpleaños. Tus pedidos quedan sin tus datos. <strong>No se puede deshacer.</strong></p>
+          <input type="hidden" name="confirm" value="si">
+          <div class="confirm-dialog__actions">
+            <button type="button" class="button button--secondary button--lg" id="delete-cancel">Cancelar</button>
+            <button type="submit" class="button button--danger button--lg" id="delete-confirm">Sí, eliminar mi cuenta</button>
+          </div>
+        </form>
+      </dialog>
     </div>
   </main>
 

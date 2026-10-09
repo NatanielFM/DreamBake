@@ -22,6 +22,14 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     // Para borrar un cliente: primero se desvinculan sus pedidos (los pedidos no se borran)
     List<Order> findByCustomer(Customer customer);
 
+    // "Mis pedidos" del área del cliente: los pedidos unidos a una ficha de cliente con ese email,
+    // y los que todavía no tienen ficha (pedidos nuevos de la tienda) pero se hicieron con ese email.
+    // Los más nuevos primero.
+    @Query("SELECT o FROM Order o LEFT JOIN o.customer c " +
+           "WHERE LOWER(c.email) = LOWER(:email) OR (c IS NULL AND LOWER(o.customerEmail) = LOWER(:email)) " +
+           "ORDER BY o.deliveryDate DESC, o.id DESC")
+    List<Order> findForAccount(@Param("email") String email);
+
     // Pedidos que se entregan entre dos fechas (inclusive) y están en alguno de esos estados
     // (los usa la tarea de las 8:00: recordatorios y resumen de entregas)
     List<Order> findByDeliveryDateBetweenAndStatusIn(LocalDate from, LocalDate to, Collection<OrderStatus> statuses);

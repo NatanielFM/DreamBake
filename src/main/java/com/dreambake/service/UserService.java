@@ -48,6 +48,9 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(java.util.UUID.randomUUID().toString()));
         user.setRoles("ROLE_USER");
         user.setEnabled(true);
+        // El email ya está comprobado: lo confirmó la red social o la persona escribió el código
+        // que le mandamos (Facebook sin email, SocialSignupController)
+        user.setEmailVerified(true);
         return userRepository.save(user);
     }
 
@@ -65,6 +68,7 @@ public class UserService {
             user.setProviderId(existing.getProviderId());
             user.setAvatarUrl(existing.getAvatarUrl());
             user.setLastLoginAt(existing.getLastLoginAt());
+            user.setEmailVerified(existing.getEmailVerified());
             if (user.getPassword() == null || user.getPassword().isEmpty()) {
                 user.setPassword(existing.getPassword());
             } else {

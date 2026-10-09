@@ -13,6 +13,9 @@ public interface EmailLogRepository extends JpaRepository<EmailLog, Long> {
     // Historial de un cliente, del más nuevo al más viejo (ficha del cliente)
     List<EmailLog> findByCustomerOrderBySentAtDesc(Customer customer);
 
+    // Historial de emails mandados a una dirección (al eliminar una cuenta se borra la dirección)
+    List<EmailLog> findByRecipientEmailIgnoreCase(String recipientEmail);
+
     // ¿Ya se le mandó un email de este tipo, con ese resultado, en el período dado? (evita saludos repetidos)
     boolean existsByCustomerAndTypeAndStatusAndSentAtBetween(Customer customer, EmailType type, EmailStatus status,
                                                              LocalDateTime from, LocalDateTime to);
