@@ -1,5 +1,31 @@
 // /js/admin/settings.js - Pestaña "Ajustes": datos del negocio que usa la tienda
 document.addEventListener('DOMContentLoaded', () => {
+  // ================= EMAIL DE PRUEBA =================
+  // Pide al servidor que mande un mail de prueba al administrador logueado y muestra el resultado
+  // en el modal de avisos de main.js (showErrorAlert, con título propio cuando salió bien).
+  const emailTestBtn = document.getElementById('btn-email-test');
+  if (emailTestBtn) {
+    emailTestBtn.addEventListener('click', async () => {
+      const originalText = emailTestBtn.textContent;
+      emailTestBtn.disabled = true;
+      emailTestBtn.textContent = 'Enviando…';
+      try {
+        const res = await fetch('/api/email/test', { method: 'POST' });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+          window.showErrorAlert(data.message || 'Email enviado.', 'Email enviado');
+        } else {
+          window.showErrorAlert(data.message || 'No se pudo enviar el email de prueba.', 'No se pudo enviar');
+        }
+      } catch (err) {
+        window.showErrorAlert('No se pudo conectar con el servidor.', 'No se pudo enviar');
+      } finally {
+        emailTestBtn.disabled = false;
+        emailTestBtn.textContent = originalText;
+      }
+    });
+  }
+
   const form = document.getElementById('settings-form');
   if (!form) return;
 

@@ -724,6 +724,15 @@
           </div>
           <p class="settings-status" id="settings-status" role="status" hidden></p>
         </form>
+
+        <!-- Email de prueba: comprueba que el correo saliente (config/application.properties) está bien cargado -->
+        <div class="config-block settings-form" id="email-test-block">
+          <h3 class="section-label">Correo electrónico</h3>
+          <p class="form-hint settings-intro">Manda un email de prueba a tu casilla (la de tu usuario de administrador) para comprobar que el sistema puede enviar mensajes a los clientes.</p>
+          <div class="form-actions">
+            <button type="button" class="btn btn-pink" id="btn-email-test">Enviar email de prueba</button>
+          </div>
+        </div>
       </section>
 
     </main>
@@ -994,7 +1003,7 @@
   <div id="modal-alert" class="modal-overlay" hidden>
     <div class="modal-card confirm-card">
       <div class="modal-header">
-        <h3>Revisá esto</h3>
+        <h3 id="alert-title">Revisá esto</h3>
         <button type="button" class="close-modal" aria-label="Cerrar">&times;</button>
       </div>
       <div class="modal-body">

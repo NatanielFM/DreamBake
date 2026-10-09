@@ -28,7 +28,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  window.showErrorAlert = function(errors) {
+  // "title" es opcional: por defecto "Revisá esto". Se puede cambiar para avisos que no son errores (ej: "Listo").
+  window.showErrorAlert = function(errors, title) {
     let msg = "";
     if (typeof errors === 'object') {
       for (const key in errors) {
@@ -37,6 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       msg += errors;
     }
+    const alertTitle = document.getElementById('alert-title');
+    if (alertTitle) alertTitle.innerText = title || 'Revisá esto';
     document.getElementById('alert-message').innerText = msg.trim();
     document.getElementById('modal-alert').hidden = false;
   };
