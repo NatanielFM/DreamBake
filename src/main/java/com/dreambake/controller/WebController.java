@@ -88,10 +88,4 @@ public class WebController {
         model.addAttribute("categories", categoryRepository.findAll());
         return "products";
     }
-
-    // Dejamos lista la ruta de perfil para el Punto 4
-    @GetMapping("/profile")
-    public String profilePage() {
-        return "profile";
-    }
 }

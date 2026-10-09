@@ -11,6 +11,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // Método personalizado para buscar por email (útil para el Login)
     Optional<User> findByEmail(String email);
 
+    // Usuario vinculado a una cuenta de Google o Facebook (por el id que da la red social)
+    Optional<User> findByAuthProviderAndProviderId(com.dreambake.entity.AuthProvider authProvider, String providerId);
+
     // Buscar usuarios por rol
     java.util.List<User> findByRoles(String roles);
 

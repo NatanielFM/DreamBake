@@ -1,7 +1,12 @@
 package com.dreambake.config;
 
+import com.dreambake.service.CustomOAuth2UserService;
+import com.dreambake.service.CustomOidcUserService;
 import com.dreambake.service.LoginAttemptService;
+import com.dreambake.service.SocialLoginService;
 import com.dreambake.util.ClientIpResolver;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.server.servlet.CookieSameSiteSupplier;
 import org.springframework.context.annotation.Bean;
@@ -10,15 +15,22 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -36,6 +48,7 @@ import java.util.UUID;
  *  5. Límite de pedidos, cupones, registros e inicios de sesión desde una misma IP (RateLimitFilter).
  *  6. Cookie de sesión con SameSite=Lax.
  *  7. "Mantener la sesión iniciada" (remember-me) con una cookie firmada que dura 14 días.
+ *  8. Login con Google (solo si hay credenciales cargadas en config/application.properties).
  */
 @Configuration
 @EnableWebSecurity
@@ -66,15 +79,21 @@ public class SecurityConfig {
             "script-src 'self' https://cdn.jsdelivr.net",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             "font-src 'self' https://fonts.gstatic.com",
-            "img-src 'self' data: blob:",
+            // lh3.googleusercontent.com: fotos de perfil de Google (las cuentas que entran con Google)
+            "img-src 'self' data: blob: https://lh3.googleusercontent.com",
             "connect-src 'self'",
             "object-src 'none'",
             "base-uri 'self'",
-            "form-action 'self'",
+            // accounts.google.com: el botón "Vincular cuenta de Google" del perfil es un formulario que
+            // termina redirigiendo a Google, y el navegador también controla esas redirecciones
+            "form-action 'self' https://accounts.google.com",
             "frame-ancestors 'none'");
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http,
+            ObjectProvider<ClientRegistrationRepository> socialClients,
+            CustomOidcUserService customOidcUserService,
+            CustomOAuth2UserService customOAuth2UserService) throws Exception {
         http
                 // 2. CSRF: el token viaja en la cookie XSRF-TOKEN y el JS lo devuelve en el encabezado
                 //    X-XSRF-TOKEN (ver static/js/csrf.js). Los formularios con th:action lo incluyen solos.
@@ -141,12 +160,44 @@ public class SecurityConfig {
                         .deleteCookies("JSESSIONID", "remember-me")
                         .permitAll());
 
+        // 8. Login con Google. Spring Boot solo arma la lista de redes sociales (ClientRegistrationRepository)
+        //    si en config/application.properties hay un client-id cargado. Sin credenciales no se activa
+        //    (y el botón "Continuar con Google" no se muestra, ver PublicViewAdvice).
+        if (socialClients.getIfAvailable() != null) {
+            http.oauth2Login(oauth -> oauth
+                    .loginPage("/login") // nuestra página, no la genérica de Spring
+                    .userInfoEndpoint(info -> info
+                            .oidcUserService(customOidcUserService)   // Google (OpenID Connect)
+                            .userService(customOAuth2UserService))    // Facebook (paso 2.3)
+                    .successHandler(authenticationSuccessHandler())   // misma redirección por rol
+                    .failureHandler(oauth2FailureHandler()));
+        }
+
         return http.build();
     }
 
     @Bean
     public AuthenticationSuccessHandler authenticationSuccessHandler() {
         return (request, response, authentication) -> {
+            // Venía de "Vincular cuenta de Google" en el perfil: vuelve al perfil con el aviso
+            HttpSession session = request.getSession(false);
+            if (session != null && session.getAttribute(SocialLoginService.SESSION_LINK_DONE) != null) {
+                session.removeAttribute(SocialLoginService.SESSION_LINK_DONE);
+                // Se vuelve a dejar la sesión "con contraseña" que tenía el empleado antes de ir a Google,
+                // así puede desvincular enseguida si se equivocó de cuenta
+                Object previous = session.getAttribute(SocialLoginService.SESSION_LINK_PREVIOUS_AUTH);
+                if (previous instanceof Authentication previousAuth) {
+                    SecurityContext context = SecurityContextHolder.createEmptyContext();
+                    context.setAuthentication(previousAuth);
+                    SecurityContextHolder.setContext(context);
+                    new HttpSessionSecurityContextRepository().saveContext(context, request, response);
+                }
+                SocialLoginService.clearLinkRequest(session);
+                response.sendRedirect("/profile?linked=google");
+                return;
+            }
+            SocialLoginService.clearLinkRequest(session);
+
             // Login correcto: se borran los intentos fallidos de ese email desde esta IP
             loginAttemptService.loginSucceeded(authentication.getName(), ClientIpResolver.resolve(request));
 
@@ -175,6 +226,31 @@ public class SecurityConfig {
             }
             loginAttemptService.loginFailed(request.getParameter("username"), ClientIpResolver.resolve(request));
             response.sendRedirect("/login?error");
+        };
+    }
+
+    // Códigos de error del login con Google que tienen un mensaje propio en login.html y profile.html.
+    // Cualquier otro error se muestra como "failed" (nunca se copia a la dirección lo que mande Google).
+    private static final Set<String> SOCIAL_ERROR_CODES = Set.of(
+            SocialLoginService.ERROR_STAFF_PASSWORD, SocialLoginService.ERROR_EMAIL_UNVERIFIED,
+            SocialLoginService.ERROR_DISABLED, SocialLoginService.ERROR_ALREADY_LINKED);
+
+    private AuthenticationFailureHandler oauth2FailureHandler() {
+        return (request, response, exception) -> {
+            String code = SocialLoginService.ERROR_FAILED;
+            if (exception instanceof OAuth2AuthenticationException oauthError) {
+                String raw = oauthError.getError().getErrorCode();
+                if ("access_denied".equals(raw)) {
+                    code = "cancelled"; // el usuario tocó "Cancelar" en la pantalla de Google
+                } else if (SOCIAL_ERROR_CODES.contains(raw)) {
+                    code = raw;
+                }
+            }
+            // Si era un pedido de "Vincular" desde el perfil, se vuelve al perfil (la sesión sigue abierta)
+            HttpSession session = request.getSession(false);
+            boolean wasLinking = session != null && session.getAttribute(SocialLoginService.SESSION_LINK_USER_ID) != null;
+            SocialLoginService.clearLinkRequest(session);
+            response.sendRedirect(wasLinking ? "/profile?linkError=" + code : "/login?social=" + code);
         };
     }
 

@@ -47,3 +47,29 @@
 @media (max-width: 29.99rem) {
   .profile-actions .button { width: 100%; }
 }
+
+/* ---------- Cuenta de Google (paso 2.2) ---------- */
+.profile-hero-title { display: flex; align-items: center; gap: var(--space-3); }
+.profile-avatar {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--rose-100);
+}
+.profile-google-note,
+.profile-google-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+.profile-google-status { color: var(--text-strong); font-weight: var(--fw-medium); }
+.profile-google-note .google-button__logo,
+.profile-google-status .google-button__logo { flex: none; width: 18px; height: 18px; }
+/* El botón de Google del perfil no ocupa todo el ancho en pantallas grandes */
+.profile-google-button { width: auto; cursor: pointer; }
+@media (max-width: 29.99rem) {
+  .profile-google-button { width: 100%; }
+}

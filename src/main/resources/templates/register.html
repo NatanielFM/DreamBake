@@ -13,6 +13,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Roboto 500 solo para el botón "Continuar con Google" (lo pide la guía de marca de Google) -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@500&display=swap" rel="stylesheet">
 
   <!-- Orden: base vieja compartida → tokens → componentes → header → CSS de la página → footer -->
   <link rel="stylesheet" th:href="@{/css/main.css}">
@@ -95,6 +97,9 @@
               <button type="submit" id="register-submit" class="button button--primary button--lg button--block auth-submit">Crear cuenta</button>
             </div>
           </form>
+
+          <!-- Login con Google (fragments/social-login.html; solo si hay credenciales cargadas) -->
+          <th:block th:replace="~{fragments/social-login :: google('o registrate con')}"></th:block>
 
           <p class="auth-switch">¿Ya tenés cuenta? <a class="link" th:href="@{/login}">Iniciá sesión</a></p>
         </div>

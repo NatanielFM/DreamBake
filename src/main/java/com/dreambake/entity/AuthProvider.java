@@ -1,6 +1,10 @@
 package com.dreambake.entity;
 
-/** Por dónde se registró y entra el usuario: con email y contraseña, o con una red social. */
+/**
+ * Qué red social tiene vinculada el usuario: LOCAL = ninguna (solo email y contraseña).
+ * Un usuario vinculado a GOOGLE o FACEBOOK también puede tener contraseña propia
+ * (clientes que ya existían y personal que vinculó su cuenta desde el perfil).
+ */
 public enum AuthProvider {
     LOCAL,
     GOOGLE,

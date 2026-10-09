@@ -5,7 +5,9 @@ import com.dreambake.controller.ProfileController;
 import com.dreambake.controller.UnsubscribeController;
 import com.dreambake.controller.WebController;
 import com.dreambake.service.BusinessSettingService;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -19,6 +21,17 @@ public class PublicViewAdvice {
 
     @Autowired
     private BusinessSettingService settingService;
+
+    // Lista de redes sociales configuradas. Spring Boot solo la crea si hay credenciales cargadas.
+    @Autowired
+    private ObjectProvider<ClientRegistrationRepository> socialClients;
+
+    // ¿Se muestra el botón "Continuar con Google"? Solo si hay client-id de Google cargado.
+    @ModelAttribute("googleLoginEnabled")
+    public boolean googleLoginEnabled() {
+        ClientRegistrationRepository repo = socialClients.getIfAvailable();
+        return repo != null && repo.findByRegistrationId("google") != null;
+    }
 
     // Número de WhatsApp del negocio (se cambia desde Panel → Ajustes). Lo usan los links
     // "Escribinos por WhatsApp" y store.js para armar el mensaje del pedido.
