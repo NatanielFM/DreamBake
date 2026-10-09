@@ -16,4 +16,14 @@ public interface EmailLogRepository extends JpaRepository<EmailLog, Long> {
     // ¿Ya se le mandó un email de este tipo, con ese resultado, en el período dado? (evita saludos repetidos)
     boolean existsByCustomerAndTypeAndStatusAndSentAtBetween(Customer customer, EmailType type, EmailStatus status,
                                                              LocalDateTime from, LocalDateTime to);
+
+    // ===== Campañas =====
+    // ¿Este cliente ya tiene un intento (enviado o fallido) de esta campaña? Así se retoma sin repetir.
+    boolean existsByCampaignIdAndCustomer(Long campaignId, Customer customer);
+
+    // Métricas de una campaña: cuántos se enviaron y cuántos fallaron
+    long countByCampaignIdAndStatus(Long campaignId, EmailStatus status);
+
+    // Emails enviados en un período, de cualquier tipo (para el tope diario de Gmail)
+    long countByStatusAndSentAtBetween(EmailStatus status, LocalDateTime from, LocalDateTime to);
 }

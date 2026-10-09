@@ -417,6 +417,34 @@
               <tbody id="loyalty-tbody"></tbody>
             </table>
           </div>
+
+          <!-- Campañas de promociones por email (campaigns.js). Solo les llegan a quienes aceptaron promociones. -->
+          <div class="campaigns" id="campaigns-block">
+            <div class="config-block-head campaigns-head">
+              <h3 class="section-label">Campañas</h3>
+              <button type="button" id="btn-new-campaign" class="btn btn-pink">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg> Nueva campaña
+              </button>
+            </div>
+            <p class="form-hint campaigns-intro">Mandá promociones por email a tus clientes. Salen de a una, con 2 segundos entre cada email, para no superar el límite de Gmail.</p>
+            <div class="campaigns-limit">
+              <div class="form-group">
+                <label for="campaign-daily-limit">Máximo de emails por día</label>
+                <input type="number" id="campaign-daily-limit" class="form-input" min="1" max="2000" step="1" inputmode="numeric" aria-describedby="campaign-daily-limit-hint">
+              </div>
+              <button type="button" id="btn-save-daily-limit" class="btn btn-grey">Guardar máximo</button>
+            </div>
+            <p class="form-hint" id="campaign-daily-limit-hint">Cuenta todos los emails del día (también los de cumpleaños). Gmail gratis permite unos 500. Si se llega al máximo, la campaña sigue al día siguiente.</p>
+
+            <div class="table-responsive campaigns-table">
+              <table class="admin-table">
+                <thead>
+                  <tr><th>Campaña</th><th>Estado</th><th>A quién</th><th>Progreso</th><th>Fecha</th><th><span class="visually-hidden">Acciones</span></th></tr>
+                </thead>
+                <tbody id="campaigns-tbody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
         <div class="panel-block panel-block--table">
@@ -1200,6 +1228,110 @@
     </div>
   </div>
 
+  <!-- Editor de campañas (campaigns.js): formulario a la izquierda y vista previa real del email a la derecha -->
+  <div id="modal-campaign" class="modal-overlay" hidden>
+    <div class="modal-card modal-large campaign-modal">
+      <div class="modal-header">
+        <h3 id="campaign-modal-title">Nueva campaña</h3>
+        <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-campaign">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="settings-status campaign-note" id="campaign-note" role="status" hidden></p>
+        <div class="campaign-editor">
+          <form id="campaign-form" class="form-grid campaign-form" novalidate>
+            <input type="hidden" id="campaign-id">
+            <div class="form-group">
+              <label for="campaign-name">Nombre de la campaña <span class="label-hint">(solo lo ves vos)</span></label>
+              <input type="text" id="campaign-name" class="form-input" maxlength="120" required placeholder="Ej: Promo Día de la Madre">
+            </div>
+            <div class="form-group">
+              <label for="campaign-subject">Asunto del email</label>
+              <input type="text" id="campaign-subject" class="form-input" maxlength="150" required placeholder="Ej: 20% en tortas para mamá">
+            </div>
+            <div class="form-group">
+              <label for="campaign-title">Título</label>
+              <input type="text" id="campaign-title" class="form-input" maxlength="150" placeholder="Ej: ¡Llega el Día de la Madre!">
+            </div>
+            <div class="form-group">
+              <label for="campaign-text">Texto</label>
+              <textarea id="campaign-text" class="form-input" rows="6" maxlength="5000" aria-describedby="campaign-text-hint" placeholder="Contá la promo. Dejá una línea en blanco para empezar otro párrafo."></textarea>
+              <p class="form-hint" id="campaign-text-hint">Se escribe como texto común: no hace falta saber de diseño.</p>
+            </div>
+
+            <div class="form-group">
+              <span class="field-label" id="campaign-image-label">Foto <span class="label-hint">(opcional)</span></span>
+              <div class="campaign-image" aria-labelledby="campaign-image-label">
+                <div class="campaign-image-preview" id="campaign-image-preview"><span class="cell-soft">Sin foto</span></div>
+                <div class="campaign-image-actions">
+                  <button type="button" class="btn btn-grey btn-sm" id="btn-campaign-image">Elegir de la galería</button>
+                  <button type="button" class="btn btn-grey btn-sm" id="btn-campaign-image-remove" hidden>Quitar foto</button>
+                </div>
+              </div>
+              <div class="gallery-grid campaign-gallery" id="campaign-gallery" hidden></div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="campaign-button-text">Botón <span class="label-hint">(opcional)</span></label>
+                <input type="text" id="campaign-button-text" class="form-input" maxlength="40" placeholder="Texto, ej: Ver tortas">
+              </div>
+              <div class="form-group">
+                <label for="campaign-button-url">Link del botón</label>
+                <input type="text" id="campaign-button-url" class="form-input" maxlength="500" placeholder="/products" aria-describedby="campaign-button-url-hint">
+                <p class="form-hint" id="campaign-button-url-hint">Vacío = la página de productos.</p>
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="campaign-audience">¿A quién le llega?</label>
+                <select id="campaign-audience" class="form-input">
+                  <option value="ALL_CONSENTED">Todos los que aceptan promociones</option>
+                  <option value="TAG">Los de una etiqueta</option>
+                  <option value="BIRTHDAY_THIS_MONTH">Los que cumplen años este mes</option>
+                  <option value="INACTIVE_90_DAYS">Los que no compran hace más de 90 días</option>
+                </select>
+              </div>
+              <div class="form-group" id="campaign-tag-group" hidden>
+                <label for="campaign-tag">Etiqueta</label>
+                <select id="campaign-tag" class="form-input"></select>
+              </div>
+            </div>
+            <p class="campaign-count" id="campaign-count" role="status" aria-live="polite"></p>
+
+            <div class="form-group">
+              <label for="campaign-coupon">Cupón <span class="label-hint">(opcional)</span></label>
+              <select id="campaign-coupon" class="form-input" aria-describedby="campaign-coupon-hint"></select>
+              <p class="form-hint" id="campaign-coupon-hint"></p>
+            </div>
+
+            <div class="campaign-schedule" id="campaign-schedule" hidden>
+              <div class="form-group">
+                <label for="campaign-when">Fecha y hora de envío</label>
+                <input type="datetime-local" id="campaign-when" class="form-input">
+              </div>
+              <button type="button" class="btn btn-pink" id="btn-campaign-schedule-confirm">Programar para esa hora</button>
+            </div>
+
+            <div class="form-actions campaign-actions">
+              <button type="button" class="btn btn-grey" id="btn-campaign-save">Guardar borrador</button>
+              <button type="button" class="btn btn-grey" id="btn-campaign-test">Enviar prueba a mi email</button>
+              <button type="button" class="btn btn-grey" id="btn-campaign-schedule">Programar</button>
+              <button type="button" class="btn btn-pink" id="btn-campaign-send">Enviar ahora</button>
+            </div>
+          </form>
+
+          <section class="campaign-preview" aria-labelledby="campaign-preview-title">
+            <h4 class="section-label" id="campaign-preview-title">Vista previa</h4>
+            <p class="form-hint campaign-preview-error" id="campaign-preview-error" hidden></p>
+            <!-- sandbox: el email se muestra sin poder ejecutar nada -->
+            <iframe id="campaign-preview-frame" class="campaign-preview-frame" title="Vista previa del email" sandbox></iframe>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <!-- Historial de pedidos de un cliente (clients.js) -->
   <div id="modal-client-orders" class="modal-overlay" hidden>
     <div class="modal-card modal-large">
@@ -1441,6 +1573,7 @@
 
   <script th:src="@{/js/admin/clients.js}" defer></script>
   <script th:src="@{/js/admin/loyalty.js}" defer></script>
+  <script th:src="@{/js/admin/campaigns.js}" defer></script>
   <script th:src="@{/js/admin/main.js}" defer></script>
   <script th:src="@{/js/admin/gallery.js}" defer></script>
   <script th:src="@{/js/admin/inventory.js}" defer></script>

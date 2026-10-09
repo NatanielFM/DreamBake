@@ -1,14 +1,18 @@
 package com.dreambake.controller;
 
+import com.dreambake.entity.Campaign;
 import com.dreambake.entity.Coupon;
 import com.dreambake.entity.CouponType;
+import com.dreambake.repository.CampaignRepository;
 import com.dreambake.repository.CouponRepository;
+import com.dreambake.service.CampaignService;
 import com.dreambake.service.CouponService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -20,6 +24,9 @@ public class CouponRestController {
 
     @Autowired
     private CouponService couponService;
+
+    @Autowired
+    private CampaignRepository campaignRepository;
 
     @GetMapping
     public List<Coupon> getAllCoupons() {
@@ -52,12 +59,22 @@ public class CouponRestController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCoupon(@PathVariable Long id) {
-        if (couponRepository.existsById(id)) {
-            couponRepository.deleteById(id);
-            return ResponseEntity.ok().build();
+    public ResponseEntity<?> deleteCoupon(@PathVariable Long id) {
+        Optional<Coupon> found = couponRepository.findById(id);
+        if (found.isEmpty()) return ResponseEntity.notFound().build();
+        Coupon coupon = found.get();
+        // Si lo usa una campaña que todavía no terminó, no se deja borrar (el email lo mostraría)
+        if (campaignRepository.existsByCouponAndStatusIn(coupon, CampaignService.UNFINISHED)) {
+            return ResponseEntity.badRequest().body(Map.of("message",
+                    "Este cupón lo usa una campaña que todavía no se terminó de enviar. Quitalo de la campaña antes de borrarlo."));
         }
-        return ResponseEntity.notFound().build();
+        // En las campañas ya terminadas solo se le quita la referencia (el historial queda)
+        for (Campaign c : campaignRepository.findByCoupon(coupon)) {
+            c.setCoupon(null);
+            campaignRepository.save(c);
+        }
+        couponRepository.delete(coupon);
+        return ResponseEntity.ok().build();
     }
 
     // Lo que ve la tienda de un cupón: solo lo necesario para mostrar el beneficio.

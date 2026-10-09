@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -99,14 +100,47 @@ public class EmailService {
     public CompletableFuture<Resultado> enviar(String destinatario, String asunto, String plantilla,
                                                Map<String, Object> variables, EmailType tipo,
                                                Customer cliente, Long campaignId) {
-        Resultado resultado = enviarAhora(destinatario, asunto, plantilla, variables, tipo, cliente);
+        return CompletableFuture.completedFuture(
+                enviarYRegistrar(destinatario, asunto, plantilla, variables, tipo, cliente, campaignId, null));
+    }
+
+    /**
+     * Igual que el anterior, pero con una foto que va DENTRO del mensaje (la plantilla la muestra
+     * con src="cid:imagen"). La usan las campañas para la foto de la galería: así se ve aunque el
+     * sitio todavía no sea público. imagen puede ser null.
+     */
+    @Async
+    public CompletableFuture<Resultado> enviar(String destinatario, String asunto, String plantilla,
+                                               Map<String, Object> variables, EmailType tipo,
+                                               Customer cliente, Long campaignId, Resource imagen) {
+        return CompletableFuture.completedFuture(
+                enviarYRegistrar(destinatario, asunto, plantilla, variables, tipo, cliente, campaignId, imagen));
+    }
+
+    private Resultado enviarYRegistrar(String destinatario, String asunto, String plantilla, Map<String, Object> variables,
+                                       EmailType tipo, Customer cliente, Long campaignId, Resource imagen) {
+        Resultado resultado = enviarAhora(destinatario, asunto, plantilla, variables, tipo, cliente, imagen);
         registrar(destinatario, asunto, tipo, cliente, campaignId, resultado);
-        return CompletableFuture.completedFuture(resultado);
+        return resultado;
+    }
+
+    /**
+     * Arma el HTML de un email con su plantilla, sin mandarlo. Lo usan enviarAhora y la vista previa
+     * de las campañas (así la vista previa es exactamente el mismo HTML que se envía).
+     */
+    public String armarHtml(String asunto, String plantilla, Map<String, Object> variables, String bajaUrl) {
+        Context ctx = new Context();
+        ctx.setVariables(variables == null ? new HashMap<>() : new HashMap<>(variables));
+        ctx.setVariable("asunto", asunto);
+        ctx.setVariable("negocio", app.getBusiness());
+        ctx.setVariable("publicUrl", app.getPublicUrl());
+        ctx.setVariable("bajaUrl", bajaUrl);
+        return templateEngine.process(plantilla, ctx);
     }
 
     // Hace el envío y devuelve cómo salió (sin registrar nada)
     private Resultado enviarAhora(String destinatario, String asunto, String plantilla,
-                                  Map<String, Object> variables, EmailType tipo, Customer cliente) {
+                                  Map<String, Object> variables, EmailType tipo, Customer cliente, Resource imagen) {
         if (destinatario == null || destinatario.isBlank()) {
             log.warn("Email '{}' no enviado: no hay dirección de destino.", asunto);
             return Resultado.fallo("No hay una dirección de email de destino.");
@@ -135,14 +169,7 @@ public class EmailService {
         }
         try {
             // 1. Se arma el HTML con la plantilla
-            Context ctx = new Context();
-            Map<String, Object> datos = variables == null ? new HashMap<>() : new HashMap<>(variables);
-            ctx.setVariables(datos);
-            ctx.setVariable("asunto", asunto);
-            ctx.setVariable("negocio", app.getBusiness());
-            ctx.setVariable("publicUrl", app.getPublicUrl());
-            ctx.setVariable("bajaUrl", bajaUrl);
-            String html = templateEngine.process(plantilla, ctx);
+            String html = armarHtml(asunto, plantilla, variables, bajaUrl);
 
             // 2. Se arma el mensaje: remitente, destinatario, asunto, HTML y el logo incrustado
             MimeMessage mensaje = sender.createMimeMessage();
@@ -157,6 +184,9 @@ public class EmailService {
             helper.setText(html, true);
             // El logo va dentro del mensaje (cid:logo): así se ve aunque el sitio no sea público todavía
             helper.addInline("logo", new ClassPathResource("static/img/logo-email.png"));
+            if (imagen != null && imagen.exists()) {
+                helper.addInline("imagen", imagen);
+            }
             // Encabezado estándar de baja: Gmail y otros muestran un botón "Anular suscripción"
             // que lleva a este link. Ayuda a que los mails no terminen en spam.
             if (bajaUrl != null) {

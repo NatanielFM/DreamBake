@@ -976,6 +976,51 @@ select.form-input {
   .loyalty-config .btn { flex: 1 1 100%; }
 }
 
+/* Clientes → Fidelización → Campañas */
+.campaigns { margin-top: var(--space-7); padding-top: var(--space-6); border-top: 1px solid var(--admin-line); }
+.campaigns-head { margin-bottom: var(--space-2); }
+.campaigns-intro { margin: 0 0 var(--space-4); }
+.campaigns-limit { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); }
+.campaigns-limit .form-group { width: 13rem; margin: 0; }
+.campaigns-table { margin-top: var(--space-5); }
+.campaign-lines { display: grid; gap: 2px; }
+.campaign-progress { display: grid; gap: 4px; }
+.campaign-bar { width: 100%; max-width: 160px; height: 8px; overflow: hidden; border-radius: var(--radius-pill); background: var(--admin-surface-2); }
+.campaign-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--admin-primary); }
+.campaign-actions-cell { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+/* Editor: formulario + vista previa lado a lado (en el celular, uno debajo del otro) */
+.campaign-modal { max-width: 1180px; }
+.campaign-note { margin: 0 0 var(--space-4); }
+.campaign-editor { display: grid; gap: var(--space-6); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+.campaign-form { margin: 0; }
+.campaign-image { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.campaign-image-preview {
+  display: grid; place-items: center; width: 120px; height: 80px; overflow: hidden;
+  border: 1.5px dashed var(--admin-input-line); border-radius: var(--radius-md); background: var(--admin-surface-2);
+}
+.campaign-image-preview img { width: 100%; height: 100%; object-fit: cover; }
+.campaign-image-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.campaign-gallery { margin-top: var(--space-3); max-height: 260px; overflow-y: auto; }
+.campaign-count { margin: calc(var(--space-2) * -1) 0 0; color: var(--admin-heading); font-weight: var(--fw-semibold); }
+.campaign-schedule { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); padding: var(--space-4); border-radius: var(--radius-md); background: var(--admin-surface-2); }
+.campaign-schedule .form-group { margin: 0; }
+.campaign-actions { flex-wrap: wrap; justify-content: flex-start; }
+.campaign-preview { position: sticky; top: 0; }
+.campaign-preview-frame {
+  display: block; width: 100%; height: 640px; border: 1px solid var(--admin-line);
+  border-radius: var(--radius-md); background: var(--rose-50);
+}
+@media (max-width: 900px) {
+  .campaign-editor { grid-template-columns: 1fr; }
+  .campaign-preview { position: static; }
+  .campaign-preview-frame { height: 520px; }
+}
+@media (max-width: 640px) {
+  .campaigns-limit .form-group { width: 100%; }
+  .campaigns-limit .btn, .campaign-actions .btn, .campaign-schedule .btn { flex: 1 1 100%; }
+}
+
 /* Ficha del cliente: permiso de emails + botón para dar de baja */
 .client-consent-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
 .client-consent-row .modal-message { margin: 0; }

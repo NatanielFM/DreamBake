@@ -91,6 +91,15 @@
           "src/main/resources/templates/admin.html"
         ],
         "createdAt": "2026-10-06T04:58:49.311Z"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "src/main/resources/templates/email/campana.html"
+        ],
+        "createdAt": "2026-10-09T16:31:25.880Z",
+        "reason": "Claude: falso positivo; Thymeleaf completa src con th:src al renderizar y la <img> solo se emite con th:if cuando la campaña tiene foto"
       }
     ]
   }

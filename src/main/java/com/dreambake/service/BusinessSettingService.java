@@ -61,6 +61,28 @@ public class BusinessSettingService {
         return null;
     }
 
+    // ===== Campañas: tope diario de emails (límite de Gmail) =====
+    public static final String CAMPAIGN_DAILY_LIMIT = "campaign.daily-limit";
+    public static final int DEFAULT_CAMPAIGN_DAILY_LIMIT = 400;
+
+    // Cuántos emails se pueden mandar por día en total (Gmail gratis permite unos 500)
+    public int getCampaignDailyLimit() {
+        return settingRepository.findById(CAMPAIGN_DAILY_LIMIT)
+                .map(BusinessSetting::getValue)
+                .map(v -> { try { return Integer.parseInt(v.trim()); } catch (Exception e) { return null; } })
+                .filter(n -> n >= 1 && n <= 2000)
+                .orElse(DEFAULT_CAMPAIGN_DAILY_LIMIT);
+    }
+
+    // Devuelve null si se guardó, o el mensaje de error para mostrar
+    public String saveCampaignDailyLimit(Integer limit) {
+        if (limit == null || limit < 1 || limit > 2000) {
+            return "El máximo de emails por día tiene que ser un número entre 1 y 2000.";
+        }
+        settingRepository.save(new BusinessSetting(CAMPAIGN_DAILY_LIMIT, String.valueOf(limit)));
+        return null;
+    }
+
     // Devuelve null si el número es válido y se guardó, o el mensaje de error para mostrar
     public String saveWhatsappNumber(String raw) {
         // Se quitan espacios, guiones, paréntesis y el "+" que la gente suele escribir

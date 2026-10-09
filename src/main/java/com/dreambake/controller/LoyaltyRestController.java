@@ -27,20 +27,25 @@ public class LoyaltyRestController {
 
     // ----- Configuración (se guarda en la base: tabla business_settings) -----
 
-    public record LoyaltySettings(boolean enabled, int percentage, boolean emailConfigured) {}
+    // dailyLimit: máximo de emails por día (lo usan las campañas; cuenta todos los emails del día)
+    public record LoyaltySettings(boolean enabled, int percentage, boolean emailConfigured, int dailyLimit) {}
 
     @GetMapping("/settings")
     public LoyaltySettings getSettings() {
         return new LoyaltySettings(settingService.isBirthdayEnabled(), settingService.getBirthdayPercentage(),
-                emailService.estaConfigurado());
+                emailService.estaConfigurado(), settingService.getCampaignDailyLimit());
     }
 
-    public record SettingsRequest(Boolean enabled, Integer percentage) {}
+    public record SettingsRequest(Boolean enabled, Integer percentage, Integer dailyLimit) {}
 
     @PutMapping("/settings")
     public ResponseEntity<?> saveSettings(@RequestBody SettingsRequest req) {
         if (req.percentage() != null) {
             String error = settingService.saveBirthdayPercentage(req.percentage());
+            if (error != null) return ResponseEntity.badRequest().body(Map.of("message", error));
+        }
+        if (req.dailyLimit() != null) {
+            String error = settingService.saveCampaignDailyLimit(req.dailyLimit());
             if (error != null) return ResponseEntity.badRequest().body(Map.of("message", error));
         }
         if (req.enabled() != null) settingService.setBirthdayEnabled(req.enabled());

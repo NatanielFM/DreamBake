@@ -406,7 +406,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (t.deletable) {
         li.querySelector('.btn-delete').addEventListener('click', () => {
           window.showConfirmModal('Eliminar Etiqueta', `¿Seguro que deseas eliminar la etiqueta "${t.name}"? Los clientes volverán a "Sin etiqueta".`, 'Eliminar', 'btn-red', async () => {
-            await fetch(`/api/tags/${t.id}`, { method: 'DELETE' });
+            const res = await fetch(`/api/tags/${t.id}`, { method: 'DELETE' });
+            // El servidor puede negarse (por ejemplo, si una campaña usa la etiqueta) y explica por qué
+            if (!res.ok) window.showErrorAlert(await res.text() || 'No se pudo eliminar la etiqueta.');
             loadTagsFromServer();
             loadClientsFromServer(); 
           });
@@ -541,7 +543,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       li.querySelector('.btn-delete').addEventListener('click', () => {
         window.showConfirmModal('Eliminar Cupón', `¿Seguro que deseas eliminar el cupón "${c.code}"?`, 'Eliminar', 'btn-red', async () => {
-          await fetch(`/api/coupons/${c.id}`, { method: 'DELETE' });
+          const res = await fetch(`/api/coupons/${c.id}`, { method: 'DELETE' });
+          // El servidor puede negarse (por ejemplo, si una campaña usa el cupón) y explica por qué
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            window.showErrorAlert(data.message || 'No se pudo eliminar el cupón.');
+          }
           loadCouponsFromServer();
         });
       });

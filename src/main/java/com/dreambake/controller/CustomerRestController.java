@@ -1,15 +1,18 @@
 package com.dreambake.controller;
 
+import com.dreambake.entity.Campaign;
 import com.dreambake.entity.Customer;
 import com.dreambake.entity.CustomerTag;
 import com.dreambake.entity.EmailStatus;
 import com.dreambake.entity.EmailType;
 import com.dreambake.entity.Order;
 import com.dreambake.entity.OrderStatus;
+import com.dreambake.repository.CampaignRepository;
 import com.dreambake.repository.CustomerRepository;
 import com.dreambake.repository.CustomerTagRepository;
 import com.dreambake.repository.EmailLogRepository;
 import com.dreambake.repository.OrderRepository;
+import com.dreambake.service.CampaignService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +42,9 @@ public class CustomerRestController {
 
     @Autowired
     private EmailLogRepository emailLogRepo;
+
+    @Autowired
+    private CampaignRepository campaignRepo;
 
     // Pedidos que cuentan como compra (los nuevos sin confirmar, cancelados y rechazados no)
     private static final List<OrderStatus> PURCHASE_STATUSES =
@@ -202,6 +208,16 @@ public class CustomerRestController {
         return tagRepo.findById(id).map(tag -> {
             if (!tag.isDeletable()) {
                 return ResponseEntity.badRequest().body("No se puede eliminar esta etiqueta por defecto.");
+            }
+            // Si la usa una campaña que todavía no terminó, no se deja borrar (se quedaría sin destinatarios)
+            if (campaignRepo.existsByTagAndStatusIn(tag, CampaignService.UNFINISHED)) {
+                return ResponseEntity.badRequest().body(
+                        "Esta etiqueta la usa una campaña que todavía no se terminó de enviar. Cambiá la audiencia de la campaña antes de borrarla.");
+            }
+            // En las campañas ya terminadas solo se le quita la referencia (el historial queda)
+            for (Campaign c : campaignRepo.findByTag(tag)) {
+                c.setTag(null);
+                campaignRepo.save(c);
             }
             CustomerTag defaultTag = tagRepo.findByName("Sin etiqueta").orElse(null);
             List<Customer> customers = customerRepo.findByTag(tag);
