@@ -23,6 +23,10 @@ import java.net.UnknownHostException;
  *     "X-Forwarded-For: 1.2.3.4", el proxy agrega la IP real al final:
  *     "1.2.3.4, 181.238.22.99". La primera la inventó el visitante; la última la puso el proxy.
  *  3. Si el encabezado no está o no parece una IP, se usa la IP de la conexión.
+ *
+ * Tomcat ya aplica esta misma regla antes de que el pedido llegue a la app (ver ProxyConfig),
+ * así que normalmente getRemoteAddr() ya trae la IP real. Este método la repite como
+ * resguardo, para que los límites por IP no dependan solo de esa configuración.
  */
 public final class ClientIpResolver {
 
