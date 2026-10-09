@@ -36,7 +36,7 @@ public class GalleryRestController {
     @PostMapping
     public ResponseEntity<?> uploadImage(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body("Archivo vacío");
+            return ResponseEntity.badRequest().body(Map.of("message", "No llegó ninguna foto. Probá de nuevo."));
         }
         try {
             // Crear carpeta si no existe
@@ -51,7 +51,8 @@ public class GalleryRestController {
             String extension = original.contains(".") ? original.substring(original.lastIndexOf('.') + 1) : "";
             String contentType = file.getContentType() == null ? "" : file.getContentType();
             if (!List.of("jpg", "jpeg", "png", "webp", "gif").contains(extension) || !contentType.startsWith("image/")) {
-                return ResponseEntity.badRequest().body("Solo se permiten imágenes JPG, PNG, WEBP o GIF.");
+                // (Las fotos HEIC del iPhone las convierte a JPG el panel antes de subirlas: gallery.js)
+                return ResponseEntity.badRequest().body(Map.of("message", "Solo se pueden subir fotos JPG, PNG, WEBP o GIF."));
             }
 
             // Nombre nuevo y único: no se usa el nombre original (podría traer rutas raras como "../")
@@ -66,7 +67,8 @@ public class GalleryRestController {
 
             return ResponseEntity.ok(image);
         } catch (IOException e) {
-            return ResponseEntity.internalServerError().body("Error al subir el archivo: " + e.getMessage());
+            System.err.println("No se pudo guardar la foto subida: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(Map.of("message", "No se pudo guardar la foto en el servidor. Probá de nuevo."));
         }
     }
 

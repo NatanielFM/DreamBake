@@ -136,7 +136,7 @@ Definido en `config/SecurityConfig.java`:
 - Pedidos públicos: el servidor fuerza `PENDING`, seña 0 y pedido nuevo, exige nombre/teléfono/fecha/ítems y limpia los textos (`util/InputSanitizer`) para evitar XSS en el panel.
 - **El precio lo calcula el servidor** (`OrderPricingService`): el carrito manda `product.id` o `cakeSizeId` y el código del cupón; el servidor busca los precios en `products` y `cake_sizes`, valida el cupón, le descuenta un uso y calcula el total. El total que mande el navegador se ignora.
 - Registro: solo se aceptan `name`, `email`, `phone`, `password` (`@InitBinder`) y el email debe ser único.
-- Galería: solo imágenes JPG/PNG/WEBP/GIF, guardadas con nombre UUID. Al borrar una foto se borra también el archivo (solo dentro de `uploads/`); si la usa un producto, no se borra.
+- Galería: solo imágenes JPG/PNG/WEBP/GIF, guardadas con nombre UUID, de hasta 10 MB (límite en `MvcConfig`, no en application.properties). Antes de subir, `gallery.js` achica la foto a 1600 px y la pasa a JPG (así entran las fotos HEIC del iPhone). Al borrar una foto se borra también el archivo (solo dentro de `uploads/`); si la usa un producto, no se borra.
 - Producción: `application-prod.properties` (perfil `prod`) toma la base y las claves de variables de entorno, activa cookies `Secure` y oculta los detalles de los errores.
 - Al agregar una ruta o endpoint nuevo, **actualizá SecurityConfig** si hace falta.
 

@@ -591,7 +591,7 @@
           <button type="button" class="gallery-item upload-item" id="btn-gallery-upload-new">
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
             <span>Subir foto</span>
-            <small>JPG, PNG o WEBP</small>
+            <small>Desde el celular o la compu</small>
           </button>
         </div>
       </section>
@@ -694,12 +694,30 @@
         </div>
         <form id="settings-form" class="config-block settings-form" novalidate>
           <h3 class="section-label">WhatsApp del negocio</h3>
-          <div class="form-group">
-            <label for="setting-whatsapp">Número de WhatsApp</label>
-            <input type="tel" id="setting-whatsapp" class="form-input" inputmode="tel" autocomplete="off" required aria-describedby="setting-whatsapp-hint setting-whatsapp-error">
-            <p class="form-hint" id="setting-whatsapp-hint">A este número llegan los pedidos de la tienda y los botones "Escribinos". Escribilo con el código de país y de área, sin el 0 ni el 15. Ejemplo: 54 9 3764 159312.</p>
-            <p class="form-error" id="setting-whatsapp-error" hidden></p>
+          <p class="form-hint settings-intro">A este número llegan los pedidos de la tienda y los botones "Escribinos".</p>
+          <!-- País + número local. settings.js los junta en el formato que usa WhatsApp (ej: 549 + 3765224107) -->
+          <div class="phone-field">
+            <div class="form-group phone-country">
+              <label for="setting-country">País</label>
+              <select id="setting-country" class="form-input">
+                <option value="549" selected>Argentina (+54 9)</option>
+                <option value="595">Paraguay (+595)</option>
+                <option value="55">Brasil (+55)</option>
+                <option value="598">Uruguay (+598)</option>
+                <option value="56">Chile (+56)</option>
+                <option value="591">Bolivia (+591)</option>
+                <option value="34">España (+34)</option>
+                <option value="1">Estados Unidos (+1)</option>
+              </select>
+            </div>
+            <div class="form-group phone-number">
+              <label for="setting-whatsapp">Número</label>
+              <input type="tel" id="setting-whatsapp" class="form-input" inputmode="tel" autocomplete="off" required placeholder="3765224107" aria-describedby="setting-whatsapp-hint setting-whatsapp-error">
+            </div>
           </div>
+          <p class="form-hint" id="setting-whatsapp-hint">Código de área y número, sin el 0 ni el 15. Ejemplo: 3765224107.</p>
+          <p class="form-error" id="setting-whatsapp-error" hidden></p>
+          <p class="phone-preview" id="setting-whatsapp-preview" aria-live="polite"></p>
           <div class="form-actions">
             <a id="setting-whatsapp-test" class="btn btn-grey" href="#" target="_blank" rel="noopener">Probar el número</a>
             <button type="submit" class="btn btn-pink">Guardar</button>

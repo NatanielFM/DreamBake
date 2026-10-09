@@ -1622,6 +1622,15 @@ select.form-input.readonly-mode:disabled { opacity: 1; background-image: none; p
 /* Ajustes */
 .settings-form { max-width: 560px; }
 .settings-form .section-label { margin: 0 0 var(--space-3); }
+/* WhatsApp: país (angosto) + número, uno al lado del otro; en el celular, uno abajo del otro */
+.settings-intro { margin: 0 0 var(--space-4); }
+.phone-field { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: var(--space-3); }
+.phone-field .form-group { margin: 0; }
+.phone-preview { margin: var(--space-2) 0 0; color: var(--admin-heading); font-weight: var(--fw-semibold); }
+.phone-preview:empty { display: none; }
+@media (max-width: 47.99rem) {
+  .phone-field { grid-template-columns: minmax(0, 1fr); }
+}
 .settings-form .form-actions { justify-content: flex-start; }
 .form-error { margin: 6px 0 0; color: var(--st-cancel-text); font-size: var(--fs-small); font-weight: var(--fw-semibold); }
 .settings-status { margin: var(--space-3) 0 0; padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm);

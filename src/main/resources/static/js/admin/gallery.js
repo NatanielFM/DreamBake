@@ -82,10 +82,48 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ================= PREPARAR LA FOTO ANTES DE SUBIRLA =================
+  // Las fotos de un celular pesan 2–5 MB y el iPhone las guarda en formato HEIC, que la
+  // mayoría de los navegadores no puede mostrar. Antes de subirlas se achican (1600 px de
+  // lado como máximo) y se pasan a JPG: suben rápido, se ven en cualquier navegador y la
+  // página de inicio carga más liviana. Las fotos que ya son chicas se suben tal cual.
+  const MAX_SIDE = 1600;
+  const KEEP_AS_IS_BYTES = 1.5 * 1024 * 1024;
+
+  async function prepareImage(file) {
+    if (file.type === 'image/gif') return file;   // un GIF puede ser animado: se sube como está
+    try {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.src = url;
+      await img.decode();                           // el navegador lee la foto (Safari también lee HEIC)
+      URL.revokeObjectURL(url);
+
+      const scale = Math.min(1, MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
+      const isWebFormat = ['image/jpeg', 'image/png', 'image/webp'].includes(file.type);
+      if (isWebFormat && scale === 1 && file.size <= KEEP_AS_IS_BYTES) return file;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.naturalWidth * scale);
+      canvas.height = Math.round(img.naturalHeight * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';                    // fondo blanco: el JPG no tiene transparencia
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+      if (!blob) return file;
+      const name = (file.name || 'foto').replace(/\.[^.]+$/, '') + '.jpg';
+      return new File([blob], name, { type: 'image/jpeg' });
+    } catch (err) {
+      return file;   // el navegador no la pudo leer: se manda la original y el servidor explica si no sirve
+    }
+  }
+
   if(fileInput) {
     fileInput.addEventListener('change', async (e) => {
       if (e.target.files.length > 0) {
-        const file = e.target.files[0];
+        const file = await prepareImage(e.target.files[0]);
         const formData = new FormData();
         formData.append("file", file);
         // Mientras sube, la tarjeta "Subir foto" muestra que está trabajando
@@ -100,7 +138,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if(preview) preview.innerHTML = `<img src="${newImage.url}">`;
             window.loadGalleryFromServer();
           } else {
-            window.showErrorAlert("No se pudo subir la foto. Probá con una imagen JPG, PNG o WEBP.");
+            // El servidor explica el motivo (formato no permitido, foto demasiado pesada…)
+            const data = await res.json().catch(() => ({}));
+            window.showErrorAlert(data.message || "No se pudo subir la foto. Probá con una imagen JPG, PNG o WEBP.");
           }
         } catch (e) {
           window.showErrorAlert("No se pudo conectar con el servidor para subir la foto.");
