@@ -1,5 +1,6 @@
 package com.dreambake.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -39,6 +40,26 @@ public class User {
     private String phone;
     private String roles; // Ejemplo: "ROLE_USER,ROLE_ADMIN"
     private Boolean enabled = true;
+
+    // Por dónde entra el usuario. Los que ya existían quedan como LOCAL (el default de la columna
+    // se encarga de rellenar las filas viejas cuando Hibernate agrega la columna).
+    @Enumerated(EnumType.STRING)
+    @Column(name = "auth_provider", nullable = false, length = 20,
+            columnDefinition = "varchar(20) not null default 'LOCAL'")
+    private AuthProvider authProvider = AuthProvider.LOCAL;
+
+    // Id del usuario en Google o Facebook (null para los usuarios LOCAL)
+    @JsonIgnore
+    @Column(name = "provider_id")
+    private String providerId;
+
+    // Foto de perfil que informa la red social (opcional)
+    @Column(name = "avatar_url", length = 500)
+    private String avatarUrl;
+
+    // Último ingreso exitoso (lo actualiza LoginTimestampListener)
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

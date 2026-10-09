@@ -1,5 +1,6 @@
 package com.dreambake.service;
 
+import com.dreambake.entity.AuthProvider;
 import com.dreambake.entity.User;
 import com.dreambake.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,26 @@ public class UserService {
         userRepository.save(user);
     }
 
+    /**
+     * Crea un usuario que entra con Google o Facebook (lo usan los pasos 2.2 y 2.3).
+     * No tiene contraseña propia, pero la columna password es obligatoria y las validaciones
+     * actuales la exigen. Por eso se guarda el hash BCrypt de un UUID aleatorio que nadie conoce:
+     * así nadie puede entrar con usuario y contraseña a esa cuenta, y no se rompe nada existente.
+     */
+    public User createSocialUser(String email, String name, AuthProvider provider,
+                                 String providerId, String avatarUrl) {
+        User user = new User();
+        user.setEmail(email.trim());
+        user.setName(name);
+        user.setAuthProvider(provider);
+        user.setProviderId(providerId);
+        user.setAvatarUrl(avatarUrl);
+        user.setPassword(passwordEncoder.encode(java.util.UUID.randomUUID().toString()));
+        user.setRoles("ROLE_USER");
+        user.setEnabled(true);
+        return userRepository.save(user);
+    }
+
     public java.util.List<User> getPasteleros() {
         return userRepository.findByRoles("PASTELERO");
     }
@@ -39,6 +60,11 @@ public class UserService {
             User existing = userRepository.findById(user.getId())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
             user.setCreatedAt(existing.getCreatedAt());
+            // El formulario no trae estos datos: se conservan los que ya tenía
+            user.setAuthProvider(existing.getAuthProvider());
+            user.setProviderId(existing.getProviderId());
+            user.setAvatarUrl(existing.getAvatarUrl());
+            user.setLastLoginAt(existing.getLastLoginAt());
             if (user.getPassword() == null || user.getPassword().isEmpty()) {
                 user.setPassword(existing.getPassword());
             } else {
