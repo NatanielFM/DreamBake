@@ -26,6 +26,41 @@ public class BusinessSettingService {
                 .orElse(DEFAULT_WHATSAPP);
     }
 
+    // ===== Fidelización: saludo de cumpleaños (se maneja desde Clientes → Fidelización) =====
+    public static final String BIRTHDAY_ENABLED = "loyalty.birthday.enabled";
+    public static final String BIRTHDAY_PERCENTAGE = "loyalty.birthday.percentage";
+    public static final int DEFAULT_BIRTHDAY_PERCENTAGE = 15;
+
+    // ¿Están activados los saludos automáticos? Por defecto sí (solo les llegan a quienes aceptaron promociones).
+    public boolean isBirthdayEnabled() {
+        return settingRepository.findById(BIRTHDAY_ENABLED)
+                .map(BusinessSetting::getValue)
+                .map(v -> !"false".equalsIgnoreCase(v))
+                .orElse(true);
+    }
+
+    public void setBirthdayEnabled(boolean enabled) {
+        settingRepository.save(new BusinessSetting(BIRTHDAY_ENABLED, String.valueOf(enabled)));
+    }
+
+    // Porcentaje de descuento del cupón de cumpleaños (por defecto 15)
+    public int getBirthdayPercentage() {
+        return settingRepository.findById(BIRTHDAY_PERCENTAGE)
+                .map(BusinessSetting::getValue)
+                .map(v -> { try { return Integer.parseInt(v.trim()); } catch (Exception e) { return null; } })
+                .filter(p -> p >= 1 && p <= 100)
+                .orElse(DEFAULT_BIRTHDAY_PERCENTAGE);
+    }
+
+    // Devuelve null si se guardó, o el mensaje de error para mostrar
+    public String saveBirthdayPercentage(Integer percentage) {
+        if (percentage == null || percentage < 1 || percentage > 100) {
+            return "El descuento tiene que ser un número entero entre 1 y 100.";
+        }
+        settingRepository.save(new BusinessSetting(BIRTHDAY_PERCENTAGE, String.valueOf(percentage)));
+        return null;
+    }
+
     // Devuelve null si el número es válido y se guardó, o el mensaje de error para mostrar
     public String saveWhatsappNumber(String raw) {
         // Se quitan espacios, guiones, paréntesis y el "+" que la gente suele escribir

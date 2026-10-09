@@ -384,6 +384,41 @@
           </div>
         </div>
 
+        <!-- Fidelización: saludos de cumpleaños con cupón de regalo (loyalty.js).
+             La configuración se guarda en la base de datos (business_settings). -->
+        <div class="panel-block loyalty-block" id="loyalty-block">
+          <h3 class="section-label">Fidelización</h3>
+          <p class="form-hint loyalty-intro">Cada día a las 9:00 el sistema le manda un email de cumpleaños con un cupón de regalo a los clientes que aceptaron recibir promociones.</p>
+
+          <div class="loyalty-config">
+            <label class="toggle-switch">
+              <input type="checkbox" id="loyalty-enabled">
+              <span class="slider"></span>
+              Saludos automáticos
+            </label>
+            <div class="form-group loyalty-percent">
+              <label for="loyalty-percentage">Descuento del cupón</label>
+              <div class="input-group">
+                <input type="number" id="loyalty-percentage" class="form-input price-input" min="1" max="100" step="1" inputmode="numeric">
+                <span aria-hidden="true">%</span>
+              </div>
+            </div>
+            <button type="button" id="btn-loyalty-save" class="btn btn-pink">Guardar descuento</button>
+            <button type="button" id="btn-loyalty-run" class="btn btn-grey">Revisar cumpleaños de hoy</button>
+          </div>
+          <p class="form-hint" id="loyalty-hint" role="status"></p>
+
+          <h3 class="section-label loyalty-subtitle">Próximos cumpleaños (30 días)</h3>
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr><th>Cliente</th><th>Cumpleaños</th><th>Emails</th><th><span class="visually-hidden">Acciones</span></th></tr>
+              </thead>
+              <tbody id="loyalty-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
         <div class="panel-block panel-block--table">
           <div class="table-responsive">
             <table class="admin-table">
@@ -1405,6 +1440,7 @@
   <div id="print-area" class="print-area"></div>
 
   <script th:src="@{/js/admin/clients.js}" defer></script>
+  <script th:src="@{/js/admin/loyalty.js}" defer></script>
   <script th:src="@{/js/admin/main.js}" defer></script>
   <script th:src="@{/js/admin/gallery.js}" defer></script>
   <script th:src="@{/js/admin/inventory.js}" defer></script>

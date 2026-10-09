@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!--
+<!--/*
   Plantilla BASE de todos los emails de DreamBake.
 
   Los programas de correo (Gmail, Outlook…) no entienden el CSS moderno: por eso se usan
@@ -13,7 +13,7 @@
 
   Variables que le pasa EmailService: asunto, negocio (name, whatsapp, email), publicUrl y bajaUrl
   (el link para darse de baja; si es null no se muestra).
--->
+*/-->
 <html xmlns:th="http://www.thymeleaf.org" th:fragment="layout(contenido)" lang="es">
 <head>
   <meta charset="UTF-8">
@@ -22,16 +22,16 @@
   <title th:text="${asunto}">DreamBake</title>
 </head>
 <body style="margin:0;padding:0;background-color:#fdf4f7;">
-  <!-- Fondo rosa suave que ocupa todo el ancho -->
+  <!--/* Fondo rosa suave que ocupa todo el ancho */-->
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#fdf4f7;">
     <tr>
       <td align="center" style="padding:24px 12px;">
 
-        <!-- Tarjeta central: 600 px como máximo y se achica sola en el celular (width:100%) -->
+        <!--/* Tarjeta central: 600 px como máximo y se achica sola en el celular (width:100%) */-->
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
                style="max-width:600px;background-color:#ffffff;border-radius:16px;border:1px solid #f7d1df;">
 
-          <!-- Encabezado: franja de acento + logo + nombre -->
+          <!--/* Encabezado: franja de acento + logo + nombre */-->
           <tr>
             <td style="height:6px;line-height:6px;font-size:6px;background-color:#e0487f;border-radius:16px 16px 0 0;">&nbsp;</td>
           </tr>
@@ -44,14 +44,14 @@
             </td>
           </tr>
 
-          <!-- Contenido propio de cada mensaje -->
+          <!--/* Contenido propio de cada mensaje */-->
           <tr>
             <td style="padding:16px 32px 28px 32px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:25px;color:#222222;">
               <div th:replace="${contenido}">Acá va el contenido del mensaje.</div>
             </td>
           </tr>
 
-          <!-- Pie: datos del negocio y link de baja -->
+          <!--/* Pie: datos del negocio y link de baja */-->
           <tr>
             <td style="padding:20px 32px 28px 32px;background-color:#fdf4f7;border-top:1px solid #f7d1df;border-radius:0 0 16px 16px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;line-height:20px;color:#666666;" align="center">
               <p style="margin:0 0 6px 0;font-weight:600;color:#481729;" th:text="${negocio.name}">Dulce Sueños Posadas</p>
@@ -68,7 +68,7 @@
                 <a th:href="${publicUrl}" style="color:#9d3259;text-decoration:underline;"
                    th:text="${publicUrl}">https://dulcesuenos.example</a>
               </p>
-              <!-- Lugar del link de baja: solo aparece en los mails promocionales (bajaUrl con valor) -->
+              <!--/* Lugar del link de baja: solo aparece en los mails promocionales (bajaUrl con valor) */-->
               <p style="margin:14px 0 0 0;font-size:12px;line-height:18px;" th:if="${bajaUrl != null}">
                 Si no querés recibir más mensajes nuestros,
                 <a th:href="${bajaUrl}" style="color:#9d3259;text-decoration:underline;">podés darte de baja acá</a>.

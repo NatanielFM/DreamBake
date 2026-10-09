@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 // Reglas de los cupones en un solo lugar: cuándo se pueden usar y cómo se descuenta un uso.
@@ -15,11 +16,13 @@ public class CouponService {
     @Autowired
     private CouponRepository couponRepository;
 
-    // Devuelve el cupón solo si existe, está activo y le quedan usos (o es ilimitado)
+    // Devuelve el cupón solo si existe, está activo, no venció y le quedan usos (o es ilimitado)
     public Optional<Coupon> findUsable(String code) {
         if (code == null || code.isBlank()) return Optional.empty();
         return couponRepository.findByCodeIgnoreCase(code.trim())
-                .filter(c -> c.isActive() && (c.isUnlimited() || (c.getUsageLimit() != null && c.getUsageLimit() > 0)));
+                .filter(c -> c.isActive() && (c.isUnlimited() || (c.getUsageLimit() != null && c.getUsageLimit() > 0)))
+                // Un cupón con fecha de vencimiento deja de servir después de ese día
+                .filter(c -> c.getExpirationDate() == null || !LocalDate.now().isAfter(c.getExpirationDate()));
     }
 
     // Descuenta un uso. Cuando llega a 0 el cupón queda inactivo.

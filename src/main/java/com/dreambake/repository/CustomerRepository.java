@@ -17,4 +17,10 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
     // Cliente dueño de un link de baja (/baja?token=...)
     Optional<Customer> findByUnsubscribeToken(String unsubscribeToken);
+
+    // Clientes que aceptaron recibir promociones (los únicos a los que se les manda el saludo automático)
+    List<Customer> findByMarketingConsentTrue();
+
+    // Clientes con cumpleaños cargado (para la lista de próximos cumpleaños del panel)
+    List<Customer> findByBirthDateIsNotNull();
 }

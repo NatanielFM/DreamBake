@@ -44,6 +44,8 @@ public class CouponRestController {
             coupon.setCustomText(couponDetails.getCustomText());
             coupon.setUsageLimit(couponDetails.getUsageLimit());
             coupon.setUnlimited(couponDetails.isUnlimited());
+            // OJO: expirationDate no se toca acá. El formulario de cupones del panel no la maneja
+            // (la usan los cupones de cumpleaños) y, si se copiara, editar un cupón la borraría.
             return ResponseEntity.ok(couponRepository.save(coupon));
         }
         return ResponseEntity.notFound().build();

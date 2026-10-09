@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(name = "coupons")
 @Getter
@@ -28,4 +30,8 @@ public class Coupon {
     private String customText;
     private Integer usageLimit;
     private boolean isUnlimited = false;
+
+    // Último día en que se puede usar (incluido). Vacío = no vence. Los cupones de cumpleaños
+    // vencen a los 30 días. Lo respetan findUsable (CouponService) y consumeOneUse (CouponRepository).
+    private LocalDate expirationDate;
 }
