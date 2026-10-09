@@ -91,6 +91,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/cake-config/public").permitAll() // opciones del creador
                         .requestMatchers(HttpMethod.GET, "/api/coupons/validate/**").permitAll() // ver si un cupón sirve
 
+                        // Chequeo de salud (¿está viva la app?): solo responde UP o DOWN. Es el único endpoint
+                        // de actuator que se expone (ver management.endpoints en config/application.properties)
+                        .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+
                         // Paneles
                         .requestMatchers("/admin/**").hasAuthority("ADMIN")
                         .requestMatchers("/baker/**").hasAuthority("PASTELERO")
