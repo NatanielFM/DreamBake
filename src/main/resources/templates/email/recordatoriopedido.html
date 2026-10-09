@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<!--/*
+  Recordatorio al cliente el día anterior a la entrega (OrderNoticeService, tipo ORDER_REMINDER).
+  Variables: p (datos del pedido), whatsapp (número del negocio). No es publicidad: no lleva link de baja.
+*/-->
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{email/base :: layout(~{::#cuerpo})}">
+<body>
+  <div id="cuerpo">
+    <h1 style="margin:0 0 12px 0;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:26px;line-height:34px;font-weight:600;color:#481729;">
+      Mañana entregamos tu pedido
+    </h1>
+    <p style="margin:0 0 16px 0;">
+      <span th:text="'Hola ' + ${p.firstName} + ','">Hola Ana,</span>
+      <span th:if="${p.delivery}">mañana te llevamos el pedido a <strong th:text="${p.address}">Calle 123</strong><span th:if="${!#strings.isEmpty(p.shift)}" th:text="' (' + ${#strings.toLowerCase(p.shift)} + ')'"> (por la tarde)</span>.</span>
+      <span th:unless="${p.delivery}">mañana te esperamos en el local para retirar tu pedido<span th:if="${!#strings.isEmpty(p.shift)}" th:text="' (' + ${#strings.toLowerCase(p.shift)} + ')'"> (por la tarde)</span>.</span>
+    </p>
+
+    <div th:replace="~{email/pedido-detalle :: detalle(${p})}"></div>
+
+    <p th:if="${p.hasDeposit}" style="margin:0 0 16px 0;">
+      Acordate del saldo a abonar: <strong th:text="'$' + ${p.balance}">$62.000</strong>.
+    </p>
+    <p style="margin:0;font-size:14px;line-height:22px;color:#666666;">
+      ¿Necesitás cambiar algo? Escribinos hoy por
+      <a th:href="'https://wa.me/' + ${whatsapp}" href="#" style="color:#9d3259;text-decoration:underline;">WhatsApp</a>.
+    </p>
+  </div>
+</body>
+</html>

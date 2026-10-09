@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<!--/*
+  "Recibimos tu pedido": email al cliente cuando hace un pedido en la tienda (OrderNoticeService, tipo ORDER_RECEIVED).
+  Variables: p (datos del pedido), whatsapp (número del negocio, solo dígitos). No es publicidad: no lleva link de baja.
+*/-->
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{email/base :: layout(~{::#cuerpo})}">
+<body>
+  <div id="cuerpo">
+    <h1 style="margin:0 0 12px 0;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:26px;line-height:34px;font-weight:600;color:#481729;"
+        th:text="'¡Recibimos tu pedido, ' + ${p.firstName} + '!'">¡Recibimos tu pedido, Ana!</h1>
+    <p style="margin:0 0 16px 0;">
+      Gracias por elegir <strong th:text="${negocio.name}">Dulce Sueños Posadas</strong>. Revisamos tu pedido y te escribimos
+      por WhatsApp para confirmarlo.
+    </p>
+
+    <div th:replace="~{email/pedido-detalle :: detalle(${p})}"></div>
+
+    <p style="margin:0 0 16px 0;">
+      Todavía <strong>no está confirmado</strong>: en cuanto lo confirmemos te mandamos otro email.
+    </p>
+    <p style="margin:0;font-size:14px;line-height:22px;color:#666666;">
+      ¿Alguna duda? Escribinos por
+      <a th:href="'https://wa.me/' + ${whatsapp}" href="#" style="color:#9d3259;text-decoration:underline;">WhatsApp</a>.
+    </p>
+  </div>
+</body>
+</html>

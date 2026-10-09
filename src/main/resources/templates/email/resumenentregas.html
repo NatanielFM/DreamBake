@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<!--/*
+  Resumen diario (8:00) al NEGOCIO: entregas de hoy y de los próximos 3 días. Mañana va destacado.
+  Variables: dias (lista de DayView), sinConfirmar (pedidos nuevos para esos días), total, panelUrl.
+*/-->
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{email/base :: layout(~{::#cuerpo})}">
+<body>
+  <div id="cuerpo">
+    <h1 style="margin:0 0 12px 0;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:26px;line-height:34px;font-weight:600;color:#481729;">
+      Entregas de los próximos días
+    </h1>
+    <p style="margin:0 0 20px 0;">
+      <strong th:text="${total} + (${total} == 1 ? ' pedido agendado' : ' pedidos agendados')">3 pedidos agendados</strong>
+      para hoy y los próximos 3 días.
+    </p>
+
+    <!--/* Un bloque por día; el de mañana va con borde rosa y fondo de color */-->
+    <table th:each="dia : ${dias}" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+           th:style="${dia.highlight} ? 'margin:0 0 16px 0;border:2px solid #e0487f;border-radius:12px;background-color:#fdf4f7;' : 'margin:0 0 16px 0;border:1px solid #f7d1df;border-radius:12px;'">
+      <tr>
+        <td style="padding:14px 16px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;line-height:21px;color:#222222;">
+          <p style="margin:0 0 8px 0;font-weight:600;color:#481729;font-size:15px;" th:text="${dia.label}">Mañana · Sábado 11 de octubre</p>
+          <div th:each="o : ${dia.orders}" style="margin:0 0 10px 0;padding:0 0 10px 0;border-bottom:1px solid #f7d1df;">
+            <strong th:text="'#' + ${o.id} + ' · ' + ${o.customerName}">#12 · Ana Pérez</strong>
+            <span style="color:#666666;" th:text="' · ' + ${o.statusLabel}"> · Agendado</span><br>
+            <span th:text="${o.method} + (${#strings.isEmpty(o.shift)} ? '' : ' · ' + ${o.shift})">Retiro en el local · Por la tarde</span>
+            <span th:if="${!#strings.isEmpty(o.address)}" th:text="' · ' + ${o.address}"></span><br>
+            <span style="color:#444444;" th:each="it, st : ${o.items}" th:text="${it.name} + (${st.last} ? '' : ', ')">Torta Personalizada</span><br>
+            <span style="color:#666666;font-size:13px;" th:text="'Tel. ' + ${o.phone} + ' · Total $' + ${o.total} + (${o.hasDeposit} ? ' (saldo $' + ${o.balance} + ')' : '')">Tel. 3764 · Total $82.000</span>
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <!--/* Pedidos nuevos para esos días que todavía no se confirmaron */-->
+    <table th:if="${!sinConfirmar.isEmpty()}" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+           style="margin:0 0 20px 0;border:1px dashed #e0487f;border-radius:12px;">
+      <tr>
+        <td style="padding:14px 16px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;line-height:21px;color:#222222;">
+          <p style="margin:0 0 8px 0;font-weight:600;color:#481729;font-size:15px;">Sin confirmar (hay que responderles)</p>
+          <div th:each="o : ${sinConfirmar}" style="margin:0 0 6px 0;">
+            <strong th:text="'#' + ${o.id} + ' · ' + ${o.customerName}">#13 · Beto</strong>
+            <span th:text="' · entrega ' + ${o.deliveryDayShort} + ' · Tel. ' + ${o.phone}"> · entrega Domingo 12/10</span>
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px 0;">
+      <tr>
+        <td align="center" bgcolor="#be3d6c" style="border-radius:999px;background-color:#be3d6c;">
+          <a th:href="${panelUrl}" href="#"
+             style="display:inline-block;padding:13px 28px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:20px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:999px;">
+            Abrir el panel
+          </a>
+        </td>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>

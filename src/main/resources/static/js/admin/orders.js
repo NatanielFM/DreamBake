@@ -908,6 +908,35 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-new-order')?.addEventListener('click', () => window.openManualOrderModal());
   document.getElementById('btn-add-manual-item')?.addEventListener('click', () => window.addManualOrderItem());
   document.getElementById('co-payment-type')?.addEventListener('change', () => window.toggleDepositInput());
+  // "Avisar por WhatsApp" (solo está en el panel de administración): el servidor arma el mensaje
+  // según el estado actual del pedido y devuelve el link wa.me al número del cliente.
+  document.getElementById('btn-whatsapp-order')?.addEventListener('click', async (e) => {
+    if (!viewingOrder) return;
+    const btn = e.currentTarget;
+    // La ventana se abre YA (en el clic): si se abriera después de esperar al servidor,
+    // el navegador la bloquearía como ventana emergente.
+    const win = window.open('', '_blank');
+    btn.disabled = true;
+    try {
+      const res = await fetch(`/api/order-notices/${viewingOrder.id}/whatsapp`);
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && win) {
+        win.opener = null;
+        win.location.href = data.url;
+      } else {
+        if (win) win.close();
+        window.showErrorAlert(res.ok
+          ? 'El navegador bloqueó la ventana. Permití las ventanas emergentes de este sitio y probá de nuevo.'
+          : (data.message || 'No se pudo preparar el mensaje.'));
+      }
+    } catch (err) {
+      if (win) win.close();
+      window.showErrorAlert('No se pudo conectar con el servidor.');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
   document.getElementById('btn-complete-view-order')?.addEventListener('click', () => window.actionToggleCompleteViewingOrder());
   document.getElementById('btn-enable-edit')?.addEventListener('click', () => window.enableEditMode());
   document.getElementById('btn-cancel-view-order')?.addEventListener('click', () => window.actionCancelViewingOrder());

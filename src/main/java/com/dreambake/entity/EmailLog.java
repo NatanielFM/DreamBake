@@ -3,6 +3,8 @@ package com.dreambake.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -27,7 +29,11 @@ public class EmailLog {
 
     private String recipientEmail;
 
+    // Se guarda como texto (VARCHAR) y no como ENUM de MySQL: así se pueden agregar tipos de email
+    // nuevos sin tocar la base (ver config/EmailLogSchemaFix, que arregla las bases ya creadas).
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(length = 40)
     private EmailType type;
 
     private String subject;
@@ -43,4 +49,8 @@ public class EmailLog {
 
     // Campaña de promociones a la que pertenece (paso 1.4). Nulo en los demás emails.
     private Long campaignId;
+
+    // Pedido al que se refiere el aviso (paso 1.5): sirve para no repetir el mismo aviso
+    // para el mismo pedido y estado. Nulo en los emails que no son de un pedido.
+    private Long orderId;
 }

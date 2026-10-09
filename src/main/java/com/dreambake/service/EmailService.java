@@ -100,7 +100,7 @@ public class EmailService {
                                                Map<String, Object> variables, EmailType tipo,
                                                Customer cliente, Long campaignId) {
         return CompletableFuture.completedFuture(
-                enviarYRegistrar(destinatario, asunto, plantilla, variables, tipo, cliente, campaignId, null));
+                enviarYRegistrar(destinatario, asunto, plantilla, variables, tipo, cliente, campaignId, null, null));
     }
 
     /**
@@ -113,13 +113,25 @@ public class EmailService {
                                                Map<String, Object> variables, EmailType tipo,
                                                Customer cliente, Long campaignId, Resource imagen) {
         return CompletableFuture.completedFuture(
-                enviarYRegistrar(destinatario, asunto, plantilla, variables, tipo, cliente, campaignId, imagen));
+                enviarYRegistrar(destinatario, asunto, plantilla, variables, tipo, cliente, campaignId, imagen, null));
+    }
+
+    /**
+     * Igual que los anteriores, pero para un aviso de un pedido: queda registrado con su orderId
+     * (así se puede saber si ese aviso ya se mandó). Lo usa OrderNoticeService.
+     */
+    @Async
+    public CompletableFuture<Resultado> enviarPedido(String destinatario, String asunto, String plantilla,
+                                                     Map<String, Object> variables, EmailType tipo,
+                                                     Customer cliente, Long orderId) {
+        return CompletableFuture.completedFuture(
+                enviarYRegistrar(destinatario, asunto, plantilla, variables, tipo, cliente, null, null, orderId));
     }
 
     private Resultado enviarYRegistrar(String destinatario, String asunto, String plantilla, Map<String, Object> variables,
-                                       EmailType tipo, Customer cliente, Long campaignId, Resource imagen) {
+                                       EmailType tipo, Customer cliente, Long campaignId, Resource imagen, Long orderId) {
         Resultado resultado = enviarAhora(destinatario, asunto, plantilla, variables, tipo, cliente, imagen);
-        registrar(destinatario, asunto, tipo, cliente, campaignId, resultado);
+        registrar(destinatario, asunto, tipo, cliente, campaignId, orderId, resultado);
         return resultado;
     }
 
@@ -205,7 +217,7 @@ public class EmailService {
     // Guarda el intento en el historial (email_logs). Si eso falla, solo se avisa en el log:
     // un problema con el historial no tiene que impedir que el email salga.
     private void registrar(String destinatario, String asunto, EmailType tipo, Customer cliente,
-                           Long campaignId, Resultado resultado) {
+                           Long campaignId, Long orderId, Resultado resultado) {
         try {
             EmailLog entrada = new EmailLog();
             entrada.setCustomer(cliente != null && cliente.getId() != null ? cliente : null);
@@ -219,6 +231,7 @@ public class EmailService {
             }
             entrada.setSentAt(LocalDateTime.now());
             entrada.setCampaignId(campaignId);
+            entrada.setOrderId(orderId);
             emailLogRepository.save(entrada);
         } catch (Exception e) {
             log.error("No se pudo guardar el historial del email '{}' a {}: {}", asunto, destinatario, e.getMessage());

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<!--/*
+  Avisos de cambio de estado de un pedido, al cliente (OrderNoticeService).
+  Variables: tipo = "confirmado" | "listo" | "cancelado", p (datos del pedido), whatsapp (número del negocio).
+  No es publicidad: no lleva link de baja.
+*/-->
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{email/base :: layout(~{::#cuerpo})}">
+<body>
+  <div id="cuerpo">
+    <!--/* CONFIRMADO */-->
+    <th:block th:if="${tipo == 'confirmado'}">
+      <h1 style="margin:0 0 12px 0;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:26px;line-height:34px;font-weight:600;color:#481729;">
+        Tu pedido está confirmado
+      </h1>
+      <p style="margin:0 0 16px 0;">
+        <span th:text="'Hola ' + ${p.firstName} + ','">Hola Ana,</span> ya agendamos tu pedido para el
+        <strong th:text="${#strings.toLowerCase(p.deliveryDay)}">viernes 10 de octubre</strong><span th:if="${!#strings.isEmpty(p.shift)}" th:text="' (' + ${#strings.toLowerCase(p.shift)} + ')'"> (por la tarde)</span>.
+        ¡Gracias por elegirnos!
+      </p>
+      <div th:replace="~{email/pedido-detalle :: detalle(${p})}"></div>
+      <p th:if="${p.hasDeposit}" style="margin:0 0 16px 0;">
+        Ya recibimos tu seña. El saldo de <strong th:text="'$' + ${p.balance}">$62.000</strong> se abona al
+        <span th:text="${p.delivery} ? 'recibir el pedido' : 'retirarlo'">retirarlo</span>.
+      </p>
+    </th:block>
+
+    <!--/* LISTO */-->
+    <th:block th:if="${tipo == 'listo'}">
+      <h1 style="margin:0 0 12px 0;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:26px;line-height:34px;font-weight:600;color:#481729;">
+        Tu pedido está listo
+      </h1>
+      <p style="margin:0 0 16px 0;">
+        <span th:text="'Hola ' + ${p.firstName} + ','">Hola Ana,</span>
+        <span th:if="${p.delivery}">lo llevamos a <strong th:text="${p.address}">Calle 123</strong>.</span>
+        <span th:unless="${p.delivery}">ya podés pasar a retirarlo.</span>
+        ¡Que lo disfrutes!
+      </p>
+      <div th:replace="~{email/pedido-detalle :: detalle(${p})}"></div>
+    </th:block>
+
+    <!--/* CANCELADO */-->
+    <th:block th:if="${tipo == 'cancelado'}">
+      <h1 style="margin:0 0 12px 0;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:26px;line-height:34px;font-weight:600;color:#481729;">
+        Tu pedido fue cancelado
+      </h1>
+      <p style="margin:0 0 16px 0;">
+        <span th:text="'Hola ' + ${p.firstName} + ','">Hola Ana,</span> tu pedido
+        <strong th:text="'#' + ${p.id}">#12</strong> fue cancelado. Si fue un error o tenés alguna consulta, escribinos
+        y lo resolvemos.
+      </p>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px 0;">
+        <tr>
+          <td align="center" bgcolor="#be3d6c" style="border-radius:999px;background-color:#be3d6c;">
+            <a th:href="'https://wa.me/' + ${whatsapp}" href="#"
+               style="display:inline-block;padding:13px 28px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:20px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:999px;">
+              Escribinos por WhatsApp
+            </a>
+          </td>
+        </tr>
+      </table>
+      <p style="margin:12px 0 0 0;font-size:14px;line-height:22px;color:#666666;">
+        WhatsApp del negocio: <strong th:text="'+' + ${whatsapp}">+5493764000000</strong>
+      </p>
+    </th:block>
+  </div>
+</body>
+</html>

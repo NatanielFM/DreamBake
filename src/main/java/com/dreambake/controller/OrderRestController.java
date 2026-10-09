@@ -7,8 +7,10 @@ import com.dreambake.repository.CustomerTagRepository;
 import com.dreambake.repository.OrderRepository;
 import com.dreambake.repository.ProductRepository;
 import com.dreambake.repository.InventoryItemRepository;
+import com.dreambake.service.OrderNoticeService;
 import com.dreambake.service.OrderPricingService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +44,15 @@ public class OrderRestController {
 
     @Autowired
     private OrderPricingService pricingService;
+
+    // Avisa (por evento) que un pedido se creó o cambió de estado: OrderNoticeService manda los emails
+    // DESPUÉS de que el cambio se guardó bien, en otro hilo.
+    @Autowired
+    private ApplicationEventPublisher events;
+
+    private void notifyChange(Order order, boolean created) {
+        events.publishEvent(new OrderNoticeService.OrderChanged(order.getId(), order.getStatus(), created));
+    }
 
     @GetMapping
     public List<Order> getAllOrders() {
@@ -174,6 +185,13 @@ public class OrderRestController {
         if (savedOrder.getStatus() == OrderStatus.CONFIRMED) {
             deductInventory(savedOrder);
         }
+        // Pedido nuevo de la tienda: "Recibimos tu pedido" al cliente y "Nuevo pedido" al negocio.
+        // Uno cargado a mano ya confirmado avisa "confirmado"; los otros estados no avisan.
+        if (!isStaff) {
+            notifyChange(savedOrder, true);
+        } else if (savedOrder.getStatus() == OrderStatus.CONFIRMED) {
+            notifyChange(savedOrder, false);
+        }
         return ResponseEntity.ok(savedOrder);
     }
 
@@ -197,7 +215,8 @@ public class OrderRestController {
         return orderRepo.findById(id).map(order -> {
             boolean force = req.force() != null ? req.force() : false;
             
-            if (order.getStatus() != OrderStatus.CONFIRMED) {
+            boolean wasConfirmed = order.getStatus() == OrderStatus.CONFIRMED;
+            if (!wasConfirmed) {
                 ResponseEntity<?> errorResponse = checkStockForConfirmation(order, force);
                 if (errorResponse != null) {
                     return errorResponse;
@@ -214,7 +233,9 @@ public class OrderRestController {
 
             // Une el pedido con su cliente (lo crea si su teléfono no existe)
             linkCustomer(order);
-            return ResponseEntity.ok(orderRepo.save(order));
+            Order saved = orderRepo.save(order);
+            if (!wasConfirmed) notifyChange(saved, false);   // "Tu pedido está confirmado"
+            return ResponseEntity.ok(saved);
         }).orElse(ResponseEntity.notFound().build());
     }
 
@@ -253,11 +274,13 @@ public class OrderRestController {
             }
 
             // Si el estado viene en la petición, lo actualizamos
+            boolean statusChanged = false;
             if (updatedOrder.getStatus() != null) {
                 if (updatedOrder.getStatus() == OrderStatus.CONFIRMED && order.getStatus() == OrderStatus.PENDING) {
                     deductInventory(order);
                     linkCustomer(order);
                 }
+                statusChanged = updatedOrder.getStatus() != order.getStatus();
                 order.setStatus(updatedOrder.getStatus());
             }
 
@@ -271,7 +294,9 @@ public class OrderRestController {
                 }
             }
             calculateStockStatus(order);
-            return ResponseEntity.ok(orderRepo.save(order));
+            Order saved = orderRepo.save(order);
+            if (statusChanged) notifyChange(saved, false);
+            return ResponseEntity.ok(saved);
         }).orElse(ResponseEntity.notFound().build());
     }
 
@@ -293,8 +318,11 @@ public class OrderRestController {
             if (req.status() == OrderStatus.CONFIRMED || req.status() == OrderStatus.COMPLETED) {
                 linkCustomer(order);
             }
+            boolean changed = req.status() != order.getStatus();
             order.setStatus(req.status());
-            return ResponseEntity.ok(orderRepo.save(order));
+            Order saved = orderRepo.save(order);
+            if (changed) notifyChange(saved, false);
+            return ResponseEntity.ok(saved);
         }).orElse(ResponseEntity.notFound().build());
     }
 

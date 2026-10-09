@@ -6,6 +6,8 @@ import com.dreambake.entity.OrderStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
@@ -19,4 +21,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     // Para borrar un cliente: primero se desvinculan sus pedidos (los pedidos no se borran)
     List<Order> findByCustomer(Customer customer);
+
+    // Pedidos que se entregan entre dos fechas (inclusive) y están en alguno de esos estados
+    // (los usa la tarea de las 8:00: recordatorios y resumen de entregas)
+    List<Order> findByDeliveryDateBetweenAndStatusIn(LocalDate from, LocalDate to, Collection<OrderStatus> statuses);
 }

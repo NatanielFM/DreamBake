@@ -118,8 +118,13 @@ public class CustomerRestController {
         return switch (type) {
             case BIRTHDAY -> "Cumpleaños";
             case PROMOTION -> "Promoción";
-            case ORDER_REMINDER -> "Recordatorio de pedido";
+            case ORDER_RECEIVED -> "Pedido recibido";
             case ORDER_CONFIRMATION -> "Pedido confirmado";
+            case ORDER_READY -> "Pedido listo";
+            case ORDER_CANCELLED -> "Pedido cancelado";
+            case ORDER_REMINDER -> "Recordatorio de pedido";
+            case NEW_ORDER_ALERT -> "Aviso de nuevo pedido";
+            case DELIVERY_SUMMARY -> "Resumen de entregas";
             case TEST -> "Prueba";
             case PASSWORD_RESET -> "Recuperar contraseña";
         };
