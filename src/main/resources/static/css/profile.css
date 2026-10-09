@@ -67,7 +67,8 @@
 }
 .profile-google-status { color: var(--text-strong); font-weight: var(--fw-medium); }
 .profile-google-note .google-button__logo,
-.profile-google-status .google-button__logo { flex: none; width: 18px; height: 18px; }
+.profile-google-status .google-button__logo,
+.profile-google-note .facebook-note__logo { flex: none; width: 18px; height: 18px; }
 /* El botón de Google del perfil no ocupa todo el ancho en pantallas grandes */
 .profile-google-button { width: auto; cursor: pointer; }
 @media (max-width: 29.99rem) {

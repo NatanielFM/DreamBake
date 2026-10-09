@@ -81,7 +81,14 @@
     </div>
 
     <div class="site-footer-bottom">
-      <p>© <span th:text="${#dates.year(#dates.createNow())}">2026</span> Dulce Sueños Posadas</p>
+      <p>
+        <span>© <span th:text="${#dates.year(#dates.createNow())}">2026</span> Dulce Sueños Posadas</span>
+        <!-- Páginas legales (WebController): privacidad y cómo pedir que borremos tus datos -->
+        <span class="site-footer-legal">
+          <a th:href="@{/privacidad}">Privacidad</a>
+          <a th:href="@{/eliminar-datos}">Eliminar mis datos</a>
+        </span>
+      </p>
     </div>
   </footer>
 </body>

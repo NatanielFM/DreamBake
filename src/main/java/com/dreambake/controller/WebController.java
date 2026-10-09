@@ -1,11 +1,13 @@
 package com.dreambake.controller;
 
+import com.dreambake.config.AppProperties;
 import com.dreambake.entity.OrderStatus;
 import com.dreambake.entity.Product;
 import com.dreambake.repository.CategoryRepository;
 import com.dreambake.repository.GalleryImageRepository;
 import com.dreambake.repository.OrderRepository;
 import com.dreambake.repository.ProductRepository;
+import com.dreambake.service.MailAccountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -30,6 +32,12 @@ public class WebController {
 
     @Autowired
     private OrderRepository orderRepository;
+
+    @Autowired
+    private AppProperties app;
+
+    @Autowired
+    private MailAccountService mailAccounts;
 
     // Sticker "Más vendido": los 3 productos del catálogo que más se pidieron
     // (pedidos confirmados o entregados), siempre que se hayan pedido al menos 2 veces.
@@ -87,5 +95,28 @@ public class WebController {
         model.addAttribute("bestSellerIds", findBestSellerIds(activeProducts));
         model.addAttribute("categories", categoryRepository.findAll());
         return "products";
+    }
+
+    // Política de privacidad (pública). Facebook la exige para publicar el login con Facebook.
+    // Versión básica: se completa en el paso 6.2.
+    @GetMapping("/privacidad")
+    public String privacyPage(Model model) {
+        model.addAttribute("contactEmail", contactEmail());
+        return "privacidad";
+    }
+
+    // Cómo pedir que borremos la cuenta y los datos (pública). También la pide Facebook.
+    @GetMapping("/eliminar-datos")
+    public String dataDeletionPage(Model model) {
+        model.addAttribute("contactEmail", contactEmail());
+        return "eliminar-datos";
+    }
+
+    // Email de contacto del negocio: app.business.email o, si está vacío, la cuenta desde la que
+    // se mandan los emails (Panel → Ajustes → Correo de envío). Puede ser null si no hay ninguno.
+    private String contactEmail() {
+        String email = app.getBusiness().getEmail();
+        if (email != null && !email.isBlank()) return email;
+        return mailAccounts.current().map(MailAccountService.Account::username).orElse(null);
     }
 }

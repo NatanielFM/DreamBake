@@ -2,6 +2,7 @@ package com.dreambake.config;
 
 import com.dreambake.controller.AuthController;
 import com.dreambake.controller.ProfileController;
+import com.dreambake.controller.SocialSignupController;
 import com.dreambake.controller.UnsubscribeController;
 import com.dreambake.controller.WebController;
 import com.dreambake.service.BusinessSettingService;
@@ -16,7 +17,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 // Se limita a los controladores de vistas públicas (assignableTypes) para no hacer
 // consultas de más en cada llamada a la API.
 @ControllerAdvice(assignableTypes = { WebController.class, AuthController.class, ProfileController.class,
-        UnsubscribeController.class })
+        UnsubscribeController.class, SocialSignupController.class })
 public class PublicViewAdvice {
 
     @Autowired
@@ -29,8 +30,18 @@ public class PublicViewAdvice {
     // ¿Se muestra el botón "Continuar con Google"? Solo si hay client-id de Google cargado.
     @ModelAttribute("googleLoginEnabled")
     public boolean googleLoginEnabled() {
+        return isConfigured("google");
+    }
+
+    // ¿Se muestra el botón "Continuar con Facebook"? Solo si hay App ID de Facebook cargado.
+    @ModelAttribute("facebookLoginEnabled")
+    public boolean facebookLoginEnabled() {
+        return isConfigured("facebook");
+    }
+
+    private boolean isConfigured(String registrationId) {
         ClientRegistrationRepository repo = socialClients.getIfAvailable();
-        return repo != null && repo.findByRegistrationId("google") != null;
+        return repo != null && repo.findByRegistrationId(registrationId) != null;
     }
 
     // Número de WhatsApp del negocio (se cambia desde Panel → Ajustes). Lo usan los links

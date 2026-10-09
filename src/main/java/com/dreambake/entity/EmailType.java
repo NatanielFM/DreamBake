@@ -13,6 +13,7 @@ public enum EmailType {
     NEW_ORDER_ALERT,     // "Nuevo pedido" (al negocio)
     DELIVERY_SUMMARY,    // resumen diario de entregas próximas (al negocio)
     TEST,                // email de prueba del panel
+    ACCOUNT_VERIFICATION, // código para confirmar el email al crear una cuenta con Facebook
     PASSWORD_RESET;      // recuperar contraseña
 
     public boolean isPromotional() {

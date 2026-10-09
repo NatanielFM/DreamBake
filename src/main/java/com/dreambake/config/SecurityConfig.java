@@ -3,6 +3,7 @@ package com.dreambake.config;
 import com.dreambake.service.CustomOAuth2UserService;
 import com.dreambake.service.CustomOidcUserService;
 import com.dreambake.service.LoginAttemptService;
+import com.dreambake.service.PendingSocialSignup;
 import com.dreambake.service.SocialLoginService;
 import com.dreambake.util.ClientIpResolver;
 import jakarta.servlet.http.HttpSession;
@@ -22,7 +23,11 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -48,7 +53,7 @@ import java.util.UUID;
  *  5. Límite de pedidos, cupones, registros e inicios de sesión desde una misma IP (RateLimitFilter).
  *  6. Cookie de sesión con SameSite=Lax.
  *  7. "Mantener la sesión iniciada" (remember-me) con una cookie firmada que dura 14 días.
- *  8. Login con Google (solo si hay credenciales cargadas en config/application.properties).
+ *  8. Login con Google y Facebook (solo las redes que tengan credenciales en config/application.properties).
  */
 @Configuration
 @EnableWebSecurity
@@ -79,8 +84,9 @@ public class SecurityConfig {
             "script-src 'self' https://cdn.jsdelivr.net",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             "font-src 'self' https://fonts.gstatic.com",
-            // lh3.googleusercontent.com: fotos de perfil de Google (las cuentas que entran con Google)
-            "img-src 'self' data: blob: https://lh3.googleusercontent.com",
+            // Fotos de perfil de las cuentas que entran con Google (lh3.googleusercontent.com)
+            // y con Facebook (platform-lookaside.fbsbx.com y *.fbcdn.net)
+            "img-src 'self' data: blob: https://lh3.googleusercontent.com https://platform-lookaside.fbsbx.com https://*.fbcdn.net",
             "connect-src 'self'",
             "object-src 'none'",
             "base-uri 'self'",
@@ -103,6 +109,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Tienda pública y archivos estáticos
                         // /baja: página para darse de baja de los emails promocionales (link de cada email)
+                        // /privacidad y /eliminar-datos: páginas legales (Facebook las exige para publicar la app)
+                        // /login/completar-email: pedir el email cuando Facebook no lo manda (SocialSignupController)
+                        .requestMatchers("/privacidad", "/eliminar-datos", "/login/completar-email", "/login/completar-email/**").permitAll()
                         .requestMatchers("/", "/builder", "/products", "/cart", "/register", "/login", "/baja",
                                 "/css/**", "/js/**", "/img/**", "/uploads/**", "/error").permitAll()
 
@@ -163,9 +172,12 @@ public class SecurityConfig {
         // 8. Login con Google. Spring Boot solo arma la lista de redes sociales (ClientRegistrationRepository)
         //    si en config/application.properties hay un client-id cargado. Sin credenciales no se activa
         //    (y el botón "Continuar con Google" no se muestra, ver PublicViewAdvice).
-        if (socialClients.getIfAvailable() != null) {
+        ClientRegistrationRepository clients = socialClients.getIfAvailable();
+        if (clients != null) {
             http.oauth2Login(oauth -> oauth
                     .loginPage("/login") // nuestra página, no la genérica de Spring
+                    .authorizationEndpoint(endpoint -> endpoint
+                            .authorizationRequestResolver(socialAuthorizationRequestResolver(clients)))
                     .userInfoEndpoint(info -> info
                             .oidcUserService(customOidcUserService)   // Google (OpenID Connect)
                             .userService(customOAuth2UserService))    // Facebook (paso 2.3)
@@ -229,6 +241,20 @@ public class SecurityConfig {
         };
     }
 
+    // Arma el pedido que se manda a Google o Facebook. A Facebook solo se le piden los permisos
+    // "email" y "public_profile" (nombre y foto), aunque en la configuración se escriba otra cosa:
+    // así no se pide más de lo necesario y Meta no exige una revisión extra de la app.
+    private OAuth2AuthorizationRequestResolver socialAuthorizationRequestResolver(ClientRegistrationRepository clients) {
+        DefaultOAuth2AuthorizationRequestResolver resolver = new DefaultOAuth2AuthorizationRequestResolver(
+                clients, OAuth2AuthorizationRequestRedirectFilter.DEFAULT_AUTHORIZATION_REQUEST_BASE_URI);
+        resolver.setAuthorizationRequestCustomizer(builder -> builder.attributes(attrs -> {
+            if ("facebook".equals(attrs.get(OAuth2ParameterNames.REGISTRATION_ID))) {
+                builder.scopes(Set.of("email", "public_profile"));
+            }
+        }));
+        return resolver;
+    }
+
     // Códigos de error del login con Google que tienen un mensaje propio en login.html y profile.html.
     // Cualquier otro error se muestra como "failed" (nunca se copia a la dirección lo que mande Google).
     private static final Set<String> SOCIAL_ERROR_CODES = Set.of(
@@ -240,6 +266,13 @@ public class SecurityConfig {
             String code = SocialLoginService.ERROR_FAILED;
             if (exception instanceof OAuth2AuthenticationException oauthError) {
                 String raw = oauthError.getError().getErrorCode();
+                // Facebook no mandó el email: no es un error, se le pide a la persona (con código de verificación)
+                if (SocialLoginService.ERROR_EMAIL_REQUIRED.equals(raw)
+                        && request.getSession(false) != null
+                        && request.getSession(false).getAttribute(PendingSocialSignup.SESSION_KEY) != null) {
+                    response.sendRedirect("/login/completar-email");
+                    return;
+                }
                 if ("access_denied".equals(raw)) {
                     code = "cancelled"; // el usuario tocó "Cancelar" en la pantalla de Google
                 } else if (SOCIAL_ERROR_CODES.contains(raw)) {
@@ -250,7 +283,9 @@ public class SecurityConfig {
             HttpSession session = request.getSession(false);
             boolean wasLinking = session != null && session.getAttribute(SocialLoginService.SESSION_LINK_USER_ID) != null;
             SocialLoginService.clearLinkRequest(session);
-            response.sendRedirect(wasLinking ? "/profile?linkError=" + code : "/login?social=" + code);
+            // De qué red social volvió (la dirección termina en /google o /facebook): el aviso la nombra
+            String via = request.getRequestURI().endsWith("/facebook") ? "facebook" : "google";
+            response.sendRedirect(wasLinking ? "/profile?linkError=" + code : "/login?social=" + code + "&via=" + via);
         };
     }
 

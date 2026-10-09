@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <!-- Color de la barra del navegador en el celular: el mismo fondo del header -->
+  <meta name="theme-color" content="#fef9f9" />
+  <link rel="icon" type="image/svg+xml" th:href="@{/img/favicon.svg}" />
+  <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
+  <script th:src="@{/js/csrf.js}"></script>
+  <title>Política de privacidad — Dulce Sueños Posadas</title>
+  <meta name="description" content="Qué datos personales guarda Dulce Sueños Posadas, para qué los usa y cómo podés pedir que los borremos.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Orden: base vieja compartida → tokens → componentes → header → CSS de la página → footer -->
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+  <link rel="stylesheet" th:href="@{/css/tokens.css}">
+  <link rel="stylesheet" th:href="@{/css/components.css}">
+  <link rel="stylesheet" th:href="@{/css/header.css}">
+  <link rel="stylesheet" th:href="@{/css/public.css}">
+  <link rel="stylesheet" th:href="@{/css/legal.css}">
+  <link rel="stylesheet" th:href="@{/css/footer.css}">
+</head>
+<body class="page-shop page-legal">
+
+  <div th:replace="~{fragments/header :: header}"></div>
+
+  <main id="main" class="shop-main">
+    <section class="shop-hero">
+      <div class="site-container site-container--narrow">
+        <h1 class="text-h1">Política de privacidad</h1>
+        <p class="text-lead">Qué datos tuyos guardamos, para qué los usamos y cómo podés pedir que los borremos.</p>
+      </div>
+    </section>
+
+    <div class="site-container site-container--narrow legal-page">
+
+      <!-- Versión básica (paso 2.3): Facebook pide esta página para publicar el login con Facebook.
+           Se completa en el paso 6.2. -->
+      <p class="legal-updated">Última actualización: octubre de 2026.</p>
+
+      <section class="legal-section" aria-labelledby="who">
+        <h2 id="who">Quiénes somos</h2>
+        <p><strong>Dulce Sueños Posadas</strong> es una pastelería de Posadas, Misiones, que hace tortas personalizadas y mesas dulces. Somos responsables de los datos que nos dejás en este sitio. Podés escribirnos <th:block th:if="${contactEmail != null}">por email a <a class="link" th:href="|mailto:${contactEmail}|" th:text="${contactEmail}">hola@ejemplo.com</a> o </th:block>por <a class="link" th:href="|https://wa.me/${whatsappNumber}|" target="_blank" rel="noopener">WhatsApp</a>.</p>
+      </section>
+
+      <section class="legal-section" aria-labelledby="what">
+        <h2 id="what">Qué datos guardamos</h2>
+        <ul>
+          <li><strong>Si creás una cuenta:</strong> nombre, email, celular y tu contraseña (guardada cifrada: nadie puede leerla, ni siquiera nosotros).</li>
+          <li><strong>Si hacés un pedido:</strong> nombre, celular, email, dirección de entrega (si pedís envío) y el detalle del pedido.</li>
+          <li><strong>Si nos la das:</strong> tu fecha de cumpleaños, para saludarte.</li>
+          <li><strong>Si entrás con Google o Facebook:</strong> solo tu nombre, tu email y tu foto de perfil. No recibimos tu contraseña, tus publicaciones ni tus contactos.</li>
+        </ul>
+      </section>
+
+      <section class="legal-section" aria-labelledby="why">
+        <h2 id="why">Para qué los usamos</h2>
+        <ul>
+          <li>Para preparar y entregar tus pedidos y avisarte cómo van (recibido, confirmado, listo, recordatorio de entrega).</li>
+          <li>Para que no tengas que escribir tus datos cada vez que pedís.</li>
+          <li>Para mandarte promociones y un saludo de cumpleaños <strong>solo si aceptaste recibirlos</strong>. Cada uno de esos emails trae un link para darte de baja.</li>
+        </ul>
+        <p>No vendemos ni compartimos tus datos con nadie. Solo los usan las personas del negocio que preparan tus pedidos.</p>
+      </section>
+
+      <section class="legal-section" aria-labelledby="cookies">
+        <h2 id="cookies">Cookies</h2>
+        <p>Usamos solo las cookies necesarias para que el sitio funcione: la que mantiene tu sesión abierta, la de "Mantener la sesión iniciada" (si la marcás) y una de seguridad para los formularios. El carrito se guarda en tu propio navegador. No usamos cookies de publicidad.</p>
+      </section>
+
+      <section class="legal-section" aria-labelledby="rights">
+        <h2 id="rights">Tus derechos</h2>
+        <p>Por la Ley 25.326 de Protección de Datos Personales podés pedirnos gratis ver qué datos tuyos tenemos, corregirlos o que los borremos. Para borrarlos, seguí los pasos de <a class="link" th:href="@{/eliminar-datos}">Eliminar mis datos</a>.</p>
+        <p class="legal-note">La Agencia de Acceso a la Información Pública, como órgano de control de la Ley 25.326, atiende las denuncias y reclamos de quienes consideren que no se respetaron sus derechos sobre sus datos personales.</p>
+      </section>
+
+      <section class="legal-section" aria-labelledby="security">
+        <h2 id="security">Cómo los cuidamos</h2>
+        <p>Las contraseñas se guardan cifradas, el ingreso se bloquea por un rato después de varios intentos fallidos y solo el personal del negocio puede ver los datos de los pedidos.</p>
+      </section>
+    </div>
+  </main>
+
+  <div th:replace="~{fragments/footer :: footer}"></div>
+
+  <script th:src="@{/js/header.js}" defer></script>
+  <script th:src="@{/js/public/store.js}" defer></script>
+</body>
+</html>

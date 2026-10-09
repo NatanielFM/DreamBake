@@ -25,6 +25,11 @@ import java.util.Optional;
  *       que el email es suyo (verificado). El personal (ADMIN/PASTELERO) se rechaza: tiene que
  *       entrar con contraseña y vincular desde su perfil.
  *  - c. No existe → se crea una cuenta de cliente nueva.
+ *       Si la red social no mandó el email (Facebook, cuenta creada con teléfono), la cuenta NO se crea
+ *       acá: se guarda el registro a medias en la sesión y se pide el email en /login/completar-email,
+ *       con un código de verificación (SocialSignupController).
+ *  Solo se puede vincular desde el perfil una cuenta de Google: con Facebook nunca se vincula una
+ *  cuenta del personal.
  *
  * Si algo no se permite, se lanza OAuth2AuthenticationException con un código corto
  * (ver los códigos abajo); SecurityConfig lo convierte en un mensaje amable en español.
@@ -38,10 +43,14 @@ public class SocialLoginService {
     public static final String ERROR_DISABLED = "disabled";
     public static final String ERROR_ALREADY_LINKED = "already_linked";
     public static final String ERROR_FAILED = "failed";
+    // No es un error para el usuario: falta el email y hay que pedírselo (ver SecurityConfig)
+    public static final String ERROR_EMAIL_REQUIRED = "email_required";
 
     // Datos que guarda ProfileController en la sesión cuando un empleado toca "Vincular"
     public static final String SESSION_LINK_USER_ID = "oauth2.linkUserId";
     public static final String SESSION_LINK_STARTED_AT = "oauth2.linkStartedAt";
+    // Con qué red social se pidió vincular (hoy solo GOOGLE)
+    public static final String SESSION_LINK_PROVIDER = "oauth2.linkProvider";
     // La sesión "con contraseña" del empleado, para devolvérsela después de pasar por Google
     public static final String SESSION_LINK_PREVIOUS_AUTH = "oauth2.linkPreviousAuth";
     // Marca que deja este servicio cuando la vinculación salió bien (la lee el successHandler)
@@ -61,8 +70,9 @@ public class SocialLoginService {
             throw error(ERROR_FAILED);
         }
 
-        // Modo vincular: la cuenta de la red social se une al empleado que lo pidió desde su perfil
-        Long linkUserId = pendingLinkUserId();
+        // Modo vincular: la cuenta de la red social se une al empleado que lo pidió desde su perfil.
+        // Solo si el pedido fue para ESTA red social (con Facebook nunca se vincula al personal).
+        Long linkUserId = pendingLinkUserId(provider);
         if (linkUserId != null) {
             return linkToExistingUser(linkUserId, provider, providerId, pictureUrl);
         }
@@ -76,8 +86,13 @@ public class SocialLoginService {
             return userRepository.save(user);
         }
 
+        // Sin email (Facebook con cuenta creada por teléfono): se guarda lo que sabemos y se pide el email
         if (email == null || email.isBlank()) {
-            throw error(ERROR_FAILED);
+            HttpSession session = currentSession(true);
+            if (session == null) throw error(ERROR_FAILED);
+            session.setAttribute(PendingSocialSignup.SESSION_KEY,
+                    new PendingSocialSignup(provider, providerId, name, pictureUrl));
+            throw error(ERROR_EMAIL_REQUIRED);
         }
         String cleanEmail = email.trim();
 
@@ -110,6 +125,25 @@ public class SocialLoginService {
         return userService.createSocialUser(cleanEmail, displayName, provider, providerId, pictureUrl);
     }
 
+    /**
+     * Crea la cuenta de un registro a medias, cuando la persona ya confirmó su email con el código
+     * (lo llama SocialSignupController). Se vuelve a revisar que nadie haya usado ese email
+     * o esa cuenta de la red social mientras tanto.
+     */
+    public User completePendingSignup(PendingSocialSignup pending) {
+        String email = pending.getEmail().trim();
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new IllegalStateException("Ya existe una cuenta con ese email");
+        }
+        if (userRepository.findByAuthProviderAndProviderId(pending.getProvider(), pending.getProviderId()).isPresent()) {
+            throw new IllegalStateException("Esa cuenta de la red social ya está vinculada");
+        }
+        String name = pending.getName();
+        String displayName = (name != null && !name.isBlank()) ? name.trim() : email.split("@")[0];
+        return userService.createSocialUser(email, displayName, pending.getProvider(),
+                pending.getProviderId(), pending.getPictureUrl());
+    }
+
     /** ¿Es del personal (administrador o pastelero)? */
     public static boolean isStaff(User user) {
         String roles = user.getRoles() == null ? "" : user.getRoles();
@@ -128,15 +162,16 @@ public class SocialLoginService {
         user.setProviderId(providerId);
         if (pictureUrl != null) user.setAvatarUrl(pictureUrl);
         User saved = userRepository.save(user);
-        HttpSession session = currentSession();
+        HttpSession session = currentSession(false);
         if (session != null) session.setAttribute(SESSION_LINK_DONE, Boolean.TRUE);
         return saved;
     }
 
-    // Devuelve el id del empleado que pidió vincular, si el pedido sigue vigente
-    private Long pendingLinkUserId() {
-        HttpSession session = currentSession();
+    // Devuelve el id del empleado que pidió vincular, si el pedido sigue vigente y es para esta red social
+    private Long pendingLinkUserId(AuthProvider provider) {
+        HttpSession session = currentSession(false);
         if (session == null) return null;
+        if (session.getAttribute(SESSION_LINK_PROVIDER) != provider) return null;
         Object id = session.getAttribute(SESSION_LINK_USER_ID);
         Object startedAt = session.getAttribute(SESSION_LINK_STARTED_AT);
         if (!(id instanceof Long userId) || !(startedAt instanceof Instant started)) return null;
@@ -152,6 +187,7 @@ public class SocialLoginService {
         if (session == null) return;
         session.removeAttribute(SESSION_LINK_USER_ID);
         session.removeAttribute(SESSION_LINK_STARTED_AT);
+        session.removeAttribute(SESSION_LINK_PROVIDER);
         session.removeAttribute(SESSION_LINK_PREVIOUS_AUTH);
     }
 
@@ -162,9 +198,9 @@ public class SocialLoginService {
     }
 
     // Igual que en UserDetailsServiceImpl: se le pide a Spring el pedido HTTP en curso
-    private HttpSession currentSession() {
+    private HttpSession currentSession(boolean create) {
         if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attrs) {
-            return attrs.getRequest().getSession(false);
+            return attrs.getRequest().getSession(create);
         }
         return null;
     }

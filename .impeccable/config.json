@@ -100,6 +100,15 @@
         ],
         "createdAt": "2026-10-09T16:31:25.880Z",
         "reason": "Claude: falso positivo; Thymeleaf completa src con th:src al renderizar y la <img> solo se emite con th:if cuando la campaña tiene foto"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "src/main/resources/templates/completar-email.html"
+        ],
+        "createdAt": "2026-10-09T23:22:03.288Z",
+        "reason": "Claude: falso positivo — el <img> de la foto lateral usa th:src de Thymeleaf (igual que login.html y register.html), que el escáner estático no interpreta"
       }
     ]
   }

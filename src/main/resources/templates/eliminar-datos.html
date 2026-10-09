@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <!-- Color de la barra del navegador en el celular: el mismo fondo del header -->
+  <meta name="theme-color" content="#fef9f9" />
+  <link rel="icon" type="image/svg+xml" th:href="@{/img/favicon.svg}" />
+  <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
+  <script th:src="@{/js/csrf.js}"></script>
+  <title>Eliminar mis datos — Dulce Sueños Posadas</title>
+  <meta name="description" content="Cómo pedirle a Dulce Sueños Posadas que borre tu cuenta y tus datos personales.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Orden: base vieja compartida → tokens → componentes → header → CSS de la página → footer -->
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+  <link rel="stylesheet" th:href="@{/css/tokens.css}">
+  <link rel="stylesheet" th:href="@{/css/components.css}">
+  <link rel="stylesheet" th:href="@{/css/header.css}">
+  <link rel="stylesheet" th:href="@{/css/public.css}">
+  <link rel="stylesheet" th:href="@{/css/legal.css}">
+  <link rel="stylesheet" th:href="@{/css/footer.css}">
+</head>
+<body class="page-shop page-legal">
+
+  <div th:replace="~{fragments/header :: header}"></div>
+
+  <main id="main" class="shop-main">
+    <section class="shop-hero">
+      <div class="site-container site-container--narrow">
+        <h1 class="text-h1">Eliminar mis datos</h1>
+        <p class="text-lead">Si querés que borremos tu cuenta y tus datos, es fácil.</p>
+      </div>
+    </section>
+
+    <div class="site-container site-container--narrow legal-page">
+
+      <!-- Facebook pide esta página ("instrucciones para eliminar datos") para publicar el login con Facebook.
+           Se completa en el paso 6.2. -->
+      <section class="legal-section" aria-labelledby="how">
+        <h2 id="how">Cómo pedirlo</h2>
+        <ol class="legal-steps">
+          <li>Escribinos <th:block th:if="${contactEmail != null}">por email a <a class="link" th:href="|mailto:${contactEmail}|" th:text="${contactEmail}">hola@ejemplo.com</a> o </th:block>por <a class="link" th:href="|https://wa.me/${whatsappNumber}|" target="_blank" rel="noopener">WhatsApp</a>.</li>
+          <li>Mandalo desde el email o el celular de tu cuenta y decinos: <strong>"Quiero eliminar mi cuenta y mis datos"</strong>. Así sabemos que sos vos.</li>
+          <li>Borramos tu cuenta y tus datos y te avisamos por el mismo medio dentro de los 5 días hábiles.</li>
+        </ol>
+        <div class="legal-actions">
+          <a class="button button--primary button--lg" th:href="|https://wa.me/${whatsappNumber}?text=Hola%2C%20quiero%20eliminar%20mi%20cuenta%20y%20mis%20datos.|" target="_blank" rel="noopener">Pedirlo por WhatsApp</a>
+          <a class="button button--secondary button--lg" th:if="${contactEmail != null}" th:href="|mailto:${contactEmail}?subject=Eliminar%20mi%20cuenta|">Pedirlo por email</a>
+        </div>
+      </section>
+
+      <section class="legal-section" aria-labelledby="what-deleted">
+        <h2 id="what-deleted">Qué se borra</h2>
+        <p>Tu cuenta, tu nombre, email, celular, dirección, fecha de cumpleaños y tus preferencias de emails. Si tenés un pedido en curso, te avisamos antes para que no se pierda.</p>
+      </section>
+
+      <section class="legal-section" aria-labelledby="social">
+        <h2 id="social">Si entraste con Google o Facebook</h2>
+        <p>Además de pedirnos que borremos tus datos, podés quitarle el acceso a nuestro sitio desde tu cuenta:</p>
+        <ul>
+          <li><strong>Facebook:</strong> Configuración y privacidad → Configuración → Apps y sitios web → Dulce Sueños Posadas → Eliminar.</li>
+          <li><strong>Google:</strong> en myaccount.google.com → Seguridad → Tus conexiones con apps y servicios de terceros → Dulce Sueños Posadas → Borrar todas las conexiones.</li>
+        </ul>
+      </section>
+
+      <section class="legal-section" aria-labelledby="promos">
+        <h2 id="promos">¿Solo querés dejar de recibir promociones?</h2>
+        <p>No hace falta borrar la cuenta: tocá el link para darte de baja que viene al final de cada email de promociones.</p>
+      </section>
+
+      <p class="legal-note">Más información en nuestra <a class="link" th:href="@{/privacidad}">política de privacidad</a>.</p>
+    </div>
+  </main>
+
+  <div th:replace="~{fragments/footer :: footer}"></div>
+
+  <script th:src="@{/js/header.js}" defer></script>
+  <script th:src="@{/js/public/store.js}" defer></script>
+</body>
+</html>

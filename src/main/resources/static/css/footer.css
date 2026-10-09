@@ -169,6 +169,24 @@
   padding-block: var(--space-5);
   border-top: 1px solid rgb(251 233 240 / 0.16);
 }
+/* © a la izquierda y links legales a la derecha (abajo en el celular) */
+.site-footer-bottom p {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-5);
+}
+.site-footer-legal { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-5); }
+.site-footer-legal a {
+  display: inline-block;
+  padding-block: var(--space-2);   /* área táctil más cómoda en el celular */
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .site-footer-legal a:hover { color: var(--white); }
+}
 
 
 /* ---------- Tablet y escritorio ---------- */

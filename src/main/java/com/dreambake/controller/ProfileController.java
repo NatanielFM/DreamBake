@@ -36,6 +36,7 @@ public class ProfileController {
                 : userRepository.findByEmail(authentication.getName()).orElse(null);
         boolean staff = user != null && SocialLoginService.isStaff(user);
         model.addAttribute("googleLinked", user != null && user.getAuthProvider() == AuthProvider.GOOGLE);
+        model.addAttribute("facebookLinked", user != null && user.getAuthProvider() == AuthProvider.FACEBOOK);
         model.addAttribute("isStaff", staff);
         model.addAttribute("passwordSession", enteredWithPassword(authentication));
         return "profile";
@@ -52,6 +53,7 @@ public class ProfileController {
         }
         session.setAttribute(SocialLoginService.SESSION_LINK_USER_ID, user.getId());
         session.setAttribute(SocialLoginService.SESSION_LINK_STARTED_AT, Instant.now());
+        session.setAttribute(SocialLoginService.SESSION_LINK_PROVIDER, AuthProvider.GOOGLE);
         session.setAttribute(SocialLoginService.SESSION_LINK_PREVIOUS_AUTH, authentication);
         return "redirect:/oauth2/authorization/google";
     }

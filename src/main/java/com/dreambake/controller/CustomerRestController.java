@@ -126,6 +126,7 @@ public class CustomerRestController {
             case NEW_ORDER_ALERT -> "Aviso de nuevo pedido";
             case DELIVERY_SUMMARY -> "Resumen de entregas";
             case TEST -> "Prueba";
+            case ACCOUNT_VERIFICATION -> "Código de verificación";
             case PASSWORD_RESET -> "Recuperar contraseña";
         };
     }

@@ -37,6 +37,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private static final int MAX_REGISTERS = 10;             // cuentas nuevas
     private static final int MAX_LOGINS = 20;                // intentos de inicio de sesión (cualquier cuenta)
     private static final int MAX_UNSUBSCRIBES = 20;          // bajas de emails (botón de /baja)
+    private static final int MAX_EMAIL_CODES = 15;           // "Completá tu email": pedir código o probarlo
 
     private final Map<String, Deque<Long>> hits = new ConcurrentHashMap<>();
 
@@ -57,6 +58,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
         // (el bloqueo por cuenta de LoginAttemptService no lo detecta porque cambia de email)
         else if ("POST".equals(method) && "/login".equals(path)) { limit = MAX_LOGINS; bucket = "login"; }
         else if ("POST".equals(method) && "/baja".equals(path)) { limit = MAX_UNSUBSCRIBES; bucket = "baja"; }
+        // Registro con Facebook sin email: cada envío manda un email o prueba un código
+        else if ("POST".equals(method) && path.startsWith("/login/completar-email")) { limit = MAX_EMAIL_CODES; bucket = "email-code"; }
 
         if (limit != null && tooMany(bucket + ":" + ClientIpResolver.resolve(request), limit)) {
             response.setStatus(429);
