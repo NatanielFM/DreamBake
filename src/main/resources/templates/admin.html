@@ -788,12 +788,63 @@
           <p class="settings-status" id="settings-status" role="status" hidden></p>
         </form>
 
-        <!-- Email de prueba: comprueba que el correo saliente (config/application.properties) está bien cargado -->
-        <div class="config-block settings-form" id="email-test-block">
-          <h3 class="section-label">Correo electrónico</h3>
-          <p class="form-hint settings-intro">Manda un email de prueba a tu casilla (la de tu usuario de administrador) para comprobar que el sistema puede enviar mensajes a los clientes.</p>
-          <div class="form-actions">
-            <button type="button" class="btn btn-pink" id="btn-email-test">Enviar email de prueba</button>
+        <!-- Correo de envío (settings.js): la cuenta desde la que salen los emails a los clientes.
+             Se guarda en la base con la contraseña cifrada; la contraseña nunca vuelve al navegador. -->
+        <div class="config-block settings-form" id="mail-account-block">
+          <h3 class="section-label">Correo de envío</h3>
+          <p class="form-hint settings-intro">Desde esta cuenta salen los emails a los clientes: saludos de cumpleaños y promociones. Lo ideal es el Gmail del emprendimiento.</p>
+          <p class="mail-status" id="mail-status" role="status"></p>
+
+          <form id="mail-form" class="form-grid mail-form" novalidate>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="mail-username">Email de la cuenta</label>
+                <input type="email" id="mail-username" class="form-input" inputmode="email" autocomplete="off" maxlength="150" placeholder="dulcesuenos@gmail.com">
+              </div>
+              <div class="form-group">
+                <label for="mail-password">Contraseña de aplicación</label>
+                <input type="password" id="mail-password" class="form-input" autocomplete="new-password" maxlength="200" aria-describedby="mail-password-hint">
+                <p class="form-hint" id="mail-password-hint">16 letras que da Gmail. No es la contraseña normal de la cuenta.</p>
+              </div>
+            </div>
+
+            <details class="mail-details">
+              <summary>¿Cómo consigo la contraseña de aplicación de Gmail?</summary>
+              <ol class="mail-steps">
+                <li>Entrá a la cuenta de Google del emprendimiento y abrí <a href="https://myaccount.google.com/security" target="_blank" rel="noopener">Seguridad</a>.</li>
+                <li>Activá la <strong>Verificación en dos pasos</strong> (Google lo pide para crear la contraseña).</li>
+                <li>Abrí <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Contraseñas de aplicaciones</a>, escribí un nombre (por ejemplo "DreamBake") y tocá Crear.</li>
+                <li>Copiá las 16 letras que aparecen y pegalas acá arriba.</li>
+              </ol>
+            </details>
+
+            <details class="mail-details" id="mail-advanced">
+              <summary>Otro proveedor de correo (avanzado)</summary>
+              <div class="form-grid-2 mail-advanced-fields">
+                <div class="form-group">
+                  <label for="mail-host">Servidor SMTP</label>
+                  <input type="text" id="mail-host" class="form-input" autocomplete="off" maxlength="100" placeholder="smtp.gmail.com">
+                </div>
+                <div class="form-group">
+                  <label for="mail-port">Puerto</label>
+                  <input type="number" id="mail-port" class="form-input" min="1" max="65535" inputmode="numeric" placeholder="587">
+                </div>
+              </div>
+              <label class="checkbox-label">
+                <input type="checkbox" id="mail-starttls" checked> Conexión segura (STARTTLS)
+              </label>
+            </details>
+
+            <p class="form-error" id="mail-error" role="alert" hidden></p>
+            <div class="form-actions">
+              <button type="button" class="btn btn-grey" id="btn-mail-remove" hidden>Quitar cuenta</button>
+              <button type="submit" class="btn btn-pink" id="btn-mail-save">Guardar y probar conexión</button>
+            </div>
+          </form>
+
+          <div class="mail-test">
+            <p class="form-hint">Para comprobar cómo llegan los emails, mandá uno de prueba a tu casilla (la de tu usuario de administrador).</p>
+            <button type="button" class="btn btn-grey" id="btn-email-test">Enviar email de prueba</button>
           </div>
         </div>
       </section>

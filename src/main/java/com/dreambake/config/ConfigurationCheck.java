@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import com.dreambake.service.MailAccountService;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -18,14 +19,20 @@ public class ConfigurationCheck implements ApplicationRunner {
     private static final Logger log = LoggerFactory.getLogger(ConfigurationCheck.class);
 
     private final Environment env;
+    private final MailAccountService mailAccounts;
 
-    public ConfigurationCheck(Environment env) {
+    public ConfigurationCheck(Environment env, MailAccountService mailAccounts) {
         this.env = env;
+        this.mailAccounts = mailAccounts;
     }
 
     @Override
     public void run(ApplicationArguments args) {
-        aviso("Envío de mails", "spring.mail.host", "spring.mail.username", "spring.mail.password");
+        // El correo se puede cargar desde el panel (Ajustes → Correo de envío) o desde este archivo
+        mailAccounts.current().ifPresentOrElse(
+                a -> log.info("Envío de mails: configurado ({}, desde {})", a.username(),
+                        "panel".equals(a.source()) ? "el panel" : "config/application.properties"),
+                () -> log.warn("Envío de mails DESACTIVADO: cargá la cuenta en Ajustes → Correo de envío"));
         aviso("Login con Google", "spring.security.oauth2.client.registration.google.client-id",
                 "spring.security.oauth2.client.registration.google.client-secret");
         aviso("Login con Facebook", "spring.security.oauth2.client.registration.facebook.client-id",

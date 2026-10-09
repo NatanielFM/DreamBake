@@ -134,7 +134,7 @@ public class BirthdayService {
         try {
             LocalDate today = today();
             if (!emailService.estaConfigurado()) {
-                log.warn("Cumpleaños ({}): no se mandó nada porque el correo no está configurado (spring.mail.*).", origin);
+                log.warn("Cumpleaños ({}): no se mandó nada porque el correo no está configurado (Ajustes → Correo de envío).", origin);
                 return new RunSummary(0, 0, 0, 0, "El correo no está configurado: no se pudo mandar ningún saludo.");
             }
             int birthdays = 0, sent = 0, already = 0, failed = 0;

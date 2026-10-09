@@ -976,6 +976,21 @@ select.form-input {
   .loyalty-config .btn { flex: 1 1 100%; }
 }
 
+/* Ajustes → Correo de envío */
+.mail-status { margin: 0 0 var(--space-4); font-weight: var(--fw-semibold); color: var(--admin-heading); }
+.mail-status:empty { display: none; }
+.mail-form { margin: 0; }
+/* Cada campo arriba de todo (si no, el que no tiene texto de ayuda queda más abajo que su vecino) */
+.mail-form .form-group { align-content: start; }
+.mail-details { padding: var(--space-3) var(--space-4); border: 1px solid var(--admin-line); border-radius: var(--radius-md); }
+.mail-details summary { min-height: 32px; display: flex; align-items: center; cursor: pointer; font-weight: var(--fw-semibold); color: var(--admin-heading); }
+.mail-details[open] summary { margin-bottom: var(--space-3); }
+.mail-steps { margin: 0; padding-left: 1.25rem; display: grid; gap: var(--space-2); color: var(--admin-text); }
+.mail-steps a { color: var(--admin-primary); font-weight: var(--fw-semibold); }
+.mail-advanced-fields { margin-bottom: var(--space-3); }
+.mail-test { margin-top: var(--space-5); padding-top: var(--space-5); border-top: 1px solid var(--admin-line); display: grid; gap: var(--space-3); justify-items: start; }
+.mail-test .form-hint { margin: 0; }
+
 /* Clientes → Fidelización → Campañas */
 .campaigns { margin-top: var(--space-7); padding-top: var(--space-6); border-top: 1px solid var(--admin-line); }
 .campaigns-head { margin-bottom: var(--space-2); }

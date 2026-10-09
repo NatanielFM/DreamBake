@@ -261,7 +261,7 @@ public class CampaignService {
         }
         if (checkRecipients) {
             if (!emailService.estaConfigurado()) {
-                return "El correo no está configurado: cargá los datos de spring.mail en config/application.properties.";
+                return EmailService.NO_CONFIGURADO;
             }
             if (audience(c.getAudience(), c.getTag()).isEmpty()) {
                 return "Ningún cliente de esta audiencia aceptó recibir promociones (o no tiene email).";

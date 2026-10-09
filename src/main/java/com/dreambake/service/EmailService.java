@@ -9,8 +9,6 @@ import com.dreambake.repository.EmailLogRepository;
 import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -49,6 +47,10 @@ public class EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
+    // Mensaje cuando todavía no hay una cuenta de correo cargada
+    public static final String NO_CONFIGURADO =
+            "El correo no está configurado. Cargá la cuenta en Ajustes → Correo de envío.";
+
     // Cómo salió un envío: ok = true si el servidor de correo aceptó el mensaje.
     // "mensaje" explica el problema en lenguaje simple cuando ok = false.
     public record Resultado(boolean ok, String mensaje) {
@@ -56,27 +58,24 @@ public class EmailService {
         static Resultado fallo(String mensaje) { return new Resultado(false, mensaje); }
     }
 
-    // ObjectProvider: Spring solo crea el JavaMailSender si spring.mail.host está configurado.
-    // Con este "proveedor" la app arranca igual cuando no lo está.
-    private final ObjectProvider<JavaMailSender> mailSender;
+    // La cuenta de correo desde la que se manda: la del panel (Ajustes → Correo de envío)
+    // o, si no hay, la de config/application.properties. Ver MailAccountService.
+    private final MailAccountService mailAccounts;
     private final TemplateEngine templateEngine;
     private final AppProperties app;
     private final EmailLogRepository emailLogRepository;
-    private final String username;
 
-    public EmailService(ObjectProvider<JavaMailSender> mailSender, TemplateEngine templateEngine,
-                        AppProperties app, EmailLogRepository emailLogRepository,
-                        @Value("${spring.mail.username:}") String username) {
-        this.mailSender = mailSender;
+    public EmailService(MailAccountService mailAccounts, TemplateEngine templateEngine,
+                        AppProperties app, EmailLogRepository emailLogRepository) {
+        this.mailAccounts = mailAccounts;
         this.templateEngine = templateEngine;
         this.app = app;
         this.emailLogRepository = emailLogRepository;
-        this.username = username == null ? "" : username.trim();
     }
 
-    // ¿Están cargados los datos del correo saliente (servidor + usuario)?
+    // ¿Hay una cuenta de correo cargada para mandar emails?
     public boolean estaConfigurado() {
-        return mailSender.getIfAvailable() != null && !username.isBlank();
+        return mailAccounts.current().isPresent();
     }
 
     // Link para darse de baja de un cliente: <dirección pública>/baja?token=<su código>
@@ -160,13 +159,13 @@ public class EmailService {
             }
         }
 
-        JavaMailSender sender = mailSender.getIfAvailable();
-        if (sender == null || username.isBlank()) {
-            log.warn("Email '{}' para {} NO enviado: falta configurar spring.mail.* en config/application.properties.",
-                    asunto, destinatario);
-            return Resultado.fallo(
-                    "El correo no está configurado. Cargá los datos del servidor de correo en config/application.properties.");
+        MailAccountService.Account cuenta = mailAccounts.current().orElse(null);
+        if (cuenta == null) {
+            log.warn("Email '{}' para {} NO enviado: no hay una cuenta de correo configurada.", asunto, destinatario);
+            return Resultado.fallo(NO_CONFIGURADO);
         }
+        JavaMailSender sender = cuenta.sender();
+        String username = cuenta.username();
         try {
             // 1. Se arma el HTML con la plantilla
             String html = armarHtml(asunto, plantilla, variables, bajaUrl);
@@ -233,7 +232,7 @@ public class EmailService {
             return "El servidor de correo rechazó el usuario o la contraseña. Con Gmail hay que usar una contraseña de aplicación.";
         }
         if (texto.contains("connect") || texto.contains("timed out") || texto.contains("unknownhost")) {
-            return "No se pudo conectar con el servidor de correo. Revisá spring.mail.host, el puerto y la conexión a internet.";
+            return "No se pudo conectar con el servidor de correo. Revisá la conexión a internet y la cuenta en Ajustes → Correo de envío.";
         }
         return "No se pudo enviar el email. Revisá el registro (log) de la app para ver el detalle.";
     }

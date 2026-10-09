@@ -97,7 +97,7 @@ public class CampaignSender {
         // Sin correo configurado no se intenta nada: se pausa una hora en vez de marcar
         // a todos los destinatarios como fallidos (se retoma cuando se cargue el correo)
         if (!emailService.estaConfigurado()) {
-            campaignRepository.pause(id, "En pausa: el correo no está configurado (spring.mail en config/application.properties).",
+            campaignRepository.pause(id, "En pausa: el correo no está configurado (Ajustes → Correo de envío).",
                     LocalDateTime.now().plusHours(1));
             log.warn("Campaña #{}: en pausa porque el correo no está configurado.", id);
             return;
