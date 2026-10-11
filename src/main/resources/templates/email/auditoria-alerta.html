@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<!--/* Aviso a los administradores: la revisión del registro de auditoría encontró una alteración
+       (AuditIntegrityService, tarea semanal o "verificar ahora"). Va a cada usuario ADMIN. */-->
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{email/base :: layout(~{::#cuerpo})}">
+<body>
+  <div id="cuerpo">
+    <h1 style="margin:0 0 12px 0;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:24px;line-height:32px;font-weight:600;color:#481729;">
+      Alerta de seguridad
+    </h1>
+    <p style="margin:0 0 16px 0;">
+      Hola<th:block th:if="${nombre != null and !nombre.isEmpty()}">, <span th:text="${nombre}">Ana</span></th:block>.
+      La revisión del registro de auditoría de <strong th:text="${negocio.name}">Dulce Sueños Posadas</strong>
+      encontró que alguien lo modificó o borró registros <strong>directamente en la base de datos</strong>
+      (por fuera del sistema).
+    </p>
+    <p style="margin:0 0 16px 0;padding:12px 16px;background-color:#fcf1f1;border-radius:12px;color:#91110b;">
+      <span th:text="${mensaje}">El registro #45 fue modificado después de guardarse.</span><br>
+      Detectado el <span th:text="${fecha}">12/10/2026 07:00</span>.
+    </p>
+    <p style="margin:0 0 8px 0;">Qué conviene hacer:</p>
+    <ul style="margin:0 0 16px 0;padding-left:20px;">
+      <li>Revisar quién tiene acceso a la base de datos y cambiar sus contraseñas.</li>
+      <li>Comparar con la última copia de seguridad para ver qué se cambió.</li>
+    </ul>
+    <p style="margin:16px 0 0 0;font-size:13px;line-height:20px;color:#666666;">
+      Este aviso también aparece en el panel de administración hasta que toques "Entendido".
+    </p>
+  </div>
+</body>
+</html>

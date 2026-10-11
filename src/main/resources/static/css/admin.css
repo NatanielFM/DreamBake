@@ -1875,3 +1875,21 @@ select.form-input.readonly-mode:disabled { opacity: 1; background-image: none; p
   .modal-card, .modal-large, .notification-dropdown { animation-name: admin-fade-in; }
   .btn:active:not(:disabled), .chip:active, .header-icon-btn:active, .product-card-admin:active { transform: none; }
 }
+
+/* ---------- Aviso de seguridad de la auditoría (paso 3.2) ----------
+   Usa los colores del estado "Cancelado" (rojo de la marca), que ya tienen versión de modo oscuro. */
+.audit-alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-3) var(--space-4);
+  margin: 0 0 var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--st-cancel-line);
+  border-radius: var(--radius-md);
+  background: var(--st-cancel-bg);
+  color: var(--st-cancel-text);
+}
+.audit-alert > svg { flex: none; width: 24px; height: 24px; margin-top: 2px; }
+.audit-alert__text { display: grid; flex: 1 1 16rem; gap: var(--space-1); line-height: 1.45; }
+.audit-alert form { margin: 0; align-self: center; }

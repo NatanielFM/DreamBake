@@ -14,7 +14,8 @@ public enum EmailType {
     DELIVERY_SUMMARY,    // resumen diario de entregas próximas (al negocio)
     TEST,                // email de prueba del panel
     ACCOUNT_VERIFICATION, // código de 6 números para confirmar un email (cuenta con Facebook o "Confirmá tu email")
-    PASSWORD_RESET;      // recuperar contraseña
+    PASSWORD_RESET,      // recuperar contraseña
+    AUDIT_ALERT;         // aviso a los administradores: el registro de auditoría fue alterado (paso 3.2)
 
     public boolean isPromotional() {
         return this == BIRTHDAY || this == PROMOTION;

@@ -87,6 +87,19 @@
     </aside>
 
     <main class="dashboard">
+      <!-- Aviso de seguridad (paso 3.2): la revisión semanal encontró el registro de auditoría alterado
+           (AuditIntegrityService). Queda visible hasta que el administrador toca "Entendido". -->
+      <div class="audit-alert" role="alert" th:if="${auditAlert != null}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17v.5"/></svg>
+        <div class="audit-alert__text">
+          <strong>Alerta de seguridad: el registro de auditoría fue alterado desde la base de datos.</strong>
+          <span th:text="|${auditAlert.message} Detectado el ${auditAlert.detectedAt}.|">El registro #45 fue modificado. Detectado el 12/10/2026 07:00.</span>
+          <span>Revisá quién tiene acceso a MySQL y compará con la última copia de seguridad.</span>
+        </div>
+        <form th:action="@{/admin/auditoria/entendido}" method="post">
+          <button type="submit" class="btn btn-grey btn-sm">Entendido</button>
+        </form>
+      </div>
       <!-- ==================== SECCIÓN RESUMEN (DASHBOARD ANALÍTICO) ==================== -->
       <section id="resumen" class="tab-content active">
         <div class="dashboard-header-bar">

@@ -1,7 +1,11 @@
 package com.dreambake.controller;
 
+import com.dreambake.service.AuditIntegrityService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 // Este controlador es el encargado de gestionar todas las peticiones que llegan bajo la ruta /admin.
@@ -14,10 +18,23 @@ import org.springframework.web.bind.annotation.RequestMapping;
 // /admin/test
 public class AdminController {
 
+    @Autowired
+    private AuditIntegrityService auditIntegrityService;
+
     @GetMapping // Define el tipo de petición. Cuando un usuario escriba www.dominio.com/admin
                 // en su
     // navegador el sistema ejecutará este método porque es una petición tipo GET
-    public String adminPanel() {
+    public String adminPanel(Model model) {
+        // Aviso de seguridad (paso 3.2): si la revisión encontró el registro de auditoría alterado,
+        // se muestra arriba de todo hasta que el administrador toque "Entendido"
+        model.addAttribute("auditAlert", auditIntegrityService.pendingAlert());
         return "admin"; // Esto busca admin.html en /templates
+    }
+
+    // Botón "Entendido" del aviso de auditoría
+    @PostMapping("/auditoria/entendido")
+    public String acknowledgeAuditAlert() {
+        auditIntegrityService.acknowledge();
+        return "redirect:/admin";
     }
 }
