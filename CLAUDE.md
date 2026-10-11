@@ -118,12 +118,14 @@ Definido en `config/SecurityConfig.java`:
 
 | Ruta | Acceso |
 |---|---|
-| `/`, `/builder`, `/products`, `/cart`, `/register`, `/login`, `/css/**`, `/js/**`, `/img/**`, `/uploads/**` | Público |
+| `/`, `/builder`, `/products`, `/cart`, `/register`, `/login`, `/baja`, `/privacidad`, `/eliminar-datos`, `/login/completar-email/**`, `/css/**`, `/js/**`, `/img/**`, `/uploads/**` | Público |
+| `/oauth2/**`, `/login/oauth2/**` (Google/Facebook, solo si hay credenciales) | Público |
 | `POST /api/orders`, `GET /api/cake-config/public`, `GET /api/coupons/validate/**` | Público (lo usa la tienda) |
 | `/admin/**` | `ADMIN` |
 | `/baker/**` | `PASTELERO` |
-| `/api/orders/**`, `/api/inventory/**`, `/api/recipes/**`, `GET /api/products/**`, `GET /api/categories/**` | `ADMIN` o `PASTELERO` |
-| resto de `/api/**` (usuarios, clientes, cupones, galería, configuración del creador, altas/bajas de productos, ajustes `/api/settings`) | `ADMIN` |
+| `/api/orders/**`, `/api/inventory/**`, `/api/recipes/**`, `GET /api/products/**`, `GET /api/categories/**`, `POST /api/audit/download` | `ADMIN` o `PASTELERO` |
+| `/profile/**`, `/api/account/**` ("Mis pedidos": siempre del usuario de la sesión) | Cualquier usuario logueado |
+| resto de `/api/**` (usuarios, clientes, cupones, galería, configuración del creador, altas/bajas de productos, ajustes `/api/settings`, campañas, fidelización, auditoría `/api/audit/**`) | `ADMIN` |
 
 - Los roles son **authorities sin prefijo** (`ADMIN`, `PASTELERO`), guardados como texto en `User.roles`.
 - Tras el login: ADMIN → `/admin`, PASTELERO → `/baker`, otro → `/`. Logout → `/login?logout`. Después de registrarse → `/login?registered`.
@@ -140,11 +142,24 @@ Definido en `config/SecurityConfig.java`:
 - Producción: `application-prod.properties` (perfil `prod`) toma la base y las claves de variables de entorno, activa cookies `Secure` y oculta los detalles de los errores.
 - Al agregar una ruta o endpoint nuevo, **actualizá SecurityConfig** si hace falta.
 
+## Auditoría (fase 3)
+
+- **Toda acción que modifique datos queda registrada** en `audit_logs` (`AuditLog`). **Regla: todo endpoint nuevo que cree, edite, borre, cambie un estado o descargue algo tiene que auditarse.**
+  - Casos simples: anotación `@Auditable(action, module, entityType, entityId, description)` arriba del método (`audit/AuditAspect`; la descripción admite `#{…}` con los parámetros, `#result` y `#body`). Solo registra si el método terminó bien (2xx).
+  - Si hace falta el antes y el después (precios, stock, pedidos, cupones…): `auditService.log(...)` directo, con `AuditText.snapshot/diff/change`.
+  - Descripciones en español, entendibles para la dueña ("Confirmó el pedido #45 de María Gómez"). Estados con los nombres del panel (`AuditText.status`).
+  - Dentro de una transacción, el registro se escribe al confirmarse (`afterCommit`).
+- **Es inmutable:** sin métodos de borrar en `AuditLogRepository`, entidad `@Immutable`, triggers de MySQL (`AuditDatabaseInitializer`) y cadena de hashes SHA-256 (`verifyChain`, revisión semanal los lunes 7:00 con aviso por email y en el panel).
+- **Datos personales:** teléfono, email, dirección y cumpleaños se guardan **enmascarados** en los detalles (`AuditText.maskPersonal`; Ley 25.326: el registro no se puede borrar cuando un cliente elimina su cuenta). No pongas emails ni teléfonos de clientes completos en las descripciones (`AuditText.maskEmail`).
+- Pestaña "Registro de actividad" (`admin/audit.js`, solo admin): filtros y paginación en el servidor, detalle legible, CSV/PDF (OpenPDF, paquete `org.openpdf.text`) con sello de integridad, "Verificar integridad".
+- **Limpiar datos de prueba de `audit_logs`:** como root, `DROP TRIGGER audit_logs_no_update; DROP TRIGGER audit_logs_no_delete;`, después `DELETE` + `ALTER TABLE audit_logs AUTO_INCREMENT = 1`, y reiniciar la app (recrea los triggers).
+- El hash incluye la hora: la zona horaria está fija en `DreambakeApplication.main` y la URL de la base usa `serverTimezone=UTC`. No cambiar ninguna de las dos.
+
 ## Modelo de datos (entidades JPA)
 
 | Entidad (tabla) | Contenido principal | Relaciones |
 |---|---|---|
-| `User` (users) | email (login), password, name, phone, roles, enabled | — |
+| `User` (users) | email (login), password, name, phone, roles, enabled, authProvider (LOCAL/GOOGLE/FACEBOOK), providerId, avatarUrl, lastLoginAt, emailVerified | — |
 | `Customer` (customers) | name, email, phone, address, birthDate, totalPurchases (sin uso), dateAdded; `ordersCount`/`totalSpent` calculados (@Transient) | ManyToOne `CustomerTag` |
 | `CustomerTag` (customer_tags) | name, isDeletable, displayOrder | — |
 | `Order` (orders_table) | customerName/Phone/Email (texto), deliveryDate, deliveryShift, deliveryMethod ("Retiro"/"Envío"), deliveryAddress, couponCode, totalPrice, deposit (seña), status, stockStatus, createdAt | OneToMany `OrderItem`, ManyToOne `Customer` (se une al confirmar) |
@@ -158,7 +173,10 @@ Definido en `config/SecurityConfig.java`:
 | `CakeSize` (cake_sizes) | name, price, maxRellenos, mixSponge, enabled | — |
 | `CakeOption` (cake_options) | name, category ("Sponge", "Crema", "Fondant"), enabled | — |
 | `GalleryImage` (gallery_images) | url, uploadedAt | — |
-| `BusinessSetting` (business_settings) | key, value (ej: whatsapp) | — |
+| `BusinessSetting` (business_settings) | key, value (ej: whatsapp, cuenta de correo cifrada, avisos de auditoría) | — |
+| `EmailLog` (email_logs) | recipientEmail, type (`EmailType`, VARCHAR), subject, status, sentAt, campaignId, orderId | ManyToOne `Customer` |
+| `Campaign` (campaigns) | name, subject, contenido, audiencia, estado, contadores | ManyToOne `CustomerTag`, ManyToOne `Coupon` |
+| `AuditLog` (audit_logs) | timestamp, actor (email, nombre, rol), action, module, entidad, description, details (JSON), IP, navegador, previousHash, hash. **Inmutable** | — |
 
 Enums: `OrderStatus` = PENDING → CONFIRMED → IN_PROGRESS → COMPLETED (o CANCELLED). `CouponType` = DESCUENTO, ENVIO_GRATIS, REGALO.
 
@@ -185,7 +203,11 @@ Limitaciones conocidas del modelo (no las "arregles" sin que te lo pidan; son de
 - **Alcance del rediseño:** durante las fases del rediseño, el alcance lo define el prompt de cada fase. Dentro de ese alcance se pueden reorganizar HTML y CSS libremente (por ejemplo, mover estilos inline a archivos CSS). Fuera de él sigue valiendo la regla de cambios chicos y enfocados.
 - **No borres archivos ni cambies el modelo de datos** (entidades) sin confirmación explícita: con `ddl-auto=update` un cambio de entidad altera la base real.
 - **No modifiques `application.properties`** (tiene la conexión local a la base).
-- Antes de dar algo por terminado, verificá que **compila** (`.\mvnw.cmd compile`) y, si es UI, revisá que se vea bien en **celular y PC** y en **ambos paneles** si tocaste JS compartido.
+- Antes de dar algo por terminado, verificá que **compila con `.\mvnw.cmd clean compile`** (sin `clean`, Maven puede decir BUILD SUCCESS sin compilar porque el editor compila por su cuenta y esconde errores) y, si es UI, revisá que se vea bien en **celular y PC** y en **ambos paneles** si tocaste JS compartido.
+- **Antes de tocar entidades:** backup con `mysqldump` en `.trabajo/backup-paso-X.sql`. Si agregás valores a un enum guardado como texto, usá VARCHAR (`@JdbcTypeCode(SqlTypes.VARCHAR)`): MySQL puede haber creado la columna como ENUM y `ddl-auto` no la actualiza.
+- **Datos de prueba:** usá un prefijo único (`zz…@test.local`, "zz Prueba…") y borralos al terminar. Nunca filtres con `LIKE 'Prueba%'`: MySQL no distingue mayúsculas y alcanza datos reales del usuario (pasó en el paso 3.3).
+- **Jackson 3** (Spring Boot 4) puede armar las entidades con `@AllArgsConstructor`: los campos que el JSON no trae quedan en `null` (no toman el valor inicial). Completá los valores por defecto en `@PrePersist` (ver `User.onCreate`).
+- Los límites por IP (`RateLimitFilter`: 10 registros, 20 logins, 15 códigos cada 10 minutos) se alcanzan rápido al probar con scripts: reiniciá la app para ponerlos en cero.
 - Explicá los cambios en lenguaje simple: el autor tiene que poder entender y defender cada línea frente a sus profesores.
 - No hagas commit ni push salvo que te lo pidan. Mensajes de commit en español.
 

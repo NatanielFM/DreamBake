@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
     stock: 'Stock', minimo: 'Stock mínimo', unidad: 'Unidad', vencimiento: 'Vencimiento', costo: 'Costo por unidad',
     codigo: 'Código', tipo: 'Tipo', activo: 'Activo', descuento: 'Descuento (%)', limite: 'Límite de usos',
     texto: 'Texto', rellenos: 'Cantidad de rellenos', mezclaBizcochuelos: 'Mezcla de bizcochuelos',
-    habilitado: 'Puede entrar', rol: 'Rol', cumpleanos: 'Cumpleaños', promociones: 'Acepta promociones',
+    habilitado: 'Puede entrar', rol: 'Rol', usuario: 'Usuario (email)', cumpleanos: 'Cumpleaños', promociones: 'Acepta promociones',
     saludosAutomaticos: 'Saludos automáticos', descuentoCumpleanos: 'Descuento de cumpleaños (%)',
     maximoEmailsPorDia: 'Máximo de emails por día', whatsapp: 'WhatsApp', cuenta: 'Cuenta de correo',
     servidor: 'Servidor de correo', forzado: 'Se confirmó sin stock suficiente', faltabaStock: 'Faltaba stock',

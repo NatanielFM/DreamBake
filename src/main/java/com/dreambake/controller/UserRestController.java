@@ -75,7 +75,7 @@ public class UserRestController {
     private Map<String, Object> teamSnapshot(User u) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("nombre", u.getName());
-        m.put("email", u.getEmail());
+        m.put("usuario", u.getEmail()); // el email del empleado es su usuario: se guarda completo (no es "email", que se tapa)
         m.put("telefono", u.getPhone());
         m.put("rol", u.getRoles());
         m.put("habilitado", u.getEnabled());

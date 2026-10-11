@@ -98,6 +98,52 @@ public final class AuditText {
         };
     }
 
+    // ===== Datos personales enmascarados (revisión de la fase 3) =====
+    // El registro de auditoría es inmutable: lo que se guarda ahí no se puede borrar nunca, ni siquiera
+    // cuando un cliente usa "Eliminar mi cuenta" (derecho de supresión, Ley 25.326). Por eso los datos de
+    // contacto se guardan TAPADOS: se ve que cambiaron y quién lo hizo, pero no el dato completo.
+
+    /** "3764555666" → "3764•••666" */
+    public static String maskPhone(String phone) {
+        if (phone == null || phone.isBlank()) return phone;
+        String p = phone.trim();
+        if (p.length() <= 6) return "•••";
+        return p.substring(0, 4) + "•••" + p.substring(p.length() - 3);
+    }
+
+    /** "maria@gmail.com" → "m•••@gmail.com" */
+    public static String maskEmail(String email) {
+        if (email == null || email.isBlank()) return email;
+        int at = email.indexOf('@');
+        if (at <= 0) return "•••";
+        return email.charAt(0) + "•••" + email.substring(at);
+    }
+
+    /** "Calle Falsa 123" → "Calle•••" (solo la primera palabra) */
+    public static String maskText(String text) {
+        if (text == null || text.isBlank()) return text;
+        String first = text.trim().split("\\s+")[0];
+        return (first.length() > 12 ? first.substring(0, 12) : first) + "•••";
+    }
+
+    /** "1991-03-15" → "••/••/1991" (queda el año) */
+    public static String maskDate(String date) {
+        if (date == null || date.length() < 4) return date;
+        return "••/••/" + date.substring(0, 4);
+    }
+
+    /** Enmascara según el nombre del dato (lo usa AuditService al guardar los detalles). */
+    public static Object maskPersonal(String key, Object value) {
+        if (!(value instanceof String s)) return value;
+        return switch (key) {
+            case "telefono" -> maskPhone(s);
+            case "email" -> maskEmail(s);
+            case "direccion" -> maskText(s);
+            case "cumpleanos" -> maskDate(s);
+            default -> value;
+        };
+    }
+
     /** "#45 de María Gómez" */
     public static String order(Order order) {
         String name = order.getCustomerName() == null || order.getCustomerName().isBlank() ? "sin nombre" : order.getCustomerName();

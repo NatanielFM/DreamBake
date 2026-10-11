@@ -36,7 +36,8 @@ public class UserService {
         // Guardamos en la base de datos
         User saved = userRepository.save(user);
         auditService.log(AuditAction.CREATE, AuditModule.SEGURIDAD, "Usuario", saved.getId(),
-                "Se registró un cliente nuevo con email y contraseña (" + saved.getEmail() + ")", null);
+                "Se registró un cliente nuevo con email y contraseña ("
+                        + com.dreambake.audit.AuditText.maskEmail(saved.getEmail()) + ")", null);
     }
 
     /**
@@ -62,7 +63,7 @@ public class UserService {
         User saved = userRepository.save(user);
         auditService.log(AuditAction.CREATE, AuditModule.SEGURIDAD, "Usuario", saved.getId(),
                 "Se creó una cuenta de cliente con " + (provider == AuthProvider.FACEBOOK ? "Facebook" : "Google")
-                        + " (" + saved.getEmail() + ")", null);
+                        + " (" + com.dreambake.audit.AuditText.maskEmail(saved.getEmail()) + ")", null);
         return saved;
     }
 

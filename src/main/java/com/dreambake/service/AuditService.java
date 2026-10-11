@@ -331,7 +331,10 @@ public class AuditService {
             Map<String, Object> copy = new LinkedHashMap<>();
             map.forEach((k, v) -> {
                 String key = String.valueOf(k);
-                copy.put(key, SENSITIVE.matcher(key).matches() ? "[oculto]" : hideSensitive(v));
+                // Contraseñas y claves: "[oculto]". Teléfono, email, dirección y cumpleaños: tapados
+                // (AuditText.maskPersonal), porque el registro es inmutable y no se podrían borrar después
+                copy.put(key, SENSITIVE.matcher(key).matches() ? "[oculto]"
+                        : com.dreambake.audit.AuditText.maskPersonal(key, hideSensitive(v)));
             });
             return copy;
         }
