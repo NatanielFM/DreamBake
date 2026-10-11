@@ -537,6 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Botón "Imprimir Recibo"
   document.getElementById('btn-print-receipt')?.addEventListener('click', () => {
     if (!viewingOrder) return;
+    window.logDownload?.('recibo', viewingOrder.id); // auditoría: quién imprimió el recibo
     
     const printSection = document.getElementById('print-receipt-section');
     if (!printSection) return;

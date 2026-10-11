@@ -1,5 +1,7 @@
 package com.dreambake.service;
 
+import com.dreambake.entity.AuditAction;
+import com.dreambake.entity.AuditModule;
 import com.dreambake.entity.AuthProvider;
 import com.dreambake.entity.User;
 import com.dreambake.repository.UserRepository;
@@ -65,6 +67,9 @@ public class SocialLoginService {
     private UserService userService;
 
     @Autowired
+    private AuditService auditService;
+
+    @Autowired
     private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     public User resolve(AuthProvider provider, String providerId, String email, boolean emailVerified,
@@ -128,7 +133,10 @@ public class SocialLoginService {
             user.setAuthProvider(provider);
             user.setProviderId(providerId);
             if (pictureUrl != null) user.setAvatarUrl(pictureUrl);
-            return userRepository.save(user);
+            User saved = userRepository.save(user);
+            auditService.logAs(saved.getEmail(), AuditAction.UPDATE, AuditModule.SEGURIDAD, "Usuario", saved.getId(),
+                    "Se vinculó su cuenta de " + networkName(provider) + " porque tiene el mismo email confirmado", null);
+            return saved;
         }
 
         // c. Cuenta nueva de cliente. También se pide el email verificado: así nadie puede
@@ -159,6 +167,10 @@ public class SocialLoginService {
                 pending.getProviderId(), pending.getPictureUrl());
     }
 
+    private static String networkName(AuthProvider provider) {
+        return provider == AuthProvider.FACEBOOK ? "Facebook" : "Google";
+    }
+
     /** ¿Es del personal (administrador o pastelero)? */
     public static boolean isStaff(User user) {
         String roles = user.getRoles() == null ? "" : user.getRoles();
@@ -177,6 +189,8 @@ public class SocialLoginService {
         user.setProviderId(providerId);
         if (pictureUrl != null) user.setAvatarUrl(pictureUrl);
         User saved = userRepository.save(user);
+        auditService.logAs(saved.getEmail(), AuditAction.UPDATE, AuditModule.SEGURIDAD, "Usuario", saved.getId(),
+                "Vinculó su cuenta de " + networkName(provider) + " desde su perfil", null);
         HttpSession session = currentSession(false);
         if (session != null) session.setAttribute(SESSION_LINK_DONE, Boolean.TRUE);
         return saved;

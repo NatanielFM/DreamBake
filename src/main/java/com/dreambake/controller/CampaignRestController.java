@@ -1,5 +1,9 @@
 package com.dreambake.controller;
 
+import com.dreambake.audit.Auditable;
+import com.dreambake.entity.AuditAction;
+import com.dreambake.entity.AuditModule;
+import com.dreambake.service.AuditService;
 import com.dreambake.entity.Campaign;
 import com.dreambake.entity.CampaignAudience;
 import com.dreambake.entity.CampaignStatus;
@@ -28,6 +32,7 @@ import java.util.Map;
 public class CampaignRestController {
 
     @Autowired private CampaignRepository campaignRepository;
+    @Autowired private AuditService audit; // registro de auditoría (paso 3.3)
     @Autowired private CustomerTagRepository tagRepository;
     @Autowired private CampaignService campaignService;
     @Autowired private CampaignSender sender;
@@ -75,6 +80,8 @@ public class CampaignRestController {
     // ----- Crear, editar, borrar -----
 
     @PostMapping
+    @Auditable(action = AuditAction.CREATE, module = AuditModule.FIDELIZACION, entityType = "Campaña", entityId = "#body.id",
+            description = "Creó la campaña de emails «#{#body.name}»")
     public ResponseEntity<?> create(@RequestBody CampaignService.Content content, Authentication auth) {
         Campaign c = new Campaign();
         String problem = campaignService.apply(c, content);
@@ -85,6 +92,8 @@ public class CampaignRestController {
 
     // Solo se editan las que todavía no empezaron (borrador o programada)
     @PutMapping("/{id}")
+    @Auditable(action = AuditAction.UPDATE, module = AuditModule.FIDELIZACION, entityType = "Campaña", entityId = "#id",
+            description = "Editó la campaña de emails «#{#body.name}»")
     public ResponseEntity<?> update(@PathVariable Long id, @RequestBody CampaignService.Content content) {
         Campaign c = campaignRepository.findById(id).orElse(null);
         if (c == null) return ResponseEntity.notFound().build();
@@ -105,6 +114,7 @@ public class CampaignRestController {
             return error("Solo se pueden borrar los borradores y las campañas canceladas.");
         }
         campaignRepository.delete(c);
+        audit.log(AuditAction.DELETE, AuditModule.FIDELIZACION, "Campaña", id, "Eliminó la campaña de emails «" + c.getName() + "»", null);
         return ResponseEntity.ok().build();
     }
 
@@ -155,6 +165,8 @@ public class CampaignRestController {
 
     // "Programar": la tarea de cada 5 minutos (CampaignScheduler) la manda cuando llega la hora
     @PostMapping("/{id}/schedule")
+    @Auditable(action = AuditAction.STATUS_CHANGE, module = AuditModule.FIDELIZACION, entityType = "Campaña", entityId = "#id",
+            description = "Programó la campaña «#{#body.name}» para el #{#req.scheduledAt().format(T(java.time.format.DateTimeFormatter).ofPattern('dd/MM/yyyy HH:mm'))}")
     public ResponseEntity<?> schedule(@PathVariable Long id, @RequestBody ScheduleRequest req) {
         Campaign c = campaignRepository.findById(id).orElse(null);
         if (c == null) return ResponseEntity.notFound().build();
@@ -188,6 +200,8 @@ public class CampaignRestController {
 
     // Cancelar una programada o una que se está enviando (se detiene antes del próximo email)
     @PostMapping("/{id}/cancel")
+    @Auditable(action = AuditAction.STATUS_CHANGE, module = AuditModule.FIDELIZACION, entityType = "Campaña", entityId = "#id",
+            description = "Canceló la campaña «#{#body.name}»")
     public ResponseEntity<?> cancel(@PathVariable Long id) {
         Campaign c = campaignRepository.findById(id).orElse(null);
         if (c == null) return ResponseEntity.notFound().build();

@@ -1,5 +1,8 @@
 package com.dreambake.controller;
 
+import com.dreambake.entity.AuditAction;
+import com.dreambake.entity.AuditModule;
+import com.dreambake.service.AuditService;
 import com.dreambake.entity.AuthProvider;
 import com.dreambake.entity.Customer;
 import com.dreambake.entity.Order;
@@ -40,6 +43,10 @@ public class ProfileController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    // Registro de auditoría (paso 3.3)
+    @Autowired
+    private AuditService audit;
 
     @Autowired
     private CustomerAccountService accountService;
@@ -110,6 +117,8 @@ public class ProfileController {
         user.setProviderId(null);
         user.setAvatarUrl(null);
         userRepository.save(user);
+        audit.log(AuditAction.UPDATE, AuditModule.SEGURIDAD, "Usuario", user.getId(),
+                "Desvinculó su cuenta de Google (vuelve a entrar solo con contraseña)", null);
         return "redirect:/profile?unlinked=google";
     }
 
@@ -193,6 +202,8 @@ public class ProfileController {
         session.removeAttribute(SESSION_EMAIL_CHALLENGE);
         user.setEmailVerified(true);
         userRepository.save(user);
+        audit.log(AuditAction.UPDATE, AuditModule.SEGURIDAD, "Usuario", user.getId(),
+                "Confirmó su email con el código", null);
         return "redirect:/profile?verified=true";
     }
 
@@ -272,6 +283,7 @@ public class ProfileController {
 
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
+        audit.log(AuditAction.UPDATE, AuditModule.SEGURIDAD, "Usuario", user.getId(), "Cambió su contraseña", null);
 
         return "redirect:/profile?passUpdated=true";
     }

@@ -614,6 +614,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function exportDashboardPDF() {
     const printArea = document.getElementById('print-area');
     if (!printArea || !dashState.summary) return;
+    window.logDownload?.('informe'); // auditoría: quién descargó el informe
 
     const s = dashState.summary;
     const nowStr = new Date().toLocaleDateString('es-AR', {

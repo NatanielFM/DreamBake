@@ -1,5 +1,9 @@
 package com.dreambake.controller;
 
+import com.dreambake.audit.Auditable;
+import com.dreambake.entity.AuditAction;
+import com.dreambake.entity.AuditModule;
+import com.dreambake.service.AuditService;
 import com.dreambake.entity.Campaign;
 import com.dreambake.entity.Customer;
 import com.dreambake.entity.CustomerTag;
@@ -33,6 +37,10 @@ public class CustomerRestController {
 
     @Autowired
     private CustomerRepository customerRepo;
+
+    // Registro de auditoría (paso 3.3): se usa directo donde hace falta el antes y el después
+    @Autowired
+    private AuditService audit;
 
     @Autowired
     private CustomerTagRepository tagRepo;
@@ -90,6 +98,8 @@ public class CustomerRestController {
     // Es lo ÚNICO que el panel puede hacer con el consentimiento: desactivarlo. Activarlo solo
     // lo puede hacer el propio cliente, tildando la casilla en la tienda (Ley 25.326).
     @PostMapping("/customers/{id}/unsubscribe")
+    @Auditable(action = AuditAction.UPDATE, module = AuditModule.FIDELIZACION, entityType = "Cliente", entityId = "#id",
+            description = "Dio de baja de los emails de promociones a «#{#body.name}»")
     public ResponseEntity<Customer> unsubscribeCustomer(@PathVariable Long id) {
         return customerRepo.findById(id).map(c -> {
             c.setMarketingConsent(false);
@@ -133,11 +143,15 @@ public class CustomerRestController {
     }
 
     @PostMapping("/customers")
+    @Auditable(action = AuditAction.CREATE, module = AuditModule.CLIENTES, entityType = "Cliente", entityId = "#result.id",
+            description = "Agregó al cliente «#{#result.name}»")
     public Customer createCustomer(@Valid @RequestBody CustomerRequest request) {
         return saveOrUpdateCustomer(new Customer(), request);
     }
 
     @PutMapping("/customers/{id}")
+    @Auditable(action = AuditAction.UPDATE, module = AuditModule.CLIENTES, entityType = "Cliente", entityId = "#id",
+            description = "Editó la ficha del cliente «#{#body.name}»")
     public ResponseEntity<Customer> updateCustomer(@PathVariable Long id, @Valid @RequestBody CustomerRequest request) {
         return customerRepo.findById(id)
                 .map(customer -> ResponseEntity.ok(saveOrUpdateCustomer(customer, request)))
@@ -152,7 +166,14 @@ public class CustomerRestController {
             for (Order o : orderRepo.findByCustomer(customer)) {
                 o.setCustomer(null);
             }
+            // Lo mismo con su historial de emails: si no, la base no deja borrar al cliente
+            // (email_logs apunta a él) y el panel mostraba un error
+            for (com.dreambake.entity.EmailLog log : emailLogRepo.findByCustomerOrderBySentAtDesc(customer)) {
+                log.setCustomer(null);
+            }
             customerRepo.delete(customer);
+            audit.log(AuditAction.DELETE, AuditModule.CLIENTES, "Cliente", id,
+                    "Eliminó al cliente «" + customer.getName() + "» (sus pedidos se conservan)", null);
             return ResponseEntity.ok().<Void>build();
         }).orElse(ResponseEntity.notFound().build());
     }
@@ -193,6 +214,8 @@ public class CustomerRestController {
     }
 
     @PostMapping("/tags")
+    @Auditable(action = AuditAction.CREATE, module = AuditModule.CLIENTES, entityType = "Etiqueta", entityId = "#body.id",
+            description = "Creó la etiqueta de clientes «#{#body.name}»")
     public ResponseEntity<?> createTag(@RequestBody CustomerTag tag) {
         if (tagRepo.findByName(tag.getName()).isPresent()) {
             return ResponseEntity.badRequest().body("La etiqueta ya existe.");
@@ -203,6 +226,8 @@ public class CustomerRestController {
     }
 
     @PutMapping("/tags/{id}")
+    @Auditable(action = AuditAction.UPDATE, module = AuditModule.CLIENTES, entityType = "Etiqueta", entityId = "#id",
+            description = "Cambió el nombre de una etiqueta de clientes a «#{#body.name}»")
     public ResponseEntity<CustomerTag> updateTag(@PathVariable Long id, @RequestBody CustomerTag request) {
         return tagRepo.findById(id).map(tag -> {
             tag.setName(request.getName());
@@ -233,11 +258,15 @@ public class CustomerRestController {
                 customerRepo.save(c);
             }
             tagRepo.delete(tag);
+            audit.log(AuditAction.DELETE, AuditModule.CLIENTES, "Etiqueta", id,
+                    "Eliminó la etiqueta de clientes «" + tag.getName() + "» (" + customers.size() + (customers.size() == 1 ? " cliente pasó" : " clientes pasaron") + " a «Sin etiqueta»)", null);
             return ResponseEntity.ok().build();
         }).orElse(ResponseEntity.notFound().build());
     }
 
     @PutMapping("/tags/reorder")
+    @Auditable(action = AuditAction.UPDATE, module = AuditModule.CLIENTES, entityType = "Etiqueta",
+            description = "Cambió el orden de las etiquetas de clientes")
     public ResponseEntity<?> reorderTags(@RequestBody List<Long> orderedIds) {
         for (int i = 0; i < orderedIds.size(); i++) {
             Long id = orderedIds.get(i);

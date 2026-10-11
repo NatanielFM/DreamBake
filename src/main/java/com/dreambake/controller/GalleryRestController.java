@@ -1,5 +1,8 @@
 package com.dreambake.controller;
 
+import com.dreambake.audit.Auditable;
+import com.dreambake.entity.AuditAction;
+import com.dreambake.entity.AuditModule;
 import com.dreambake.entity.GalleryImage;
 import com.dreambake.repository.GalleryImageRepository;
 import com.dreambake.repository.ProductRepository;
@@ -34,6 +37,8 @@ public class GalleryRestController {
     }
 
     @PostMapping
+    @Auditable(action = AuditAction.CREATE, module = AuditModule.GALERIA, entityType = "Foto", entityId = "#body.id",
+            description = "Subió una foto a la galería (#{#file.originalFilename})")
     public ResponseEntity<?> uploadImage(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("message", "No llegó ninguna foto. Probá de nuevo."));
@@ -75,6 +80,8 @@ public class GalleryRestController {
     // Borra una foto de la galería: la fila de la base y el archivo de la carpeta uploads/.
     // Si algún producto la usa como foto, no se borra (el producto quedaría sin imagen).
     @DeleteMapping("/{id}")
+    @Auditable(action = AuditAction.DELETE, module = AuditModule.GALERIA, entityType = "Foto", entityId = "#id",
+            description = "Borró una foto de la galería (foto #{#id})")
     public ResponseEntity<?> deleteImage(@PathVariable Long id) {
         return galleryImageRepository.findById(id).map(image -> {
             List<String> usedBy = productRepository.findAll().stream()

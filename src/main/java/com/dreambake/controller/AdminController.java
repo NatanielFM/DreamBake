@@ -1,5 +1,8 @@
 package com.dreambake.controller;
 
+import com.dreambake.audit.Auditable;
+import com.dreambake.entity.AuditAction;
+import com.dreambake.entity.AuditModule;
 import com.dreambake.service.AuditIntegrityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -33,6 +36,8 @@ public class AdminController {
 
     // Botón "Entendido" del aviso de auditoría
     @PostMapping("/auditoria/entendido")
+    @Auditable(action = AuditAction.UPDATE, module = AuditModule.SEGURIDAD, entityType = "Auditoría",
+            description = "Marcó como vista la alerta de que el registro de auditoría fue alterado")
     public String acknowledgeAuditAlert() {
         auditIntegrityService.acknowledge();
         return "redirect:/admin";

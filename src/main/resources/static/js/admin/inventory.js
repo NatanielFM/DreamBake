@@ -319,6 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnOrder = document.getElementById('btn-generate-order');
   if(btnOrder) {
     btnOrder.addEventListener('click', () => {
+      window.logDownload?.('lista-compras'); // auditoría: quién descargó la lista de compras
       
       const alertItems = dbInventory.filter(i => {
          return (i.currentStock <= i.minimumStock) || isExpiringSoon(i.expirationDate) || isExpired(i.expirationDate);

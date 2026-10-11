@@ -1,5 +1,8 @@
 package com.dreambake.controller;
 
+import com.dreambake.audit.Auditable;
+import com.dreambake.entity.AuditAction;
+import com.dreambake.entity.AuditModule;
 import com.dreambake.service.OrderNoticeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +33,8 @@ public class OrderNoticeRestController {
     // Corre ahora lo mismo que la tarea de las 8:00 (recordatorios y resumen de entregas), sin esperar la hora.
     // No repite lo que ya se mandó.
     @PostMapping("/run-daily")
+    @Auditable(action = AuditAction.EMAIL_CAMPAIGN, module = AuditModule.PEDIDOS, entityType = "Avisos",
+            description = "Mandó en el momento los recordatorios y el resumen de entregas")
     public OrderNoticeService.DailySummary runDaily() {
         return orderNoticeService.runDaily("botón del panel");
     }

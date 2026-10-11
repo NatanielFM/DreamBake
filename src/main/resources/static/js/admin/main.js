@@ -210,3 +210,18 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
 });
+
+// Registro de auditoría (paso 3.3): avisa al servidor "quién descargó qué". El informe, la lista de
+// compras y los recibos se arman acá en el navegador (imprimir / guardar como PDF), así que el
+// servidor no se entera solo. type: "informe", "lista-compras" o "recibo" (con orderId).
+// Si el aviso falla, la descarga sigue igual (no se muestra ningún error).
+window.logDownload = function (type, orderId) {
+  try {
+    fetch('/api/audit/download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, orderId: orderId || null }),
+      keepalive: true
+    }).catch(() => {});
+  } catch (e) { /* nada: la auditoría nunca frena al usuario */ }
+};

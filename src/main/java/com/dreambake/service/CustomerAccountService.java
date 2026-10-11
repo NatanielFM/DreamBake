@@ -1,5 +1,10 @@
 package com.dreambake.service;
 
+import com.dreambake.entity.AuditAction;
+import com.dreambake.entity.AuditModule;
+import com.dreambake.audit.AuditText;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import com.dreambake.entity.Customer;
 import com.dreambake.entity.EmailLog;
 import com.dreambake.entity.Order;
@@ -63,6 +68,9 @@ public class CustomerAccountService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private AuditService auditService;
+
     /** Un pedido como lo ve el cliente en "Mis pedidos" (solo lo necesario, sin datos internos). */
     public record MyOrder(Long id, LocalDate deliveryDate, String deliveryShift, String deliveryMethod,
                           String status, String statusLabel, Double total, List<String> items) {}
@@ -85,11 +93,15 @@ public class CustomerAccountService {
      */
     @Transactional
     public void saveProfile(User user, String name, String phone, LocalDate birthDate, boolean marketingConsent) {
+        Map<String, Object> before = profileSnapshot(user, findCustomer(user).orElse(null)); // para la auditoría
         user.setName(name);
         user.setPhone(phone);
         userRepository.save(user);
 
-        if (!canUseCustomerArea(user)) return;
+        if (!canUseCustomerArea(user)) {
+            logProfile(user, before, null);
+            return;
+        }
 
         Customer customer = findCustomer(user).orElseGet(() -> {
             Customer c = new Customer();
@@ -112,6 +124,23 @@ public class CustomerAccountService {
             customer.setConsentDate(null);
         }
         customerRepository.save(customer);
+        logProfile(user, before, customer);
+    }
+
+    // Auditoría de "Datos personales": qué cambió (el consentimiento queda como constancia, Ley 25.326)
+    private void logProfile(User user, Map<String, Object> before, Customer customer) {
+        Map<String, Object> diff = AuditText.diff(before, profileSnapshot(user, customer));
+        auditService.log(AuditAction.UPDATE, AuditModule.CLIENTES, "Usuario", user.getId(),
+                "Actualizó sus datos personales" + AuditText.changedFields(diff), diff);
+    }
+
+    private static Map<String, Object> profileSnapshot(User user, Customer customer) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("nombre", user.getName());
+        m.put("telefono", user.getPhone());
+        m.put("cumpleanos", customer == null || customer.getBirthDate() == null ? null : customer.getBirthDate().toString());
+        m.put("promociones", customer != null && Boolean.TRUE.equals(customer.getMarketingConsent()));
+        return m;
     }
 
     /** "Mis pedidos" del usuario logueado (vacío si su email no está comprobado). */
@@ -178,7 +207,9 @@ public class CustomerAccountService {
                 emailLogRepository.save(log);
             }
         }
-        // 4. El usuario
+        // 4. Auditoría (antes de borrar el usuario, así figura su nombre) y 5. el usuario
+        auditService.log(AuditAction.DELETE, AuditModule.SEGURIDAD, "Usuario", user.getId(),
+                "Eliminó su cuenta de cliente (derecho de supresión, Ley 25.326)", null);
         userRepository.delete(user);
         return true;
     }

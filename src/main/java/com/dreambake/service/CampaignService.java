@@ -1,5 +1,9 @@
 package com.dreambake.service;
 
+import com.dreambake.entity.AuditAction;
+import com.dreambake.entity.AuditModule;
+import com.dreambake.service.AuditService;
+import java.util.Map;
 import com.dreambake.config.AppProperties;
 import com.dreambake.entity.*;
 import com.dreambake.repository.*;
@@ -51,6 +55,7 @@ public class CampaignService {
     @Autowired private EmailService emailService;
     @Autowired private AppProperties app;
     @Autowired private CampaignSender sender;
+    @Autowired private AuditService auditService; // registro de auditoría del envío (paso 3.3)
 
     // Lo que manda el formulario del panel (texto plano; nunca HTML)
     public record Content(String name, String subject, String title, String bodyText, String imageUrl,
@@ -287,6 +292,12 @@ public class CampaignService {
         // Copia del HTML enviado, como constancia (con un link de baja de ejemplo: cada cliente recibe el suyo)
         c.setBodyHtml(emailService.armarHtml(c.getSubject(), "email/campana", variables(c, false), "#baja"));
         campaignRepository.save(c);
+        // Auditoría: si la manda la dueña figura ella; si es una programada, figura "Sistema"
+        auditService.log(AuditAction.EMAIL_CAMPAIGN, AuditModule.FIDELIZACION, "Campaña", c.getId(),
+                "Empezó a enviar la campaña «" + c.getName() + "» a " + c.getTotalRecipients()
+                        + (c.getTotalRecipients() == 1 ? " cliente" : " clientes"),
+                Map.of("asunto", String.valueOf(c.getSubject()), "audiencia", String.valueOf(c.getAudience()),
+                        "cupon", c.getCoupon() == null ? "" : c.getCoupon().getCode()));
         sender.launch(c.getId());
     }
 }

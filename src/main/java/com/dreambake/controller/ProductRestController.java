@@ -1,5 +1,10 @@
 package com.dreambake.controller;
 
+import com.dreambake.audit.Auditable;
+import com.dreambake.audit.AuditText;
+import com.dreambake.entity.AuditAction;
+import com.dreambake.entity.AuditModule;
+import com.dreambake.service.AuditService;
 import com.dreambake.entity.Category;
 import com.dreambake.entity.Product;
 import com.dreambake.repository.CategoryRepository;
@@ -14,6 +19,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.Objects;
 import java.util.Optional;
 
 @RestController
@@ -26,6 +34,10 @@ public class ProductRestController {
     @Autowired
     private CategoryRepository categoryRepository;
 
+    // Registro de auditoría (paso 3.3): se usa directo donde hace falta el antes y el después
+    @Autowired
+    private AuditService audit;
+
     // ================= PRODUCTOS =================
 
     @GetMapping("/products")
@@ -34,6 +46,8 @@ public class ProductRestController {
     }
 
     @PostMapping("/products")
+    @Auditable(action = AuditAction.CREATE, module = AuditModule.PRODUCTOS, entityType = "Producto", entityId = "#result.id",
+            description = "Creó el producto «#{#result.name}» a #{T(com.dreambake.audit.AuditText).money(#result.price)}")
     public Product createProduct(@Valid @RequestBody ProductRequest request) {
         return saveOrUpdateProduct(new Product(), request);
     }
@@ -41,17 +55,44 @@ public class ProductRestController {
     @PutMapping("/products/{id}")
     public ResponseEntity<Product> updateProduct(@PathVariable Long id, @Valid @RequestBody ProductRequest request) {
         return productRepository.findById(id)
-                .map(product -> ResponseEntity.ok(saveOrUpdateProduct(product, request)))
+                .map(product -> {
+                    // Antes y después (por ejemplo, un cambio de precio): se llama directo a la auditoría
+                    Map<String, Object> before = productSnapshot(product);
+                    Product saved = saveOrUpdateProduct(product, request);
+                    Map<String, Object> diff = AuditText.diff(before, productSnapshot(saved));
+                    String priceText = Objects.equals(before.get("precio"), saved.getPrice()) ? ""
+                            : " (precio: " + AuditText.money((Double) before.get("precio")) + " → " + AuditText.money(saved.getPrice()) + ")";
+                    audit.log(AuditAction.UPDATE, AuditModule.PRODUCTOS, "Producto", saved.getId(),
+                            "Editó el producto «" + saved.getName() + "»" + priceText + AuditText.changedFields(diff), diff);
+                    return ResponseEntity.ok(saved);
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/products/{id}")
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
-        if (productRepository.existsById(id)) {
+        Optional<Product> found = productRepository.findById(id);
+        if (found.isPresent()) {
+            Map<String, Object> before = productSnapshot(found.get());
             productRepository.deleteById(id);
+            audit.log(AuditAction.DELETE, AuditModule.PRODUCTOS, "Producto", id,
+                    "Eliminó el producto «" + found.get().getName() + "»", AuditText.change(before, null));
             return ResponseEntity.ok().build();
         }
         return ResponseEntity.notFound().build();
+    }
+
+    // Los datos de un producto que se comparan en la auditoría
+    private Map<String, Object> productSnapshot(Product p) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("nombre", p.getName());
+        m.put("precio", p.getPrice());
+        m.put("descripcion", p.getDescription());
+        m.put("visible", p.isEnabled());
+        m.put("categoria", p.getCategory() == null ? null : p.getCategory().getName());
+        m.put("foto", p.getImageUrl());
+        m.put("receta", p.getRecipe() == null ? null : p.getRecipe().getId());
+        return m;
     }
 
     private Product saveOrUpdateProduct(Product product, ProductRequest request) {
@@ -84,6 +125,8 @@ public class ProductRestController {
     }
 
     @PostMapping("/categories")
+    @Auditable(action = AuditAction.CREATE, module = AuditModule.PRODUCTOS, entityType = "Categoría", entityId = "#result.id",
+            description = "Creó la categoría «#{#result.name}»")
     public Category createCategory(@RequestBody Category category) {
         long count = categoryRepository.count();
         category.setDisplayOrder((int) count); // Se va al final de la lista por defecto
@@ -91,6 +134,8 @@ public class ProductRestController {
     }
 
     @PutMapping("/categories/{id}")
+    @Auditable(action = AuditAction.UPDATE, module = AuditModule.PRODUCTOS, entityType = "Categoría", entityId = "#id",
+            description = "Cambió el nombre de una categoría a «#{#body.name}»")
     public ResponseEntity<Category> updateCategory(@PathVariable Long id, @RequestBody Category request) {
         return categoryRepository.findById(id).map(cat -> {
             cat.setName(request.getName());
@@ -112,11 +157,15 @@ public class ProductRestController {
                 productRepository.save(p);
             }
             categoryRepository.delete(cat);
+            audit.log(AuditAction.DELETE, AuditModule.PRODUCTOS, "Categoría", id,
+                    "Eliminó la categoría «" + cat.getName() + "» (" + products.size() + (products.size() == 1 ? " producto pasó" : " productos pasaron") + " a «Sin tipo»)", null);
             return ResponseEntity.ok().build();
         }).orElse(ResponseEntity.notFound().build());
     }
 
     @PutMapping("/categories/reorder")
+    @Auditable(action = AuditAction.UPDATE, module = AuditModule.PRODUCTOS, entityType = "Categoría",
+            description = "Cambió el orden de las categorías")
     public ResponseEntity<?> reorderCategories(@RequestBody List<Long> orderedIds) {
         for (int i = 0; i < orderedIds.size(); i++) {
             Long id = orderedIds.get(i);

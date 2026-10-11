@@ -1,5 +1,10 @@
 package com.dreambake.controller;
 
+import com.dreambake.audit.Auditable;
+import com.dreambake.audit.AuditText;
+import com.dreambake.entity.AuditAction;
+import com.dreambake.entity.AuditModule;
+import com.dreambake.service.AuditService;
 import com.dreambake.entity.Campaign;
 import com.dreambake.entity.Coupon;
 import com.dreambake.entity.CouponType;
@@ -28,12 +33,18 @@ public class CouponRestController {
     @Autowired
     private CampaignRepository campaignRepository;
 
+    // Registro de auditoría (paso 3.3): se usa directo donde hace falta el antes y el después
+    @Autowired
+    private AuditService audit;
+
     @GetMapping
     public List<Coupon> getAllCoupons() {
         return couponRepository.findAll();
     }
 
     @PostMapping
+    @Auditable(action = AuditAction.CREATE, module = AuditModule.CUPONES, entityType = "Cupón", entityId = "#result.code",
+            description = "Creó el cupón #{#result.code}#{#result.discountPercentage != null ? ' (' + #result.discountPercentage + '% de descuento)' : ''}")
     public Coupon createCoupon(@RequestBody Coupon coupon) {
         return couponRepository.save(coupon);
     }
@@ -43,6 +54,7 @@ public class CouponRestController {
         Optional<Coupon> optionalCoupon = couponRepository.findById(id);
         if (optionalCoupon.isPresent()) {
             Coupon coupon = optionalCoupon.get();
+            Map<String, Object> before = couponSnapshot(coupon); // antes (por ejemplo, otro % de descuento)
             coupon.setCode(couponDetails.getCode());
             coupon.setType(couponDetails.getType());
             coupon.setActive(couponDetails.isActive());
@@ -53,9 +65,25 @@ public class CouponRestController {
             coupon.setUnlimited(couponDetails.isUnlimited());
             // OJO: expirationDate no se toca acá. El formulario de cupones del panel no la maneja
             // (la usan los cupones de cumpleaños) y, si se copiara, editar un cupón la borraría.
-            return ResponseEntity.ok(couponRepository.save(coupon));
+            Coupon saved = couponRepository.save(coupon);
+            Map<String, Object> diff = AuditText.diff(before, couponSnapshot(saved));
+            audit.log(AuditAction.UPDATE, AuditModule.CUPONES, "Cupón", saved.getCode(),
+                    "Editó el cupón " + saved.getCode() + AuditText.changedFields(diff), diff);
+            return ResponseEntity.ok(saved);
         }
         return ResponseEntity.notFound().build();
+    }
+
+    // Los datos de un cupón que se comparan en la auditoría
+    private Map<String, Object> couponSnapshot(Coupon c) {
+        Map<String, Object> m = new java.util.LinkedHashMap<>();
+        m.put("codigo", c.getCode());
+        m.put("tipo", c.getType() == null ? null : c.getType().name());
+        m.put("activo", c.isActive());
+        m.put("descuento", c.getDiscountPercentage());
+        m.put("limite", c.isUnlimited() ? "sin límite" : c.getUsageLimit());
+        m.put("texto", c.getCustomText());
+        return m;
     }
 
     @DeleteMapping("/{id}")
@@ -74,6 +102,8 @@ public class CouponRestController {
             campaignRepository.save(c);
         }
         couponRepository.delete(coupon);
+        audit.log(AuditAction.DELETE, AuditModule.CUPONES, "Cupón", coupon.getCode(),
+                "Eliminó el cupón " + coupon.getCode(), AuditText.change(couponSnapshot(coupon), null));
         return ResponseEntity.ok().build();
     }
 

@@ -1,5 +1,8 @@
 package com.dreambake.controller;
 
+import com.dreambake.entity.AuditAction;
+import com.dreambake.entity.AuditModule;
+import com.dreambake.service.AuditService;
 import com.dreambake.entity.Customer;
 import com.dreambake.repository.CustomerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +33,10 @@ public class UnsubscribeController {
     @Autowired
     private CustomerRepository customerRepository;
 
+    // Registro de auditoría (paso 3.3)
+    @Autowired
+    private AuditService audit;
+
     @GetMapping("/baja")
     public String showUnsubscribe(@RequestParam(required = false) String token, Model model) {
         Optional<Customer> customer = findByToken(token);
@@ -55,6 +62,8 @@ public class UnsubscribeController {
         Customer c = customer.get();
         c.setMarketingConsent(false);
         customerRepository.save(c);
+        audit.log(AuditAction.UPDATE, AuditModule.FIDELIZACION, "Cliente", c.getId(),
+                "«" + c.getName() + "» se dio de baja de los emails de promociones desde el link del email", null);
         model.addAttribute("state", "done");
         return "baja";
     }

@@ -1,5 +1,7 @@
 package com.dreambake.service;
 
+import com.dreambake.entity.AuditAction;
+import com.dreambake.entity.AuditModule;
 import com.dreambake.entity.AuthProvider;
 import com.dreambake.entity.User;
 import com.dreambake.repository.UserRepository;
@@ -16,6 +18,10 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    // Registro de auditoría (paso 3.3)
+    @Autowired
+    private AuditService auditService;
+
     public void registerUser(User user) {
         // Ciframos la contraseña antes de guardarla
         String encodedPassword = passwordEncoder.encode(user.getPassword());
@@ -28,7 +34,9 @@ public class UserService {
         user.setEmail(user.getEmail().trim());
         user.setRoles("ROLE_USER");
         // Guardamos en la base de datos
-        userRepository.save(user);
+        User saved = userRepository.save(user);
+        auditService.log(AuditAction.CREATE, AuditModule.SEGURIDAD, "Usuario", saved.getId(),
+                "Se registró un cliente nuevo con email y contraseña (" + saved.getEmail() + ")", null);
     }
 
     /**
@@ -51,7 +59,11 @@ public class UserService {
         // El email ya está comprobado: lo confirmó la red social o la persona escribió el código
         // que le mandamos (Facebook sin email, SocialSignupController)
         user.setEmailVerified(true);
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        auditService.log(AuditAction.CREATE, AuditModule.SEGURIDAD, "Usuario", saved.getId(),
+                "Se creó una cuenta de cliente con " + (provider == AuthProvider.FACEBOOK ? "Facebook" : "Google")
+                        + " (" + saved.getEmail() + ")", null);
+        return saved;
     }
 
     public java.util.List<User> getPasteleros() {

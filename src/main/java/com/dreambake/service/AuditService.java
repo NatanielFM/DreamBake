@@ -18,6 +18,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -109,7 +111,8 @@ public class AuditService {
 
     /**
      * Registra una acción. Nunca tira error hacia afuera: si algo falla, queda anotado en el log de
-     * la aplicación y la acción del usuario sigue normalmente. Devuelve el registro guardado o null.
+     * la aplicación y la acción del usuario sigue normalmente. Devuelve el registro guardado, o null
+     * si falló o si se va a guardar al confirmarse la transacción en curso.
      *
      * @param entityId id de lo afectado (número, código de cupón…); puede ser null
      * @param details  datos de antes y después (un Map, un objeto o un texto JSON); puede ser null
@@ -129,7 +132,7 @@ public class AuditService {
             AuditLog entry = new AuditLog();
             // Hora recortada a milisegundos (ver HASH_TIME)
             entry.setTimestamp(LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS));
-            fillActor(entry, actorEmail);
+            fillActor(entry, actorEmail, action);
             fillRequest(entry);
             entry.setAction(action);
             entry.setModule(module);
@@ -137,6 +140,25 @@ public class AuditService {
             entry.setEntityId(entityId == null ? null : cut(String.valueOf(entityId), 64));
             entry.setDescription(cut(description == null || description.isBlank() ? action + " en " + module : description, 500));
             entry.setDetails(toSafeJson(details));
+
+            // Si la acción del usuario está dentro de una transacción (por ejemplo, confirmar un pedido),
+            // el registro se escribe recién DESPUÉS de que esa transacción se confirma (afterCommit).
+            // Así nunca queda anotado algo que al final se deshizo por un error. Los datos (quién,
+            // desde dónde, el antes y el después) ya se tomaron arriba, en este mismo momento.
+            if (TransactionSynchronizationManager.isSynchronizationActive()
+                    && TransactionSynchronizationManager.isActualTransactionActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        try {
+                            write(entry);
+                        } catch (Exception e) {
+                            log.error("No se pudo guardar el registro de auditoría ({}): {}", entry.getDescription(), e.getMessage());
+                        }
+                    }
+                });
+                return null; // se guarda al confirmarse la transacción
+            }
             return write(entry);
         } catch (Exception e) {
             log.error("No se pudo guardar el registro de auditoría ({} / {}: {}): {}",
@@ -244,8 +266,16 @@ public class AuditService {
         });
     }
 
-    // Quién actúa: el usuario logueado, o "visitante" (tienda pública) / "sistema" (tareas automáticas)
-    private void fillActor(AuditLog entry, String actorEmail) {
+    // Quién actúa: el usuario logueado, o "Cliente web" (tienda pública, sin sesión) / "Sistema" (tareas automáticas)
+    private void fillActor(AuditLog entry, String actorEmail, AuditAction action) {
+        // Login fallido: se anota el email que se intentó, pero NO a nombre del dueño de esa cuenta
+        // (quien lo intentó no demostró ser él: puede ser otra persona probando contraseñas)
+        if (action == AuditAction.LOGIN_FAILED) {
+            entry.setActorEmail(cut(actorEmail, 150));
+            entry.setActorName("Sin sesión (intento de ingreso)");
+            entry.setActorRole("PUBLICO");
+            return;
+        }
         String email = actorEmail;
         if (email == null) {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -255,7 +285,7 @@ public class AuditService {
         }
         if (email == null) {
             boolean inRequest = currentRequest() != null;
-            entry.setActorName(inRequest ? "Visitante de la tienda" : "Sistema (tarea automática)");
+            entry.setActorName(inRequest ? "Cliente web" : "Sistema (tarea automática)");
             entry.setActorRole(inRequest ? "PUBLICO" : "SISTEMA");
             return;
         }

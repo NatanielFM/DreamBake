@@ -76,6 +76,11 @@ public class User {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         enabled = true; // Por defecto el usuario está habilitado
+        // Valores por defecto si llegaron vacíos. Pasa al crear un pastelero desde el panel: Jackson arma
+        // el User con el constructor de todos los campos (@AllArgsConstructor) y los que el panel no manda
+        // quedan en null (no toma los "= LOCAL" / "= false" de arriba). Sin esto, la base lo rechaza.
+        if (authProvider == null) authProvider = AuthProvider.LOCAL;
+        if (emailVerified == null) emailVerified = false;
     }
 
 }

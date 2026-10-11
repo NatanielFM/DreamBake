@@ -1,5 +1,11 @@
 package com.dreambake.controller;
 
+import com.dreambake.audit.Auditable;
+import com.dreambake.audit.AuditText;
+import com.dreambake.entity.AuditAction;
+import com.dreambake.entity.AuditModule;
+import com.dreambake.service.AuditService;
+import java.util.LinkedHashMap;
 import com.dreambake.repository.CustomerRepository;
 import com.dreambake.service.BirthdayService;
 import com.dreambake.service.BusinessSettingService;
@@ -24,6 +30,7 @@ public class LoyaltyRestController {
     @Autowired private BirthdayService birthdayService;
     @Autowired private CustomerRepository customerRepository;
     @Autowired private EmailService emailService;
+    @Autowired private AuditService audit; // registro de auditoría (paso 3.3)
 
     // ----- Configuración (se guarda en la base: tabla business_settings) -----
 
@@ -40,6 +47,7 @@ public class LoyaltyRestController {
 
     @PutMapping("/settings")
     public ResponseEntity<?> saveSettings(@RequestBody SettingsRequest req) {
+        LoyaltySettings before = getSettings(); // para la auditoría (antes y después)
         if (req.percentage() != null) {
             String error = settingService.saveBirthdayPercentage(req.percentage());
             if (error != null) return ResponseEntity.badRequest().body(Map.of("message", error));
@@ -49,7 +57,19 @@ public class LoyaltyRestController {
             if (error != null) return ResponseEntity.badRequest().body(Map.of("message", error));
         }
         if (req.enabled() != null) settingService.setBirthdayEnabled(req.enabled());
-        return ResponseEntity.ok(getSettings());
+        LoyaltySettings after = getSettings();
+        Map<String, Object> diff = AuditText.diff(loyaltySnapshot(before), loyaltySnapshot(after));
+        audit.log(AuditAction.CONFIG_CHANGE, AuditModule.FIDELIZACION, "Configuración", null,
+                "Cambió la configuración de fidelización" + AuditText.changedFields(diff), diff);
+        return ResponseEntity.ok(after);
+    }
+
+    private static Map<String, Object> loyaltySnapshot(LoyaltySettings s) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("saludosAutomaticos", s.enabled());
+        m.put("descuentoCumpleanos", s.percentage());
+        m.put("maximoEmailsPorDia", s.dailyLimit());
+        return m;
     }
 
     // ----- Próximos cumpleaños -----
@@ -63,6 +83,8 @@ public class LoyaltyRestController {
     // Revisa los cumpleaños de HOY ahora mismo (lo mismo que hace la tarea de las 9:00),
     // sin esperar la hora. No repite a quien ya fue saludado este año.
     @PostMapping("/birthdays/run")
+    @Auditable(action = AuditAction.EMAIL_CAMPAIGN, module = AuditModule.FIDELIZACION, entityType = "Cumpleaños",
+            description = "Mandó en el momento los saludos de cumpleaños de hoy (#{#result.sent()} enviados)")
     public BirthdayService.RunSummary runToday() {
         return birthdayService.runToday("botón del panel");
     }
@@ -74,6 +96,10 @@ public class LoyaltyRestController {
         return customerRepository.findById(customerId).<ResponseEntity<?>>map(c -> {
             BirthdayService.GreetResult r = birthdayService.greet(c, force);
             Map<String, Object> body = Map.of("message", r.message(), "code", r.code() == null ? "" : r.code());
+            if (r.outcome() == BirthdayService.Outcome.SENT) {
+                audit.log(AuditAction.EMAIL_CAMPAIGN, AuditModule.FIDELIZACION, "Cliente", customerId,
+                        "Mandó el saludo de cumpleaños a «" + c.getName() + "» (cupón " + r.code() + ")", null);
+            }
             return switch (r.outcome()) {
                 case SENT -> ResponseEntity.ok(body);
                 case ALREADY_SENT -> ResponseEntity.status(HttpStatus.CONFLICT).body(body);
@@ -84,6 +110,8 @@ public class LoyaltyRestController {
 
     // "Saludar por WhatsApp": devuelve el link wa.me con el mensaje y el cupón ya escritos
     @PostMapping("/birthdays/{customerId}/whatsapp")
+    @Auditable(action = AuditAction.CREATE, module = AuditModule.FIDELIZACION, entityType = "Cliente", entityId = "#customerId",
+            description = "Preparó el saludo de cumpleaños por WhatsApp del cliente ##{#customerId} (cupón #{#body.get('code')})")
     public ResponseEntity<?> whatsapp(@PathVariable Long customerId) {
         return customerRepository.findById(customerId).<ResponseEntity<?>>map(c ->
                 birthdayService.whatsappGreeting(c)

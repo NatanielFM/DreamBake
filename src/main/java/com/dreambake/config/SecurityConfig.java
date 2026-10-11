@@ -128,6 +128,9 @@ public class SecurityConfig {
                         .requestMatchers("/admin/**").hasAuthority("ADMIN")
                         .requestMatchers("/baker/**").hasAuthority("PASTELERO")
 
+                        // "Quién descargó qué" (informe, lista de compras, recibos): lo avisan los dos paneles
+                        .requestMatchers(HttpMethod.POST, "/api/audit/download").hasAnyAuthority("ADMIN", "PASTELERO")
+
                         // API que usan el panel del pastelero y el del admin
                         .requestMatchers("/api/orders/**", "/api/inventory/**", "/api/recipes/**").hasAnyAuthority("ADMIN", "PASTELERO")
                         .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/categories/**").hasAnyAuthority("ADMIN", "PASTELERO")
