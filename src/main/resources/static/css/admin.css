@@ -1893,3 +1893,146 @@ select.form-input.readonly-mode:disabled { opacity: 1; background-image: none; p
 .audit-alert > svg { flex: none; width: 24px; height: 24px; margin-top: 2px; }
 .audit-alert__text { display: grid; flex: 1 1 16rem; gap: var(--space-1); line-height: 1.45; }
 .audit-alert form { margin: 0; align-self: center; }
+
+/* =========================================================
+   REGISTRO DE ACTIVIDAD (auditoría, paso 3.4) — admin/audit.js
+   ========================================================= */
+.audit-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--space-3) var(--space-4);
+  align-items: end;
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--admin-line);
+  border-radius: var(--radius-md);
+  background: var(--admin-surface);
+}
+.audit-filters__search { grid-column: span 2; }
+.audit-filters__actions { display: flex; flex-wrap: nowrap; gap: var(--space-2); }
+.audit-summary { min-height: 1.5em; margin: 0 0 var(--space-3); color: var(--admin-text-soft); font-size: var(--fs-small); }
+
+/* Filas: se tocan para ver el detalle */
+.audit-table tr.audit-row { cursor: pointer; }
+.audit-table tr.audit-row:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+@media (hover: hover) and (pointer: fine) {
+  .audit-table tr.audit-row:hover { background: var(--admin-hover); }
+}
+.audit-table td { vertical-align: top; }
+.audit-user { display: grid; }
+.audit-sub { display: block; color: var(--admin-text-soft); font-size: var(--fs-small); overflow-wrap: anywhere; }
+/* Anchos fijos por columna: la descripción (lo más importante) se lleva la mayor parte
+   y la tabla nunca se sale del panel. Solo en pantallas anchas: en las medianas (notebook chica,
+   tableta acostada) seis columnas no entran sin cortar palabras, y se usan tarjetas (más abajo). */
+@media (min-width: 84rem) {
+  .audit-table { table-layout: fixed; width: 100%; }
+  /* Cada ancho alcanza para la palabra más larga de su columna ("Administrador", "Configuración") */
+  .audit-table th:nth-child(1) { width: 11%; }
+  .audit-table th:nth-child(2) { width: 17%; }
+  .audit-table th:nth-child(3) { width: 14%; }
+  .audit-table th:nth-child(4) { width: 13%; }
+  .audit-table th:nth-child(5) { width: 16%; }
+  .audit-table th,
+  .audit-table td { padding-left: 10px; padding-right: 10px; overflow-wrap: break-word; }
+  .audit-table .audit-badge { white-space: normal; }
+}
+.audit-empty { padding: var(--space-6) var(--space-4) !important; color: var(--admin-text-soft); text-align: center !important; }
+
+.audit-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--admin-hover);
+  color: var(--admin-heading);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+}
+.audit-badge--alert { background: var(--st-cancel-bg); color: var(--st-cancel-text); }
+
+.audit-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  color: var(--admin-text-soft);
+}
+.audit-pagination[hidden] { display: none; }
+
+/* Detalle de un registro */
+.audit-detail__desc { margin: 0 0 var(--space-4); color: var(--admin-heading); font-size: 1.0625rem; font-weight: var(--fw-semibold); line-height: 1.4; }
+.audit-detail__title { margin: var(--space-5) 0 var(--space-2); color: var(--admin-heading); font-size: 1rem; }
+.audit-meta {
+  display: grid;
+  grid-template-columns: minmax(8rem, max-content) 1fr;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+}
+.audit-meta dt { color: var(--admin-text-soft); font-size: var(--fs-small); font-weight: var(--fw-semibold); }
+.audit-meta dd { margin: 0; overflow-wrap: anywhere; }
+.audit-changes { width: 100%; border-collapse: collapse; font-size: 0.9375rem; }
+.audit-changes th,
+.audit-changes td { padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--admin-line); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.audit-changes thead th { color: var(--admin-text-soft); font-size: var(--fs-small); }
+.audit-changes tbody th { color: var(--admin-heading); font-weight: var(--fw-semibold); }
+.audit-changes tr.is-changed td:last-child { font-weight: var(--fw-semibold); color: var(--admin-heading); }
+.audit-list { margin: 0; padding-left: 1.1rem; }
+.audit-muted { color: var(--admin-text-soft); }
+.audit-hash { margin: var(--space-5) 0 0; color: var(--admin-text-soft); font-size: var(--fs-small); overflow-wrap: anywhere; }
+.audit-hash code { font-size: 0.8125rem; }
+
+/* Resultado de "Verificar integridad" (sin verde: el verde del panel es solo para Completado/Hay insumos) */
+.audit-verify { display: flex; gap: var(--space-3); align-items: flex-start; }
+.audit-verify svg { flex: none; width: 36px; height: 36px; color: var(--admin-heading); }
+.audit-verify strong { display: block; margin-bottom: var(--space-1); color: var(--admin-heading); font-size: 1.0625rem; }
+.audit-verify p { margin: 0 0 var(--space-2); }
+.audit-verify--broken svg,
+.audit-verify--broken strong { color: var(--st-cancel-text); }
+
+@media (max-width: 47.99rem) {
+  .audit-filters__search { grid-column: auto; }
+  .audit-filters__actions .btn { flex: 1 1 auto; }
+  /* La tabla de antes/después también pasa a tarjetas */
+  .audit-changes thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .audit-changes, .audit-changes tbody, .audit-changes tr { display: block; width: 100%; }
+  .audit-changes tr { padding: var(--space-2) 0; border-bottom: 1px solid var(--admin-line); }
+  .audit-changes th, .audit-changes td { display: grid; grid-template-columns: 5.5rem 1fr; gap: var(--space-2); padding: 2px 0; border: 0; }
+  .audit-changes tbody th { display: block; }
+  .audit-changes td::before { content: attr(data-label); color: var(--admin-text-soft); font-size: var(--fs-small); }
+  .audit-meta { grid-template-columns: 1fr; gap: 0; }
+  .audit-meta dd { margin-bottom: var(--space-2); }
+}
+
+/* Pantallas medianas (48rem a 84rem): el registro de actividad también se ve en tarjetas,
+   igual que todas las tablas en el celular (sección 7, @media max-width 47.99rem) */
+@media (min-width: 48rem) and (max-width: 83.99rem) {
+  .audit-table, .audit-table tbody, .audit-table tr, .audit-table td { display: block; width: 100%; }
+  .audit-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .audit-table tbody { display: grid; gap: var(--space-3); }
+  .audit-table tr {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    border: 1px solid var(--admin-line);
+    border-radius: var(--radius-md);
+    background: var(--admin-surface);
+  }
+  .audit-table td {
+    display: grid;
+    grid-template-columns: 9rem minmax(0, 1fr);
+    align-items: baseline;
+    gap: var(--space-3);
+    padding: 0;
+    border: 0;
+    overflow-wrap: anywhere;
+  }
+  .audit-table td::before {
+    content: attr(data-label);
+    color: var(--admin-text-soft);
+    font-size: var(--fs-small);
+    font-weight: var(--fw-semibold);
+  }
+  .audit-table td.audit-empty { display: block; }
+}

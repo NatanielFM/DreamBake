@@ -78,6 +78,7 @@
           <button class="tab-btn" data-tab="galeria"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg><span>Galería</span></button>
           <button class="tab-btn" data-tab="armador"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 21h16M5 21v-7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7M5 16c1.5 0 1.5 1 3.5 1s2-1 3.5-1 1.5 1 3.5 1 2-1 3.5-1M12 12V8M12 5.5V5"/></svg><span>Armador de tortas</span></button>
           <button class="tab-btn" data-tab="equipo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 13a4 4 0 0 1-1-7.9A4 4 0 0 1 12 3a4 4 0 0 1 7 2.1A4 4 0 0 1 18 13v7H6v-7Z"/><path d="M6 17h12"/></svg><span>Equipo</span></button>
+          <button class="tab-btn" data-tab="registro"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1Z"/><path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M8 11h8M8 15h5"/></svg><span>Registro de actividad</span></button>
           <button class="tab-btn" data-tab="ajustes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span>Ajustes</span></button>
         </div>
         <div class="sidebar-foot">
@@ -758,6 +759,88 @@
             <tbody id="team-tbody"></tbody>
           </table>
         </div>
+      </section>
+
+      <!-- ==================== SECCIÓN REGISTRO DE ACTIVIDAD (auditoría, paso 3.4) ====================
+           Solo lectura: no hay ninguna opción para editar ni borrar registros (ni acá ni en la API).
+           La paginación y los filtros los hace el servidor (GET /api/audit/logs). JS: admin/audit.js -->
+      <section id="registro" class="tab-content">
+        <div class="panel-head">
+          <div class="panel-head-text">
+            <h2 class="panel-title">Registro de actividad</h2>
+            <p class="panel-sub">Quién hizo qué y cuándo en el sistema. Los registros no se pueden cambiar ni borrar.</p>
+          </div>
+          <div class="panel-actions">
+            <button type="button" id="btn-audit-verify" class="btn btn-grey">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg> Verificar integridad
+            </button>
+            <button type="button" id="btn-audit-csv" class="btn btn-grey" title="Con los filtros aplicados">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg> Excel (CSV)
+            </button>
+            <button type="button" id="btn-audit-pdf" class="btn btn-pink" title="Con los filtros aplicados">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg> PDF
+            </button>
+          </div>
+        </div>
+
+        <form id="audit-filters" class="audit-filters" novalidate>
+          <div class="form-group">
+            <label for="audit-from">Desde</label>
+            <input type="date" id="audit-from" class="form-input">
+          </div>
+          <div class="form-group">
+            <label for="audit-to">Hasta</label>
+            <input type="date" id="audit-to" class="form-input">
+          </div>
+          <div class="form-group">
+            <label for="audit-actor">Usuario</label>
+            <select id="audit-actor" class="form-input"><option value="">Todos</option></select>
+          </div>
+          <div class="form-group">
+            <label for="audit-module">Módulo</label>
+            <select id="audit-module" class="form-input"><option value="">Todos</option></select>
+          </div>
+          <div class="form-group">
+            <label for="audit-action">Acción</label>
+            <select id="audit-action" class="form-input"><option value="">Todas</option></select>
+          </div>
+          <div class="form-group audit-filters__search">
+            <label for="audit-q">Buscar</label>
+            <input type="search" id="audit-q" class="form-input" placeholder="Texto, nombre, n° de pedido…" autocomplete="off">
+          </div>
+          <div class="audit-filters__actions">
+            <button type="submit" class="btn btn-pink btn-sm">Buscar</button>
+            <button type="button" id="audit-clear" class="btn btn-grey btn-sm">Limpiar</button>
+          </div>
+        </form>
+
+        <p class="audit-summary" id="audit-summary" aria-live="polite"></p>
+
+        <div class="table-responsive">
+          <table class="admin-table audit-table">
+            <thead>
+              <tr>
+                <th>Fecha y hora</th>
+                <th>Usuario</th>
+                <th>Rol</th>
+                <th>Módulo</th>
+                <th>Acción</th>
+                <th>Descripción</th>
+              </tr>
+            </thead>
+            <tbody id="audit-tbody"></tbody>
+          </table>
+        </div>
+
+        <nav class="audit-pagination" id="audit-pagination" aria-label="Páginas del registro" hidden>
+          <button type="button" class="btn btn-grey btn-sm" id="audit-prev">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m15 18-6-6 6-6"/></svg> Anterior
+          </button>
+          <span id="audit-page-info"></span>
+          <button type="button" class="btn btn-grey btn-sm" id="audit-next">
+            Siguiente <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+        </nav>
       </section>
 
       <!-- ==================== SECCIÓN AJUSTES ==================== -->
@@ -1599,6 +1682,28 @@
     </div>
   </div>
 
+  <!-- Registro de actividad: detalle de un registro (lo arma audit.js con el antes y el después) -->
+  <div id="modal-audit-detail" class="modal-overlay" hidden>
+    <div class="modal-card modal-large" role="dialog" aria-modal="true" aria-labelledby="audit-detail-title">
+      <div class="modal-header">
+        <h3 id="audit-detail-title">Detalle del registro</h3>
+        <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-audit-detail">&times;</button>
+      </div>
+      <div class="modal-body" id="audit-detail-body"></div>
+    </div>
+  </div>
+
+  <!-- Registro de actividad: resultado de "Verificar integridad" -->
+  <div id="modal-audit-verify" class="modal-overlay" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="audit-verify-title">
+      <div class="modal-header">
+        <h3 id="audit-verify-title">Verificar integridad</h3>
+        <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-audit-verify">&times;</button>
+      </div>
+      <div class="modal-body" id="audit-verify-body" aria-live="polite"></div>
+    </div>
+  </div>
+
   <div id="modal-team" class="modal-overlay" hidden>
     <div class="modal-card">
       <div class="modal-header">
@@ -1653,6 +1758,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script th:src="@{/js/admin/dashboard.js}" defer></script>
   <script th:src="@{/js/admin/team.js}" defer></script>
+  <script th:src="@{/js/admin/audit.js}" defer></script>
   <script th:src="@{/js/admin/settings.js}" defer></script>
   <script th:src="@{/js/admin/notifications-simple.js}" defer></script>
 

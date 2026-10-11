@@ -47,6 +47,57 @@ public final class AuditText {
         return f.format(value);
     }
 
+    /** Nombres en español para la pantalla y las descargas del registro de actividad. */
+    public static String moduleLabel(com.dreambake.entity.AuditModule m) {
+        if (m == null) return "";
+        return switch (m) {
+            case PEDIDOS -> "Pedidos";
+            case PRODUCTOS -> "Productos";
+            case INVENTARIO -> "Inventario";
+            case RECETAS -> "Recetas";
+            case CLIENTES -> "Clientes";
+            case CUPONES -> "Cupones";
+            case GALERIA -> "Galería";
+            case EQUIPO -> "Equipo";
+            case ARMADOR -> "Armador de tortas";
+            case FIDELIZACION -> "Fidelización";
+            case SISTEMA -> "Sistema";
+            case SEGURIDAD -> "Seguridad";
+            case BAKEY -> "Bakey";
+        };
+    }
+
+    public static String actionLabel(com.dreambake.entity.AuditAction a) {
+        if (a == null) return "";
+        return switch (a) {
+            case CREATE -> "Alta";
+            case UPDATE -> "Modificación";
+            case DELETE -> "Baja";
+            case STATUS_CHANGE -> "Cambio de estado";
+            case LOGIN -> "Inicio de sesión";
+            case LOGIN_FAILED -> "Ingreso fallido";
+            case LOGOUT -> "Cierre de sesión";
+            case EXPORT -> "Exportación";
+            case DOWNLOAD -> "Descarga";
+            case CONFIG_CHANGE -> "Configuración";
+            case EMAIL_CAMPAIGN -> "Envío de emails";
+            case BACKUP -> "Copia de seguridad";
+            case ASSISTANT_ACTION -> "Acción de Bakey";
+        };
+    }
+
+    public static String roleLabel(String role) {
+        if (role == null) return "";
+        return switch (role) {
+            case "ADMIN" -> "Administrador";
+            case "PASTELERO" -> "Pastelero";
+            case "ROLE_USER" -> "Cliente";
+            case "PUBLICO" -> "Sin sesión";
+            case "SISTEMA" -> "Sistema";
+            default -> role;
+        };
+    }
+
     /** "#45 de María Gómez" */
     public static String order(Order order) {
         String name = order.getCustomerName() == null || order.getCustomerName().isBlank() ? "sin nombre" : order.getCustomerName();
