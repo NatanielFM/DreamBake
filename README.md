@@ -9,6 +9,8 @@
   tienda online, pedidos, inventario, recetas, clientes y un asistente de IA, accesible desde PC y celular.
 </p>
 
+> **Documentación técnica** (arquitectura, archivo por archivo, modelo de datos, seguridad y limitaciones): [docs/DOCUMENTACION-TECNICA.md](docs/DOCUMENTACION-TECNICA.md).
+
 > **Estado: beta de prueba (versión 0.0.1-SNAPSHOT).** Las funcionalidades descritas abajo están implementadas, pero el sistema todavía no pasó por pruebas automáticas ni por una auditoría de seguridad completa, y no está endurecido para producción. Ver [Estado del proyecto y trabajo pendiente](#11-estado-del-proyecto-y-trabajo-pendiente).
 
 ## Índice
