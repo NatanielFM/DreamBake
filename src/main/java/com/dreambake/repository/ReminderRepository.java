@@ -38,8 +38,6 @@ public interface ReminderRepository extends JpaRepository<Reminder, Long> {
     @Query("select r from Reminder r where r.done = false and r.emailSentAt is null and r.dueAt > :from and r.dueAt <= :to order by r.dueAt")
     List<Reminder> findPendingForEmail(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
-    long countByOwner(User owner);
-
     /*
      * Cambios puntuales de UN campo (UPDATE … SET campo = …) en vez de guardar el recordatorio entero:
      * la tarea del email y la persona que toca "Hecho" pueden pasar al mismo tiempo, y guardar el objeto

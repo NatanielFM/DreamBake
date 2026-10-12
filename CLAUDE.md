@@ -76,7 +76,7 @@ src/main/java/com/dreambake/
 ├── ai/            Bakey: interfaz AiProvider y GeminiProvider (ver "Bakey, el asistente de IA")
 ├── entity/        Entidades JPA (ver "Modelo de datos")
 ├── repository/    Interfaces Spring Data JPA
-└── service/       UserService, UserDetailsServiceImpl, ProductManagementService, LoginAttemptService,
+└── service/       UserService, UserDetailsServiceImpl, LoginAttemptService,
                    OrderPricingService (precios reales de un pedido de la tienda), CouponService, BusinessSettingService (ajustes del negocio)
                    (gran parte de la lógica de negocio está directamente en los controladores REST)
 

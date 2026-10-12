@@ -39,3 +39,6 @@ backups/
 logs/
 cookies.txt
 config/secret.key
+
+### Archivos locales
+uploads/
