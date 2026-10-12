@@ -90,8 +90,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const MAX_SIDE = 1600;
   const KEEP_AS_IS_BYTES = 1.5 * 1024 * 1024;
 
+  // El servidor (FileStorageService, paso 6.7) acepta JPG, PNG y WebP de hasta 5 MB y vuelve a achicar y
+  // comprimir. Un GIF (u otro formato) se pasa a JPG acá: si era animado, queda la primera imagen.
   async function prepareImage(file) {
-    if (file.type === 'image/gif') return file;   // un GIF puede ser animado: se sube como está
     try {
       const url = URL.createObjectURL(file);
       const img = new Image();

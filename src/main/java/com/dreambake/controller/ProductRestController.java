@@ -29,6 +29,10 @@ import java.util.Optional;
 public class ProductRestController {
 
     @Autowired
+    private com.dreambake.service.FileStorageService fileStorage;   // borra la foto si queda sin usar (paso 6.7)
+
+
+    @Autowired
     private ProductRepository productRepository;
 
     @Autowired
@@ -75,6 +79,9 @@ public class ProductRestController {
         if (found.isPresent()) {
             Map<String, Object> before = productSnapshot(found.get());
             productRepository.deleteById(id);
+            // La foto del producto es de la galería: el archivo se borra del disco solo si ya no la usa
+            // nadie (ni la galería, ni otro producto, ni una campaña). Paso 6.7.
+            fileStorage.deleteIfUnused(found.get().getImageUrl());
             audit.log(AuditAction.DELETE, AuditModule.PRODUCTOS, "Producto", id,
                     "Eliminó el producto «" + found.get().getName() + "»", AuditText.change(before, null));
             return ResponseEntity.ok().build();

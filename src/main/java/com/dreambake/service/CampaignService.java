@@ -13,7 +13,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -242,10 +241,9 @@ public class CampaignService {
 
     // Foto de la campaña como archivo (va dentro de cada email). null si no tiene o si ya no existe.
     public Resource imageResource(Campaign c) {
-        if (c.getImageUrl() == null || !c.getImageUrl().startsWith("/uploads/")) return null;
-        Path uploads = Paths.get("uploads").toAbsolutePath().normalize();
-        Path file = uploads.resolve(c.getImageUrl().substring("/uploads/".length())).normalize();
-        if (!file.startsWith(uploads)) return null;   // seguridad: nunca fuera de uploads/
+        // Seguridad: FileStorageService.resolve solo devuelve rutas dentro de uploads/ (paso 6.7)
+        Path file = FileStorageService.resolve(c.getImageUrl());
+        if (file == null) return null;
         FileSystemResource r = new FileSystemResource(file);
         return r.exists() ? r : null;
     }
