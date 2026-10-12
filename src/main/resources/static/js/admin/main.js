@@ -18,9 +18,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const newBtnCancel = btnCancel.cloneNode(true);
     btnCancel.replaceWith(newBtnCancel);
 
+    // Paso 6.8: mientras se hace la acción el botón queda bloqueado ("cargando") y recién después se
+    // cierra la ventana. Si la acción abrió OTRA confirmación (ej: "falta stock, ¿forzar?"), el botón
+    // ya fue reemplazado y la ventana nueva no se cierra.
     newBtnOk.addEventListener('click', () => {
-      document.getElementById('modal-confirm').hidden = true;
-      onConfirm();
+      const run = async () => {
+        try { await onConfirm(); }
+        finally { if (newBtnOk.isConnected) document.getElementById('modal-confirm').hidden = true; }
+      };
+      if (window.DreamUI) window.DreamUI.busy(newBtnOk, run); else run();
     });
 
     newBtnCancel.addEventListener('click', () => {

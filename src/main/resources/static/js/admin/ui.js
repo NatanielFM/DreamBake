@@ -8,6 +8,9 @@
 //   DreamUI.tableMessage(tbody, columnas, titulo, detalle?, esError?) → fila de "todavía no hay…" o de error
 //   DreamUI.boxLoading(contenedor, texto?) / DreamUI.boxMessage(contenedor, titulo, detalle?, esError?)
 //       lo mismo para las grillas de tarjetas (productos, recetas, galería).
+//   await DreamUI.fail(res, 'No se pudo guardar el pedido.')
+//       Muestra en la ventana de avisos el mensaje que mandó el servidor ({message}) o el texto por defecto.
+//   DreamUI.offline() → aviso de "no se pudo conectar" (para los catch de fetch).
 // Todo el texto se pone con textContent.
 
 (function () {
@@ -69,5 +72,26 @@
   const boxMessage = (box, title, detail = '', isError = false) =>
     box && box.replaceChildren(stateNode('div', title, detail, isError ? 'error' : 'empty'));
 
-  window.DreamUI = { busy, tableLoading, tableMessage, boxLoading, boxMessage };
+  async function fail(res, fallback) {
+    let message = fallback || 'No se pudo completar la acción. Probá de nuevo.';
+    try {
+      const type = res && res.headers ? (res.headers.get('content-type') || '') : '';
+      if (type.includes('json')) {
+        const data = await res.json();
+        if (data && typeof data.message === 'string' && data.message) message = data.message;
+      } else if (res && res.status === 429) {
+        message = (await res.text()) || message;
+      } else if (res && type.includes('html')) {
+        message = 'Se cerró tu sesión. Recargá la página y volvé a entrar.';
+      }
+    } catch (e) { /* respuesta rara: queda el texto por defecto */ }
+    if (window.showErrorAlert) window.showErrorAlert(message);
+    return message;
+  }
+
+  function offline() {
+    if (window.showErrorAlert) window.showErrorAlert('No se pudo conectar con el servidor. Revisá la conexión y probá de nuevo.');
+  }
+
+  window.DreamUI = { busy, tableLoading, tableMessage, boxLoading, boxMessage, fail, offline };
 })();
