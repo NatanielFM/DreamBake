@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const formTeam = document.getElementById('form-team');
   const teamIdInput = document.getElementById('team-id');
 
+  // ¿Ya se mostró la lista alguna vez? (va antes de la primera carga: con let, usarla antes de declararla da error)
+  let teamLoaded = false;
+
   // Load pasteleros on init
   loadTeam();
 
@@ -75,7 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Load and render pasteleros table
-  let teamLoaded = false;
   async function loadTeam() {
     if (!teamLoaded) window.DreamUI?.tableLoading(teamTbody, 4, 'Cargando el equipo…');
     try {
