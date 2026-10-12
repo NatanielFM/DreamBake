@@ -5,8 +5,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Activa las tareas programadas (@Scheduled): métodos que la app ejecuta sola a cierta hora.
- * Hoy se usa para los saludos de cumpleaños (ver LoyaltyScheduler); los backups y recordatorios
- * de los próximos pasos usan lo mismo.
+ * Se usa para los saludos de cumpleaños (LoyaltyScheduler), las campañas (CampaignScheduler), los
+ * avisos de pedidos (OrderNoticeScheduler), la revisión de la auditoría (AuditScheduler) y los
+ * backups de las 3:00 (BackupScheduler).
  */
 @Configuration
 @EnableScheduling
