@@ -12,14 +12,16 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Registro de herramientas de Bakey (paso 5.3): sabe qué herramientas hay, cuáles puede usar cada rol
- * y las ejecuta.
+ * Registro de herramientas de Bakey (pasos 5.3 y 5.4): sabe qué herramientas hay, cuáles puede usar
+ * cada rol y las ejecuta.
  *
  * Los permisos se controlan DOS veces:
  *  1. toolsFor: al modelo solo se le ofrecen las herramientas que el rol puede usar (al pastelero ni
- *     siquiera se le cuenta que existe "resumen_ventas").
+ *     siquiera se le cuenta que existe "resumen_ventas" o "ajustar_stock").
  *  2. execute: antes de ejecutar se vuelve a revisar, por si el modelo pide una que no se le ofreció.
- * Así un pastelero no puede ver ventas ni clientes aunque se lo pida a Bakey de mil maneras.
+ *
+ * Las herramientas de ACCIÓN no se ejecutan acá: se revisan sus datos y quedan como acción pendiente
+ * (BakeyActionService) hasta que la persona toque "Confirmar".
  */
 @Component
 public class BakeyToolRegistry {
@@ -27,11 +29,12 @@ public class BakeyToolRegistry {
     private static final Logger log = LoggerFactory.getLogger(BakeyToolRegistry.class);
 
     private final Map<String, BakeyTool> tools = new LinkedHashMap<>();
+    private final BakeyActionService actionService;
 
-    public BakeyToolRegistry(BakeyQueryTools queryTools) {
-        for (BakeyTool tool : queryTools.tools()) {
-            tools.put(tool.name(), tool);
-        }
+    public BakeyToolRegistry(BakeyQueryTools queryTools, BakeyActionTools actionTools, BakeyActionService actionService) {
+        this.actionService = actionService;
+        for (BakeyTool tool : queryTools.tools()) tools.put(tool.name(), tool);
+        for (BakeyTool tool : actionTools.tools()) tools.put(tool.name(), tool);
     }
 
     /** Declaraciones de las herramientas que esta persona puede usar (lo que se le manda al modelo). */
@@ -40,29 +43,41 @@ public class BakeyToolRegistry {
     }
 
     /**
-     * Ejecuta lo que pidió el modelo y devuelve el resultado. Nunca tira excepción: si algo sale mal,
-     * devuelve {"error": "…"} en español para que el modelo se lo explique a la persona.
-     * readOnly: la transacción es de solo lectura (las herramientas solo consultan) y deja leer las
-     * recetas de cada producto, que la base carga recién cuando se usan.
+     * Ejecuta lo que pidió el modelo. Nunca tira excepción: si algo sale mal, al modelo le llega
+     * {"error": "…"} en español para que se lo explique a la persona.
+     * readOnly: acá solo se LEE (las consultas, y las acciones solo se revisan y se proponen).
      */
     @Transactional(readOnly = true)
-    public Map<String, Object> execute(AiToolCall call, ToolContext ctx) {
+    public ToolOutcome execute(AiToolCall call, ToolContext ctx) {
         BakeyTool tool = tools.get(call.name());
         if (tool == null) {
-            return Map.of("error", "No existe la herramienta " + call.name() + ".");
+            return ToolOutcome.of(Map.of("error", "No existe la herramienta " + call.name() + "."));
         }
         if (!tool.allowedFor(ctx)) {
             log.warn("Bakey: {} pidió la herramienta {} sin permiso", ctx.user().getEmail(), call.name());
-            return Map.of("error", "Esta persona no tiene permiso para ver esa información.");
+            return ToolOutcome.of(Map.of("error", "Esta persona no tiene permiso para hacer o ver eso."));
         }
         try {
             log.info("Bakey: {} usa {} {}", ctx.user().getEmail(), call.name(), call.args());
-            return tool.handler().apply(ctx, new ToolArgs(call.args()));
+            ToolArgs args = new ToolArgs(call.args());
+            if (tool.kind() == BakeyTool.Kind.CONSULTA) {
+                return ToolOutcome.of(tool.handler().apply(ctx, args));
+            }
+            // ACCIÓN: se revisa y se deja pendiente. NO se cambia ningún dato acá.
+            ActionProposal proposal = tool.proposer().apply(ctx, args);
+            ToolOutcome.ActionCard card = actionService.propose(ctx, tool, proposal);
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("estado", "esperando_confirmacion");
+            result.put("accion", proposal.title());
+            result.put("resumen", proposal.lines());
+            result.put("instruccion", "Esto TODAVÍA NO SE HIZO. La persona tiene que revisar la tarjeta y tocar "
+                    + "«Confirmar» (vence a las " + card.expiresAt() + "). No digas que ya está hecho.");
+            return new ToolOutcome(result, card);
         } catch (ToolArgs.InvalidArgException e) {
-            return Map.of("error", e.getMessage());
+            return ToolOutcome.of(Map.of("error", e.getMessage()));
         } catch (RuntimeException e) {
             log.error("Bakey: falló la herramienta {}", call.name(), e);
-            return Map.of("error", "No se pudo consultar esa información en este momento.");
+            return ToolOutcome.of(Map.of("error", "No se pudo consultar esa información en este momento."));
         }
     }
 }

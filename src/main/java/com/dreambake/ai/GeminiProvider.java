@@ -278,6 +278,11 @@ public class GeminiProvider implements AiProvider {
             log.warn("Bakey: Gemini respondió 429 (cuota agotada): {}", detail);
             return new AiException(AiException.Kind.QUOTA, "Cuota de Gemini agotada");
         }
+        if (status == 503) {
+            // Google sobrecargado ("high demand"): para la persona es lo mismo que la cuota, se reintenta en un rato
+            log.warn("Bakey: Gemini respondió 503 (sobrecargado): {}", detail);
+            return new AiException(AiException.Kind.QUOTA, "Gemini sobrecargado");
+        }
         if (status == 404) {
             log.warn("Bakey: Gemini no encontró el modelo \"{}\" (revisá bakey.gemini.model): {}", model, detail);
         } else if (status == 400 || status == 401 || status == 403) {

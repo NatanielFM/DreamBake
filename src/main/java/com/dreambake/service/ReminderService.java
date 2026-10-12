@@ -87,12 +87,14 @@ public class ReminderService {
     // Crear, listar, marcar hecho y borrar
     // ---------------------------------------------------------------------
 
+    /** Datos ya revisados y limpios, listos para guardar. */
+    public record ValidReminder(String title, String notes, LocalDateTime dueAt, Long relatedOrderId) {}
+
     /**
-     * Crea un recordatorio para "owner".
-     * @param byAssistant true si lo pidió Bakey (se audita como "Acción de Bakey")
+     * Revisa y limpia los datos de un recordatorio SIN guardarlo. Lo usa create() y también Bakey
+     * (paso 5.4) para avisar un error antes de proponer la acción.
      */
-    public Reminder create(User owner, String title, String notes, LocalDateTime dueAt, Long relatedOrderId,
-                           boolean byAssistant) {
+    public ValidReminder validate(String title, String notes, LocalDateTime dueAt, Long relatedOrderId) {
         String cleanTitle = InputSanitizer.clean(title, MAX_TITLE);
         if (cleanTitle == null || cleanTitle.isBlank()) {
             throw new InvalidReminderException("Escribí qué hay que hacer.");
@@ -114,20 +116,29 @@ public class ReminderService {
         if (relatedOrderId != null && !orderRepository.existsById(relatedOrderId)) {
             throw new InvalidReminderException("No existe el pedido N° " + relatedOrderId + ".");
         }
+        return new ValidReminder(cleanTitle, cleanNotes, dueAt.withSecond(0).withNano(0), relatedOrderId);
+    }
+
+    /**
+     * Crea un recordatorio para "owner".
+     * @param byAssistant true si lo pidió Bakey (queda marcado; la auditoría lo anota como "vía Bakey"
+     *                    porque la acción confirmada corre en el modo Bakey de AuditService)
+     */
+    public Reminder create(User owner, String title, String notes, LocalDateTime dueAt, Long relatedOrderId,
+                           boolean byAssistant) {
+        ValidReminder valid = validate(title, notes, dueAt, relatedOrderId);
 
         Reminder r = new Reminder();
         r.setOwner(owner);
-        r.setTitle(cleanTitle);
-        r.setNotes(cleanNotes);
-        r.setDueAt(dueAt.withSecond(0).withNano(0));
-        r.setRelatedOrderId(relatedOrderId);
+        r.setTitle(valid.title());
+        r.setNotes(valid.notes());
+        r.setDueAt(valid.dueAt());
+        r.setRelatedOrderId(valid.relatedOrderId());
         r.setCreatedByAssistant(byAssistant);
         Reminder saved = repository.save(r);
 
-        auditService.log(byAssistant ? AuditAction.ASSISTANT_ACTION : AuditAction.CREATE, AuditModule.RECORDATORIOS,
-                "Recordatorio", saved.getId(),
-                (byAssistant ? "Bakey creó el recordatorio «" : "Creó el recordatorio «") + saved.getTitle()
-                        + "» para el " + saved.getDueAt().format(DATE_TIME),
+        auditService.log(AuditAction.CREATE, AuditModule.RECORDATORIOS, "Recordatorio", saved.getId(),
+                "Creó el recordatorio «" + saved.getTitle() + "» para el " + saved.getDueAt().format(DATE_TIME),
                 AuditText.change(null, snapshot(saved)));
         return saved;
     }
@@ -181,8 +192,9 @@ public class ReminderService {
                 AuditText.change(before, null));
     }
 
-    // Busca el recordatorio y revisa que la persona lo pueda tocar (el dueño o un ADMIN)
-    private Reminder findAllowed(Long id, User user, boolean isAdmin) {
+    // Busca el recordatorio y revisa que la persona lo pueda tocar (el dueño o un ADMIN).
+    // Público para que Bakey (paso 5.4) lo revise antes de proponer "marcar como hecho".
+    public Reminder findAllowed(Long id, User user, boolean isAdmin) {
         Reminder r = repository.findById(id).orElseThrow(ReminderNotFoundException::new);
         if (!isAdmin && !r.getOwner().getId().equals(user.getId())) {
             throw new ReminderNotFoundException();

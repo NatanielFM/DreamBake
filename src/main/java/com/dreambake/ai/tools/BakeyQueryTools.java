@@ -178,8 +178,8 @@ public class BakeyQueryTools {
         if (o.getItems() != null) {
             for (OrderItem item : o.getItems()) {
                 Map<String, Object> i = new LinkedHashMap<>();
-                i.put("producto", itemName(item));
-                if (item.getDetails() != null && !item.getDetails().isBlank()) i.put("detalle", cut(item.getDetails(), 400));
+                i.put("producto", BakeyPrivacy.untrusted(itemName(item)));
+                if (item.getDetails() != null && !item.getDetails().isBlank()) i.put("detalle", BakeyPrivacy.untrusted(cut(item.getDetails(), 400)));
                 if (ctx.admin() && item.getPrice() != null) i.put("precio", item.getPrice());
                 items.add(i);
             }
@@ -192,6 +192,7 @@ public class BakeyQueryTools {
         if (o.getCouponCode() != null && !o.getCouponCode().isBlank()) m.put("cupon", o.getCouponCode());
         if (o.getCreatedAt() != null) m.put("pedidoHechoEl", o.getCreatedAt().format(DATE_TIME));
         if (!contact) m.put("contactoTapado", true);
+        m.put("aviso", BakeyPrivacy.UNTRUSTED_NOTICE);
         return m;
     }
 
@@ -202,11 +203,11 @@ public class BakeyQueryTools {
         if (o.getDeliveryDate() != null) {
             m.put("entrega", o.getDeliveryDate().format(DATE) + " (" + o.getDeliveryDate().format(WEEKDAY) + ")");
         }
-        putIfNotNull(m, "turno", o.getDeliveryShift());
+        putIfNotNull(m, "turno", BakeyPrivacy.untrusted(o.getDeliveryShift()));
         putIfNotNull(m, "metodo", o.getDeliveryMethod());
         m.put("estado", AuditText.status(o.getStatus()));
-        m.put("cliente", o.getCustomerName());
-        m.put("productos", productsText(o));
+        m.put("cliente", BakeyPrivacy.untrusted(o.getCustomerName()));
+        m.put("productos", BakeyPrivacy.untrusted(productsText(o)));
         // Plata: solo para el administrador (el panel del pastelero tampoco la muestra)
         if (ctx.admin()) {
             double total = o.getTotalPrice() == null ? 0 : o.getTotalPrice();
@@ -219,6 +220,7 @@ public class BakeyQueryTools {
     }
 
     private void putOrderList(Map<String, Object> result, List<Order> orders, ToolContext ctx) {
+        result.put("aviso", BakeyPrivacy.UNTRUSTED_NOTICE);
         result.put("cantidad", orders.size());
         result.put("pedidos", orders.stream().limit(MAX_ITEMS).map(o -> orderSummary(o, ctx)).toList());
         if (orders.size() > MAX_ITEMS) result.put("hayMas", orders.size() - MAX_ITEMS);
@@ -277,7 +279,7 @@ public class BakeyQueryTools {
         List<Map<String, Object>> list = new ArrayList<>();
         for (Customer c : found.stream().limit(10).toList()) {
             Map<String, Object> m = new LinkedHashMap<>();
-            m.put("cliente", c.getName());
+            m.put("cliente", BakeyPrivacy.untrusted(c.getName()));
             if (c.getTag() != null) m.put("etiqueta", c.getTag().getName());
             // Pedidos de la clienta: los unidos a su ficha y los viejos con su mismo teléfono
             String phone = c.getPhone() == null || c.getPhone().isBlank() ? null : c.getPhone().trim();
@@ -299,6 +301,7 @@ public class BakeyQueryTools {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("encontrados", found.size());
         result.put("clientes", list);
+        result.put("aviso", BakeyPrivacy.UNTRUSTED_NOTICE);
         if (found.size() > 10) result.put("hayMas", found.size() - 10);
         if (!contact) result.put("contactoTapado", true);
         return result;
@@ -309,7 +312,7 @@ public class BakeyQueryTools {
         List<Map<String, Object>> list = new ArrayList<>();
         for (BirthdayService.UpcomingBirthday b : birthdayService.upcoming(days)) {
             Map<String, Object> m = new LinkedHashMap<>();
-            m.put("cliente", b.name());
+            m.put("cliente", BakeyPrivacy.untrusted(b.name()));
             m.put("fecha", b.date().format(DAY_MONTH) + " (" + b.date().format(WEEKDAY) + ")");
             m.put("faltanDias", b.daysLeft());
             m.put("yaSaludadoEsteAno", b.greetedThisYear());
@@ -320,6 +323,7 @@ public class BakeyQueryTools {
         result.put("dias", days);
         result.put("cantidad", list.size());
         result.put("cumpleanos", list.stream().limit(MAX_ITEMS).toList());
+        result.put("aviso", BakeyPrivacy.UNTRUSTED_NOTICE);
         if (list.size() > MAX_ITEMS) result.put("hayMas", list.size() - MAX_ITEMS);
         return result;
     }
@@ -537,6 +541,7 @@ public class BakeyQueryTools {
         List<Reminder> reminders = reminderService.list(ctx.user(), false, ReminderService.Scope.PENDING);
         List<Map<String, Object>> list = reminders.stream().limit(MAX_ITEMS).map(r -> {
             Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", r.getId());   // para poder marcarlo como hecho (marcar_recordatorio_hecho)
             m.put("titulo", r.getTitle());
             m.put("cuando", r.getDueAt().format(DATE_TIME) + " (" + r.getDueAt().format(WEEKDAY) + ")");
             m.put("vencido", r.getDueAt().isBefore(java.time.LocalDateTime.now()));

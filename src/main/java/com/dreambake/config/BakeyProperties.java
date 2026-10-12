@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
  *   bakey.gemini.timeout-seconds  cuánto se espera la respuesta antes de rendirse (30)
  *   bakey.limits.per-minute       mensajes por usuario por minuto (20)
  *   bakey.limits.per-day          mensajes por usuario por día (200)
+ *   bakey.actions.minutes         minutos para confirmar una acción propuesta por Bakey (10)
  *
  * La clave también se puede cargar como variable de entorno GEMINI_API_KEY (el nombre que usa
  * Google en su documentación) o BAKEY_GEMINI_APIKEY (la forma estándar de Spring).
@@ -25,9 +26,11 @@ public class BakeyProperties {
 
     private final Gemini gemini = new Gemini();
     private final Limits limits = new Limits();
+    private final Actions actions = new Actions();
 
     public Gemini getGemini() { return gemini; }
     public Limits getLimits() { return limits; }
+    public Actions getActions() { return actions; }
 
     /** true si hay una clave de Gemini cargada (en el archivo o en una variable de entorno). */
     public boolean isConfigured() {
@@ -63,6 +66,14 @@ public class BakeyProperties {
         public void setTimeoutSeconds(int timeoutSeconds) {
             if (timeoutSeconds > 0) this.timeoutSeconds = timeoutSeconds;
         }
+    }
+
+    // Acciones pendientes de Bakey (paso 5.4): cuántos minutos se pueden confirmar (bakey.actions.minutes)
+    public static class Actions {
+        private int minutes = 10;
+
+        public int getMinutes() { return minutes; }
+        public void setMinutes(int minutes) { if (minutes > 0 && minutes <= 60) this.minutes = minutes; }
     }
 
     // Límite propio por usuario, para no gastar la cuota gratuita de Gemini (ver BakeyRateLimiter)

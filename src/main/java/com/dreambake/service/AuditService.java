@@ -109,6 +109,31 @@ public class AuditService {
     /** Resultado de verifyChain(). firstBrokenId es null si la cadena está íntegra. */
     public record ChainCheck(boolean intact, Long firstBrokenId, long checked, String message) {}
 
+    /*
+     * MODO BAKEY (paso 5.4): mientras se ejecuta una acción de Bakey que la persona confirmó, este hilo
+     * queda marcado. Todo lo que se registre en ese momento (por ejemplo "Confirmó el pedido #45…", que
+     * escribe el mismo código del panel) se guarda con la acción ASSISTANT_ACTION y la descripción
+     * terminada en "(vía Bakey)". Así se reutilizan las descripciones de siempre y se sabe que el cambio
+     * se hizo a través del asistente. El actor sigue siendo la persona que confirmó.
+     * ThreadLocal = una "variable" que tiene un valor distinto en cada hilo (cada petición web).
+     */
+    private static final ThreadLocal<String> ASSISTANT_NOTE = new ThreadLocal<>();
+
+    /**
+     * Ejecuta "accion" en modo Bakey.
+     * @param note texto extra opcional para la descripción (ej: "motivo: se rompieron"); puede ser null
+     */
+    public <T> T runAsAssistant(String note, java.util.function.Supplier<T> accion) {
+        String previous = ASSISTANT_NOTE.get();
+        ASSISTANT_NOTE.set(note == null ? "" : note);
+        try {
+            return accion.get();
+        } finally {
+            // Siempre se desmarca (aunque falle): el hilo después atiende otras peticiones
+            if (previous == null) ASSISTANT_NOTE.remove(); else ASSISTANT_NOTE.set(previous);
+        }
+    }
+
     /**
      * Registra una acción. Nunca tira error hacia afuera: si algo falla, queda anotado en el log de
      * la aplicación y la acción del usuario sigue normalmente. Devuelve el registro guardado, o null
@@ -129,6 +154,22 @@ public class AuditService {
     public AuditLog logAs(String actorEmail, AuditAction action, AuditModule module, String entityType,
                           Object entityId, String description, Object details) {
         try {
+            // Modo Bakey: la acción pasa a ASSISTANT_ACTION y se anota cuál era la original
+            String assistantNote = ASSISTANT_NOTE.get();
+            if (assistantNote != null) {
+                String original = com.dreambake.audit.AuditText.actionLabel(action);
+                action = AuditAction.ASSISTANT_ACTION;
+                description = (description == null ? "" : description)
+                        + (assistantNote.isBlank() ? "" : " — " + assistantNote) + " (vía Bakey)";
+                Map<String, Object> extra = new LinkedHashMap<>();
+                if (details instanceof Map<?, ?> map) {
+                    map.forEach((k, v) -> extra.put(String.valueOf(k), v));
+                } else if (details != null) {
+                    extra.put("detalle", details);
+                }
+                extra.put("accionOriginal", original);
+                details = extra;
+            }
             AuditLog entry = new AuditLog();
             // Hora recortada a milisegundos (ver HASH_TIME)
             entry.setTimestamp(LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS));
