@@ -41,4 +41,4 @@ Dos partes del sistema tienen su propia documentación, más detallada. No se re
 - **Idioma:** la interfaz, los mensajes y los comentarios están en español (Argentina); los nombres de clases, métodos y variables, en inglés.
 - **Comentarios didácticos:** el código explica en comentarios qué hace cada parte, porque es un proyecto académico que se defiende frente a profesores.
 - **Montos y fechas** en el navegador siempre con `DreamFormat` (`static/js/format.js`): `$ 12.345,50` y `12/10/2026`.
-- **Toda acción que modifica datos se audita** (ver [Seguridad](tecnica/05-seguridad.md#registro-de-auditoría)).
+- **Toda acción que modifica datos se audita** (ver [Seguridad](tecnica/05-seguridad.md#58-registro-de-auditoría)).

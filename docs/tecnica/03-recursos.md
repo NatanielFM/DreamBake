@@ -41,7 +41,7 @@ Son HTML con atributos `th:*` de Thymeleaf que el servidor completa antes de env
 | Plantilla | Qué es |
 |---|---|
 | `admin.html` | Panel de administración: **una sola página con pestañas** (`data-tab`): Resumen, Pedidos, Productos, Inventario, Recetas, Clientes, Galería, Armador, Equipo, Registro de actividad, Backups y Ajustes. Contiene todas las ventanas (modales) del panel. |
-| `baker.html` | Panel del pastelero: Pedidos, Inventario y Recetas. Reutiliza los JS del admin y oculta con su propio `<style>` los botones que no corresponden; **los permisos reales los controla el servidor** (ver [Seguridad](05-seguridad.md#qué-ve-y-qué-puede-hacer-el-pastelero)). |
+| `baker.html` | Panel del pastelero: Pedidos, Inventario y Recetas. Reutiliza los JS del admin y oculta con su propio `<style>` los botones que no corresponden; **los permisos reales los controla el servidor** (ver [Seguridad](05-seguridad.md#59-qué-ve-y-qué-puede-hacer-el-pastelero)). |
 
 **Fragmentos (`fragments/`)** — piezas que se insertan en varias páginas con `th:replace`:
 - `header.html` — Encabezado de la tienda (menú, cuenta, carrito; también carga `format.js`).

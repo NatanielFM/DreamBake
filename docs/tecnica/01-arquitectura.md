@@ -124,4 +124,4 @@ Paso a paso, en palabras:
 
 Estados posibles (`OrderStatus`): `PENDING` (nuevo) → `CONFIRMED` (agendado) → `IN_PROGRESS` (en preparación) → `COMPLETED` (entregado), o `CANCELLED` / `REJECTED`. Nota: ningún botón de los paneles pasa un pedido a `IN_PROGRESS`; el estado existe en el modelo, en el seguimiento y en Bakey, pero en la práctica los pedidos van de agendado a entregado.
 
-El pastelero hace el mismo recorrido desde su panel (`baker.html`) con dos diferencias: no ve ni carga montos, y no puede rechazar, cancelar ni eliminar pedidos (ver [Seguridad](05-seguridad.md#qué-ve-y-qué-puede-hacer-el-pastelero)).
+El pastelero hace el mismo recorrido desde su panel (`baker.html`) con dos diferencias: no ve ni carga montos, y no puede rechazar, cancelar ni eliminar pedidos (ver [Seguridad](05-seguridad.md#59-qué-ve-y-qué-puede-hacer-el-pastelero)).
