@@ -276,9 +276,9 @@
 
   <!-- ==================== MODALES DE PEDIDOS ==================== -->
   <div id="modal-manual-order" class="modal-overlay" hidden style="z-index: 2100;">
-    <div class="modal-card modal-large">
+    <div class="modal-card modal-large" role="dialog" aria-modal="true" aria-labelledby="modal-manual-order-title">
       <div class="modal-header">
-        <h3>Nuevo pedido</h3>
+        <h3 id="modal-manual-order-title">Nuevo pedido</h3>
         <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-manual-order">&times;</button>
       </div>
       <div class="modal-body">
@@ -334,9 +334,9 @@
   </div>
 
   <div id="modal-reject-order" class="modal-overlay" hidden style="z-index: 2400;">
-    <div class="modal-card confirm-card">
+    <div class="modal-card confirm-card" role="dialog" aria-modal="true" aria-labelledby="modal-reject-order-title">
       <div class="modal-header">
-        <h3>¿Rechazar este pedido?</h3>
+        <h3 id="modal-reject-order-title">¿Rechazar este pedido?</h3>
       </div>
       <div class="modal-body">
         <p class="modal-message">El pedido pasa a "Cancelados". El cliente no recibe ningún aviso automático.</p>
@@ -349,9 +349,9 @@
   </div>
 
   <div id="modal-past-date" class="modal-overlay" hidden style="z-index: 2500;">
-    <div class="modal-card confirm-card">
+    <div class="modal-card confirm-card" role="dialog" aria-modal="true" aria-labelledby="modal-past-date-title">
       <div class="modal-header">
-        <h3>La fecha ya pasó</h3>
+        <h3 id="modal-past-date-title">La fecha ya pasó</h3>
       </div>
       <div class="modal-body">
         <p class="modal-message">La fecha de entrega que pusiste es anterior a hoy. ¿Querés guardarla igual?</p>
@@ -364,9 +364,9 @@
   </div>
 
   <div id="modal-confirm-order" class="modal-overlay" hidden style="z-index: 2300;">
-    <div class="modal-card">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-confirm-order-title">
       <div class="modal-header">
-        <h3>Confirmar pedido #<span id="co-id-label"></span></h3>
+        <h3 id="modal-confirm-order-title">Confirmar pedido #<span id="co-id-label"></span></h3>
         <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-confirm-order">&times;</button>
       </div>
       <div class="modal-body">
@@ -394,7 +394,7 @@
   </div>
 
   <div id="modal-view-order" class="modal-overlay" hidden style="z-index: 2200;">
-    <div class="modal-card modal-large">
+    <div class="modal-card modal-large" role="dialog" aria-modal="true" aria-labelledby="view-order-title">
       <div class="modal-header">
         <h3 id="view-order-title">Pedido #</h3>
         <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-view-order">&times;</button>
@@ -469,7 +469,7 @@
   </div>
 
   <div id="modal-day-orders" class="modal-overlay" hidden style="z-index: 2000;">
-    <div class="modal-card modal-large">
+    <div class="modal-card modal-large" role="dialog" aria-modal="true" aria-labelledby="day-orders-title">
       <div class="modal-header">
         <h3 id="day-orders-title">Entregas del día</h3>
         <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-day-orders">&times;</button>
@@ -486,7 +486,7 @@
   </div>
 
   <div id="modal-custom-prompt" class="modal-overlay" hidden style="z-index: 3000;">
-    <div class="modal-card confirm-card">
+    <div class="modal-card confirm-card" role="dialog" aria-modal="true" aria-labelledby="custom-prompt-title">
       <div class="modal-header">
         <h3 id="custom-prompt-title"></h3>
       </div>
@@ -504,7 +504,7 @@
 
   <!-- ==================== MODALES GENERALES Y OTROS MÓDULOS ==================== -->
   <div id="modal-confirm" class="modal-overlay" hidden>
-    <div class="modal-card confirm-card">
+    <div class="modal-card confirm-card" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
       <div class="modal-header">
         <h3 id="confirm-title">Confirmar</h3>
       </div>
@@ -519,7 +519,7 @@
   </div>
 
   <div id="modal-view-recipe" class="modal-overlay" hidden>
-    <div class="modal-card">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="view-recipe-title">
       <div class="modal-header">
         <h3 id="view-recipe-title">Receta</h3>
         <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-view-recipe">&times;</button>
@@ -537,9 +537,9 @@
   </div>
 
   <div id="modal-alert" class="modal-overlay" hidden>
-    <div class="modal-card confirm-card">
+    <div class="modal-card confirm-card" role="dialog" aria-modal="true" aria-labelledby="modal-alert-title">
       <div class="modal-header">
-        <h3>Revisá esto</h3>
+        <h3 id="modal-alert-title">Revisá esto</h3>
         <button type="button" class="close-modal" aria-label="Cerrar">&times;</button>
       </div>
       <div class="modal-body">
@@ -553,9 +553,9 @@
 
   <!-- Nuevo recordatorio (paso 5.2, admin/reminders.js). Fecha y hora en dos campos: más fácil en el celular. -->
   <div id="modal-reminder" class="modal-overlay" hidden>
-    <div class="modal-card confirm-card">
+    <div class="modal-card confirm-card" role="dialog" aria-modal="true" aria-labelledby="modal-reminder-title">
       <div class="modal-header">
-        <h3>Nuevo recordatorio</h3>
+        <h3 id="modal-reminder-title">Nuevo recordatorio</h3>
         <button type="button" class="close-modal" aria-label="Cerrar">&times;</button>
       </div>
       <div class="modal-body">
@@ -593,7 +593,7 @@
   </div>
 
   <div id="modal-inventory-form" class="modal-overlay" hidden>
-    <div class="modal-card confirm-card">
+    <div class="modal-card confirm-card" role="dialog" aria-modal="true" aria-labelledby="inv-modal-title">
       <div class="modal-header">
         <h3 id="inv-modal-title">Nuevo insumo</h3>
         <button type="button" class="close-modal" aria-label="Cerrar">&times;</button>
@@ -645,7 +645,7 @@
        armador ni equipo: sus scripts son solo del admin (admin.html). -->
 
   <div id="modal-recipe-form" class="modal-overlay" hidden>
-    <div class="modal-card modal-large">
+    <div class="modal-card modal-large" role="dialog" aria-modal="true" aria-labelledby="recipe-modal-title">
       <div class="modal-header">
         <h3 id="recipe-modal-title">Nueva receta</h3>
         <button type="button" class="close-modal" aria-label="Cerrar">&times;</button>
