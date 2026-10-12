@@ -42,3 +42,10 @@ config/secret.key
 
 ### Archivos locales
 uploads/
+
+### Herramientas de desarrollo (solo en la PC del autor, paso 9.2)
+CLAUDE.md
+PRODUCT.md
+design-review/
+.impeccable/
+.playwright-mcp/
