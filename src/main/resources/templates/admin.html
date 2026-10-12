@@ -1,10 +1,11 @@
 <!doctype html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security6">
+<html lang="es-AR" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security6">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#ffffff" />
-  <link rel="icon" type="image/svg+xml" th:href="@{/img/favicon.svg}" />
+  <!-- Íconos en todos los tamaños (fragments/seo.html, paso 6.3) -->
+  <th:block th:replace="~{fragments/seo :: icons}"></th:block>
   <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
   <script th:src="@{/js/csrf.js}"></script>
   <title>Administración — Dulce Sueños</title>

@@ -1,14 +1,17 @@
 <!doctype html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security6">
+<html lang="es-AR" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security6">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <!-- Color de la barra del navegador en el celular: el mismo fondo del header -->
   <meta name="theme-color" content="#fef9f9" />
-  <link rel="icon" type="image/svg+xml" th:href="@{/img/favicon.svg}" />
+  <!-- Íconos en todos los tamaños (fragments/seo.html, paso 6.3) -->
+  <th:block th:replace="~{fragments/seo :: icons}"></th:block>
   <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
   <script th:src="@{/js/csrf.js}"></script>
   <title>Mi cuenta — Dulce Sueños Posadas</title>
+  <meta name="description" content="Tus datos, tus pedidos y la configuración de tu cuenta en Dulce Sueños Posadas.">
+  <meta name="robots" content="noindex" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

@@ -1,0 +1,58 @@
+/* =========================================================
+   error.css — Páginas de error propias (404, 403, 500…; paso 6.3)
+   Tarjeta centrada con el logo, el número, un mensaje amable y el botón para volver.
+   ========================================================= */
+.page-error {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: var(--space-6) var(--gutter);
+  background: var(--surface-page);
+  font-family: var(--font-sans, Poppins, sans-serif);
+  color: var(--text-strong);
+}
+.error-card {
+  width: 100%;
+  max-width: 34rem;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-4);
+  text-align: center;
+}
+.error-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--ink);
+  font-size: 1.375rem;
+  font-weight: var(--fw-black);
+  text-decoration: none;
+}
+.error-code {
+  margin: var(--space-4) 0 0;
+  color: var(--accent);
+  font-size: clamp(4rem, 3rem + 6vw, 7rem);
+  font-weight: var(--fw-black);
+  line-height: 1;
+  letter-spacing: var(--ls-display, -0.03em);
+}
+.error-title {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--fs-h2);
+  font-weight: var(--fw-black);
+  line-height: 1.1;
+  text-wrap: balance;
+}
+.error-text { margin: 0; max-width: 30rem; line-height: 1.6; }
+.error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+}
+@media (max-width: 29.99rem) {
+  .error-actions .button { width: 100%; }
+}

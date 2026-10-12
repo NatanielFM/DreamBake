@@ -1,16 +1,18 @@
 <!doctype html>
 <!--/* "Olvidé mi contraseña" (paso 6.1, PasswordResetController). Paso 1: la persona escribe su email.
        Siempre se responde lo mismo, exista o no la cuenta, para no revelar qué emails están registrados. */-->
-<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<html lang="es-AR" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#fef9f9" />
   <meta name="robots" content="noindex" />
-  <link rel="icon" type="image/svg+xml" th:href="@{/img/favicon.svg}" />
+  <!-- Íconos en todos los tamaños (fragments/seo.html, paso 6.3) -->
+  <th:block th:replace="~{fragments/seo :: icons}"></th:block>
   <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
   <script th:src="@{/js/csrf.js}"></script>
   <title>Recuperar contraseña — Dulce Sueños Posadas</title>
+  <meta name="description" content="Pedí un link para elegir una contraseña nueva de tu cuenta de Dulce Sueños Posadas.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

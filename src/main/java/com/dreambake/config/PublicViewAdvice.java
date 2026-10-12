@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 // Datos que necesitan todas las páginas públicas (header, footer y etiquetas para compartir).
 // Se limita a los controladores de vistas públicas (assignableTypes) para no hacer
@@ -20,6 +19,9 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 @ControllerAdvice(assignableTypes = { WebController.class, AuthController.class, ProfileController.class,
         UnsubscribeController.class, SocialSignupController.class, PasswordResetController.class })
 public class PublicViewAdvice {
+
+    @Autowired
+    private AppProperties app;
 
     @Autowired
     private BusinessSettingService settingService;
@@ -54,8 +56,10 @@ public class PublicViewAdvice {
 
     // Dirección del sitio (ej: https://dulcesuenos.com.ar). Las etiquetas Open Graph,
     // que arman la vista previa al compartir el link en WhatsApp o Instagram, piden URLs completas.
+    // Sale de app.public-url (paso 6.3), igual que el sitemap: detrás de Tailscale Funnel o de un proxy,
+    // la dirección que ve el servidor (http://127.0.0.1:8080) no es la que conoce el público.
     @ModelAttribute("siteUrl")
     public String siteUrl() {
-        return ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        return app.getPublicUrl();
     }
 }

@@ -415,7 +415,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('prod-price').value = p.price;
     document.getElementById('prod-desc').value = p.description || '';
     document.getElementById('prod-enabled').checked = p.enabled;
-    document.getElementById('prod-image-preview').innerHTML = `<img src="${imgSrc}">`;
+    document.getElementById('prod-image-preview').innerHTML = `<img src="${imgSrc}" alt="Foto actual del producto">`;
     document.getElementById('btn-delete').disabled = false; 
 
     if (p.category) {

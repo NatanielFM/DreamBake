@@ -115,6 +115,8 @@ public class SecurityConfig {
                         .requestMatchers("/privacidad", "/terminos", "/eliminar-datos", "/login/completar-email", "/login/completar-email/**").permitAll()
                         // "Olvidé mi contraseña" (paso 6.1)
                         .requestMatchers("/recuperar", "/recuperar/**").permitAll()
+                        // Íconos, manifiesto y archivos para buscadores (paso 6.3)
+                        .requestMatchers("/favicon.ico", "/site.webmanifest", "/robots.txt", "/sitemap.xml").permitAll()
                         .requestMatchers("/", "/builder", "/products", "/cart", "/register", "/login", "/baja",
                                 "/css/**", "/js/**", "/img/**", "/uploads/**", "/error").permitAll()
 

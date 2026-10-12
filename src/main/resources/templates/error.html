@@ -1,0 +1,4 @@
+<!doctype html>
+<!--/* Página de error genérica (paso 6.3): la usa Spring Boot para los códigos sin página propia (400, 405…).
+       Muestra el número de error (solo el código, nunca el detalle técnico). */-->
+<html lang="es-AR" xmlns:th="http://www.thymeleaf.org" th:replace="~{error/layout :: page(${status != null ? status : 'Error'}, 'Algo no salió bien', 'No pudimos completar lo que pediste. Volvé al inicio y probá de nuevo.')}"></html>

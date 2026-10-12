@@ -683,11 +683,11 @@ document.addEventListener('DOMContentLoaded', () => {
         <div style="display:grid; grid-template-columns: 1.6fr 1fr; gap:18px; margin-bottom:22px; align-items:center;">
           <div style="border:1px solid #eee; border-radius:10px; padding:12px;">
             <h3 style="margin:0 0 8px 0; font-size:14px; color:#e0487f;">Evolución Mensual de Ingresos y Pedidos</h3>
-            ${revImg ? `<img src="${revImg}" style="width:100%; max-height:200px; object-fit:contain;">` : ''}
+            ${revImg ? `<img src="${revImg}" alt="Gráfico de ingresos y pedidos por mes" style="width:100%; max-height:200px; object-fit:contain;">` : ''}
           </div>
           <div style="border:1px solid #eee; border-radius:10px; padding:12px;">
             <h3 style="margin:0 0 8px 0; font-size:14px; color:#e0487f;">Distribución de Pedidos</h3>
-            ${statusImg ? `<img src="${statusImg}" style="width:100%; max-height:200px; object-fit:contain;">` : ''}
+            ${statusImg ? `<img src="${statusImg}" alt="Gráfico de pedidos por estado" style="width:100%; max-height:200px; object-fit:contain;">` : ''}
           </div>
         </div>
 
