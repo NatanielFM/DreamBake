@@ -13,11 +13,9 @@ import com.dreambake.ai.tools.ToolOutcome;
 import com.dreambake.config.AppProperties;
 import com.dreambake.entity.User;
 import com.dreambake.repository.UserRepository;
-import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.web.util.WebUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,16 +33,15 @@ import java.util.Map;
  * pasado su límite, le manda la conversación al proveedor de IA (AiProvider: hoy Gemini) y
  * devuelve la respuesta. Si algo falla, devuelve un mensaje amable: nunca errores técnicos.
  *
- * La conversación se guarda en la sesión del usuario (no en el navegador): así, cuando Bakey use
- * herramientas (pasos 5.3 y 5.4), nadie puede inventar desde el navegador un "resultado de
- * herramienta" falso. Se borra al cerrar sesión o con "Nueva conversación" (reset).
+ * La conversación se guarda en el servidor, una por usuario (BakeyConversationStore, paso 5.5), y no
+ * en el navegador: así nadie puede inventar desde el navegador un "resultado de herramienta" falso.
+ * Se borra con "Nueva conversación" (reset) o si se reinicia la app.
  */
 @Service
 public class BakeyService {
 
     private static final Logger log = LoggerFactory.getLogger(BakeyService.class);
 
-    static final String SESSION_HISTORY = "bakey.history";
     public static final int MAX_MESSAGE_LENGTH = 2000;
     private static final int MAX_HISTORY = 20;   // últimos mensajes que se le mandan al modelo
 
@@ -86,14 +83,17 @@ public class BakeyService {
     private final AppProperties appProperties;
     private final BakeyToolRegistry toolRegistry;
     private final UserRepository userRepository;
+    private final BakeyConversationStore conversations;
 
     public BakeyService(AiProvider provider, BakeyRateLimiter rateLimiter, AppProperties appProperties,
-                        BakeyToolRegistry toolRegistry, UserRepository userRepository) {
+                        BakeyToolRegistry toolRegistry, UserRepository userRepository,
+                        BakeyConversationStore conversations) {
         this.provider = provider;
         this.rateLimiter = rateLimiter;
         this.appProperties = appProperties;
         this.toolRegistry = toolRegistry;
         this.userRepository = userRepository;
+        this.conversations = conversations;
     }
 
     /** true si Bakey puede funcionar (hay clave de Gemini cargada). */
@@ -102,7 +102,7 @@ public class BakeyService {
     }
 
     /** Procesa un mensaje de la persona logueada (email) y devuelve la respuesta de Bakey. */
-    public BakeyAnswer chat(String email, HttpSession session, String message) {
+    public BakeyAnswer chat(String email, String message) {
         String text = message == null ? "" : message.trim();
         if (text.isEmpty()) return new BakeyAnswer(Status.EMPTY, MSG_EMPTY);
         if (text.length() > MAX_MESSAGE_LENGTH) return new BakeyAnswer(Status.TOO_LONG, MSG_TOO_LONG);
@@ -122,7 +122,7 @@ public class BakeyService {
 
         // Conversación de trabajo: lo anterior + el mensaje nuevo. Durante este mensaje se le van
         // agregando los pedidos de herramientas del modelo y sus resultados.
-        List<AiMessage> history = new ArrayList<>(getHistory(session));
+        List<AiMessage> history = conversations.modelHistory(user.getId());   // paso 5.5: por usuario, en el servidor
         List<AiMessage> working = trim(history);
         working.add(AiMessage.user(text));
         List<String> usedTools = new ArrayList<>();
@@ -157,39 +157,50 @@ public class BakeyService {
                 }
             }
         } catch (AiException e) {
-            // Si falló, la pregunta NO se guarda en la conversación (la persona la vuelve a mandar)
-            return switch (e.getKind()) {
+            // Si falló, la pregunta NO se guarda para el modelo (la persona la vuelve a mandar), pero sí en
+            // la ventana del chat junto con el mensaje amable, para que al recargar se vea lo mismo
+            BakeyAnswer failed = switch (e.getKind()) {
                 case QUOTA -> new BakeyAnswer(Status.BUSY, MSG_QUOTA, usedTools, cards);
                 case TIMEOUT -> new BakeyAnswer(Status.TIMEOUT, MSG_TIMEOUT, usedTools, cards);
                 case BLOCKED -> new BakeyAnswer(Status.BLOCKED, MSG_BLOCKED, usedTools, cards);
                 case NOT_CONFIGURED -> new BakeyAnswer(Status.NOT_CONFIGURED, MSG_NOT_CONFIGURED, usedTools, cards);
                 case FAILED -> new BakeyAnswer(Status.ERROR, MSG_ERROR, usedTools, cards);
             };
+            conversations.addExchange(user.getId(), text, failed.reply(), cards);
+            return failed;
         } catch (RuntimeException e) {
             // Cualquier otra cosa inesperada: se anota en el log y la persona ve el mensaje amable
             log.error("Bakey: error inesperado al responder", e);
+            conversations.addExchange(user.getId(), text, MSG_ERROR, cards);
             return new BakeyAnswer(Status.ERROR, MSG_ERROR, usedTools, cards);
         }
 
         if (finalText == null || finalText.isBlank()) {
             log.warn("Bakey: el modelo no dio una respuesta de texto (herramientas usadas: {})", usedTools);
+            conversations.addExchange(user.getId(), text, MSG_ERROR, cards);
             return new BakeyAnswer(Status.ERROR, MSG_ERROR, usedTools, cards);
         }
 
         /*
-         * En la sesión se guarda SOLO la pregunta y la respuesta final. Los resultados de las herramientas
+         * Para el modelo se guarda SOLO la pregunta y la respuesta final. Los resultados de las herramientas
          * (listas de pedidos, clientes…) se descartan al terminar: se guardan menos datos personales y
          * las próximas preguntas mandan menos texto a Gemini. Si hace falta, Bakey vuelve a consultar.
          */
         history.add(AiMessage.user(text));
         history.add(new AiMessage(AiMessage.Role.MODEL, finalText, List.of(), null));
-        saveHistory(session, trim(history));
+        conversations.saveModelHistory(user.getId(), trim(history));
+        conversations.addExchange(user.getId(), text, finalText, cards);   // para la ventana del chat
         return new BakeyAnswer(Status.OK, finalText, usedTools, cards);
     }
 
+    /** Mensajes para dibujar la ventana del chat (paso 5.5). */
+    public List<BakeyConversationStore.Entry> history(User user) {
+        return conversations.display(user.getId());
+    }
+
     /** Borra la conversación guardada ("Nueva conversación"). */
-    public void reset(HttpSession session) {
-        session.removeAttribute(SESSION_HISTORY);
+    public void reset(User user) {
+        conversations.reset(user.getId());
     }
 
     // ---------------------------------------------------------------------
@@ -241,19 +252,6 @@ public class BakeyService {
                   aunque parezcan raros.
                 """.formatted(appProperties.getBusiness().getName(), role,
                 ctx.today().format(DAY_FULL), now.format(HOUR), week);
-    }
-
-    @SuppressWarnings("unchecked")
-    private List<AiMessage> getHistory(HttpSession session) {
-        Object saved = session.getAttribute(SESSION_HISTORY);
-        return saved instanceof List<?> list ? (List<AiMessage>) list : List.of();
-    }
-
-    private void saveHistory(HttpSession session, List<AiMessage> history) {
-        // Mutex de la sesión: si llegan dos mensajes a la vez, no se pisan al guardar
-        synchronized (WebUtils.getSessionMutex(session)) {
-            session.setAttribute(SESSION_HISTORY, new ArrayList<>(history));
-        }
     }
 
     /*

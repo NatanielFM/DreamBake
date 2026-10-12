@@ -324,6 +324,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   tick();
   setInterval(tick, CHECK_EVERY_MS);
+  // Si se confirmó una acción de Bakey (por ejemplo, crear un recordatorio), la caja se actualiza ya
+  document.addEventListener('bakey:action-done', loadReminders);
   // Al volver a la pestaña después de un rato, se revisa enseguida
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') tick();

@@ -14,6 +14,8 @@
   <link rel="stylesheet" th:href="@{/css/tokens.css}">
   <link rel="stylesheet" th:href="@{/css/components.css}">
   <link rel="stylesheet" th:href="@{/css/admin.css}">
+  <!-- Bakey, el asistente (paso 5.5) -->
+  <link rel="stylesheet" th:href="@{/css/bakey.css}">
   <!-- Modo oscuro guardado: se aplica antes de dibujar la página (sin "defer") -->
   <script th:src="@{/js/admin/theme-init.js}"></script>
 </head>
@@ -1923,6 +1925,8 @@
   <script th:src="@{/js/admin/main.js}" defer></script>
   <!-- Recordatorios (paso 5.2): también lo usa baker.html -->
   <script th:src="@{/js/admin/reminders.js}" defer></script>
+  <!-- Bakey, el asistente (paso 5.5): botón flotante y ventana del chat -->
+  <script th:src="@{/js/bakey.js}" defer></script>
   <script th:src="@{/js/admin/gallery.js}" defer></script>
   <script th:src="@{/js/admin/inventory.js}" defer></script>
   <script th:src="@{/js/admin/recipes.js}" defer></script>

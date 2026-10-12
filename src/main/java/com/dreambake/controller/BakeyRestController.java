@@ -3,8 +3,8 @@ package com.dreambake.controller;
 import com.dreambake.ai.tools.BakeyActionService;
 import com.dreambake.entity.User;
 import com.dreambake.repository.UserRepository;
+import com.dreambake.service.BakeyConversationStore;
 import com.dreambake.service.BakeyService;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +19,7 @@ import java.util.Map;
  *
  *   GET  /api/bakey/status                → si Bakey está configurado (hay clave de Gemini) o no
  *   POST /api/bakey/chat                  → {"message": "…"} → {"status", "reply", "tools", "actions"}
+ *   GET  /api/bakey/history               → la conversación guardada, para dibujar el chat (paso 5.5)
  *   POST /api/bakey/reset                 → empieza una conversación nueva
  *   POST /api/bakey/actions/{id}/confirm  → ejecuta una acción que propuso Bakey (paso 5.4)
  *   POST /api/bakey/actions/{id}/cancel   → la descarta
@@ -40,6 +41,9 @@ public class BakeyRestController {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private BakeyConversationStore conversations;
+
     @GetMapping("/status")
     public ResponseEntity<Map<String, Object>> status() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -50,10 +54,10 @@ public class BakeyRestController {
 
     @PostMapping("/chat")
     public ResponseEntity<Map<String, Object>> chat(@RequestBody(required = false) Map<String, Object> request,
-                                                    Authentication authentication, HttpSession session) {
+                                                    Authentication authentication) {
         Object message = request == null ? null : request.get("message");
         BakeyService.BakeyAnswer answer = bakeyService.chat(
-                authentication.getName(), session, message instanceof String s ? s : null);
+                authentication.getName(), message instanceof String s ? s : null);
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("status", answer.status());
@@ -63,9 +67,21 @@ public class BakeyRestController {
         return ResponseEntity.status(httpStatusFor(answer.status())).body(body);
     }
 
+    // La conversación guardada (paso 5.5): la ventana del chat la pide al abrirse y al recargar la página
+    @GetMapping("/history")
+    public ResponseEntity<Map<String, Object>> history(Authentication authentication) {
+        User user = userRepository.findByEmail(authentication.getName()).orElse(null);
+        if (user == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("configured", bakeyService.isConfigured());
+        body.put("role", isAdmin(authentication) ? "ADMIN" : "PASTELERO");
+        body.put("messages", bakeyService.history(user));
+        return ResponseEntity.ok(body);
+    }
+
     @PostMapping("/reset")
-    public ResponseEntity<Map<String, Object>> reset(HttpSession session) {
-        bakeyService.reset(session);
+    public ResponseEntity<Map<String, Object>> reset(Authentication authentication) {
+        userRepository.findByEmail(authentication.getName()).ifPresent(bakeyService::reset);
         return ResponseEntity.ok(Map.of("status", "OK"));
     }
 
@@ -74,8 +90,13 @@ public class BakeyRestController {
     public ResponseEntity<Map<String, Object>> confirm(@PathVariable String id, Authentication authentication) {
         User user = userRepository.findByEmail(authentication.getName()).orElse(null);
         if (user == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        boolean admin = authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ADMIN"));
-        BakeyActionService.Result result = actionService.confirm(id, user, admin);
+        BakeyActionService.Result result = actionService.confirm(id, user, isAdmin(authentication));
+        // La tarjeta de la ventana del chat guarda cómo terminó (se ve igual al recargar)
+        conversations.updateCard(user.getId(), id, switch (result.status()) {
+            case OK -> BakeyConversationStore.CardState.CONFIRMADA;
+            case EXPIRED -> BakeyConversationStore.CardState.VENCIDA;
+            default -> BakeyConversationStore.CardState.FALLO;
+        }, result.message());
         HttpStatus http = switch (result.status()) {
             case OK -> HttpStatus.OK;
             case NOT_FOUND -> HttpStatus.NOT_FOUND;
@@ -91,10 +112,18 @@ public class BakeyRestController {
     public ResponseEntity<Map<String, Object>> cancel(@PathVariable String id, Authentication authentication) {
         User user = userRepository.findByEmail(authentication.getName()).orElse(null);
         boolean cancelled = user != null && actionService.cancel(id, user);
+        if (cancelled) {
+            conversations.updateCard(user.getId(), id, BakeyConversationStore.CardState.CANCELADA,
+                    "Cancelada: no se hizo ningún cambio.");
+        }
         return cancelled
                 ? ResponseEntity.ok(Map.of("status", "OK", "message", "Listo, no se hizo ningún cambio."))
                 : ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("status", "NOT_FOUND",
                         "message", "No encontré esa acción. Puede que ya se haya confirmado o cancelado."));
+    }
+
+    private boolean isAdmin(Authentication authentication) {
+        return authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ADMIN"));
     }
 
     // Código HTTP según cómo terminó el mensaje (el texto para la persona va siempre en "reply")
