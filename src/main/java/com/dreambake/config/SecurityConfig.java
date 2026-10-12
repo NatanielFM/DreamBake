@@ -135,6 +135,8 @@ public class SecurityConfig {
                         // API que usan el panel del pastelero y el del admin
                         .requestMatchers("/api/orders/**", "/api/inventory/**", "/api/recipes/**").hasAnyAuthority("ADMIN", "PASTELERO")
                         .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/categories/**").hasAnyAuthority("ADMIN", "PASTELERO")
+                        // Bakey, el asistente virtual (paso 5.1): lo usan los dos paneles
+                        .requestMatchers("/api/bakey/**").hasAnyAuthority("ADMIN", "PASTELERO")
 
                         // Área del cliente ("Mis pedidos"): cualquier usuario logueado, y cada uno ve solo lo suyo
                         // (AccountRestController toma el usuario de la sesión, nunca de un parámetro)

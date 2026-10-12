@@ -73,6 +73,7 @@ src/main/java/com/dreambake/
 │                  PublicViewAdvice (número de WhatsApp y URL del sitio en las páginas públicas), RateLimitFilter
 ├── controller/    Controladores de vistas (WebController, AdminController, BakerController, AuthController, ProfileController)
 │                  y REST bajo /api (*RestController) que consume el JS del frontend
+├── ai/            Bakey: interfaz AiProvider y GeminiProvider (ver "Bakey, el asistente de IA")
 ├── entity/        Entidades JPA (ver "Modelo de datos")
 ├── repository/    Interfaces Spring Data JPA
 └── service/       UserService, UserDetailsServiceImpl, ProductManagementService, LoginAttemptService,
@@ -123,7 +124,7 @@ Definido en `config/SecurityConfig.java`:
 | `POST /api/orders`, `GET /api/cake-config/public`, `GET /api/coupons/validate/**` | Público (lo usa la tienda) |
 | `/admin/**` | `ADMIN` |
 | `/baker/**` | `PASTELERO` |
-| `/api/orders/**`, `/api/inventory/**`, `/api/recipes/**`, `GET /api/products/**`, `GET /api/categories/**`, `POST /api/audit/download` | `ADMIN` o `PASTELERO` |
+| `/api/orders/**`, `/api/inventory/**`, `/api/recipes/**`, `GET /api/products/**`, `GET /api/categories/**`, `POST /api/audit/download`, `/api/bakey/**` | `ADMIN` o `PASTELERO` |
 | `/profile/**`, `/api/account/**` ("Mis pedidos": siempre del usuario de la sesión) | Cualquier usuario logueado |
 | resto de `/api/**` (usuarios, clientes, cupones, galería, configuración del creador, altas/bajas de productos, ajustes `/api/settings`, campañas, fidelización, auditoría `/api/audit/**`) | `ADMIN` |
 
@@ -164,6 +165,14 @@ Definido en `config/SecurityConfig.java`:
 - **Restaurar** (`RestoreService`, `POST /api/backups/{id}/restore`): tilde + palabra RESTAURAR + contraseña (5 errores → 15 min) → huella SHA-256 → carga en `<base>_restore_stage` → compatibilidad de columnas → copia `PRE_RESTORE` (carpeta `antes-de-restaurar/`) → modo mantenimiento (`MaintenanceMode` + `MaintenanceFilter`: 503) → un solo `RENAME TABLE` atómico. **No restaura `audit_logs` ni `backup_records`.** Fotos: solo agrega las que faltan. Cierra la sesión → `/login?restored`. Auditoría `RESTORE`.
 - `MysqlClient`: corre mysqldump/mysql con archivo de opciones temporal (sin contraseña en la línea de comandos). El cliente `mysql` se busca al lado de mysqldump (o `backup.mysql-path`).
 - Guía para no técnicos: `docs/RESTAURAR-BACKUP.md`. Para probar restauraciones, usar una COPIA de la base (`spring.datasource.url` por `SPRING_APPLICATION_JSON`), nunca `dreambake_db`.
+
+## Bakey, el asistente de IA (fase 5)
+
+- Paquete `ai/`: `AiProvider` (patrón Strategy: el resto del sistema solo conoce la interfaz) y `GeminiProvider` (REST con `RestClient`, sin SDK; clave en el encabezado `x-goog-api-key`, nunca en la URL ni en logs). Datos neutros: `AiMessage`, `AiTool`, `AiToolCall` (con `signature` = thoughtSignature de Gemini, se devuelve tal cual), `AiToolResult`, `AiReply`, `AiException` (QUOTA/TIMEOUT/NOT_CONFIGURED/BLOCKED/FAILED).
+- `BakeyService`: conversación guardada en la sesión (últimos 20 mensajes), mensajes amables (nunca errores técnicos); `BakeyRateLimiter`: límite propio por usuario (20/min y 200/día). `POST /api/bakey/chat`, `GET /api/bakey/status`, `POST /api/bakey/reset`.
+- Configuración `bakey.*` (`config/BakeyProperties`): clave en `bakey.gemini.api-key` o variable de entorno `GEMINI_API_KEY`; vacía = "no configurado" y el resto anda igual. Modelo por defecto `gemini-3.5-flash-lite`; timeout 30 s.
+- Charlar no se audita (no cambia datos). Las acciones que haga Bakey (paso 5.4) se auditan con `ASSISTANT_ACTION` / módulo `BAKEY`.
+- Plan gratuito de Gemini: Google usa lo que se le manda para mejorar sus productos → no mandarle datos personales completos de clientes (Ley 25.326).
 
 ## Modelo de datos (entidades JPA)
 

@@ -20,10 +20,12 @@ public class ConfigurationCheck implements ApplicationRunner {
 
     private final Environment env;
     private final MailAccountService mailAccounts;
+    private final BakeyProperties bakey;
 
-    public ConfigurationCheck(Environment env, MailAccountService mailAccounts) {
+    public ConfigurationCheck(Environment env, MailAccountService mailAccounts, BakeyProperties bakey) {
         this.env = env;
         this.mailAccounts = mailAccounts;
+        this.bakey = bakey;
     }
 
     @Override
@@ -37,7 +39,13 @@ public class ConfigurationCheck implements ApplicationRunner {
                 "spring.security.oauth2.client.registration.google.client-secret");
         aviso("Login con Facebook", "spring.security.oauth2.client.registration.facebook.client-id",
                 "spring.security.oauth2.client.registration.facebook.client-secret");
-        aviso("Asistente Bakey (IA)", "bakey.gemini.api-key");
+        // Bakey: la clave puede venir del archivo o de la variable de entorno GEMINI_API_KEY (nunca se muestra)
+        if (bakey.isConfigured()) {
+            log.info("Asistente Bakey (IA): configurado (modelo {})", bakey.getGemini().getModel());
+        } else {
+            log.warn("Asistente Bakey (IA) DESACTIVADO: falta configurar bakey.gemini.api-key en config/application.properties "
+                    + "(o la variable de entorno GEMINI_API_KEY)");
+        }
         aviso("Copias de seguridad", "backup.directory", "backup.mysqldump-path");
         log.info("Zona horaria de la app: {}", java.util.TimeZone.getDefault().getID());
     }
