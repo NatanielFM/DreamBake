@@ -126,6 +126,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const params = filterParams();
     params.set('page', String(newPage));
     summary.textContent = 'Cargando…';
+    // Paso 6.8: la tabla también muestra "Cargando…" mientras no tiene datos
+    if (!tbody.querySelector('tr:not(.state-row)')) window.DreamUI?.tableLoading(tbody, 7, 'Cargando el registro…');
     try {
       const res = await fetch('/api/audit/logs?' + params.toString());
       if (!res.ok) throw new Error(String(res.status));

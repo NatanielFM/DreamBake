@@ -68,11 +68,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ===================== Cargar y dibujar =====================
 
+  let backupsLoaded = false;
   async function load() {
+    if (!backupsLoaded) window.DreamUI?.tableLoading(tbody, 5, 'Cargando copias de seguridad…');   // paso 6.8
     try {
       const res = await fetch('/api/backups');
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'No se pudo cargar el estado de las copias.');
+      backupsLoaded = true;
       render(data);
     } catch (err) {
       backups = [];
