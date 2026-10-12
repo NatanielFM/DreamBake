@@ -1,27 +1,17 @@
 <!doctype html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security6">
+<html lang="es-AR" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security6">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <!-- Color de la barra del navegador en el celular: el mismo fondo del header -->
   <meta name="theme-color" content="#fef9f9" />
-  <link rel="icon" type="image/svg+xml" th:href="@{/img/favicon.svg}" />
+  <!-- Íconos en todos los tamaños (fragments/seo.html, paso 6.3) -->
+  <th:block th:replace="~{fragments/seo :: icons}"></th:block>
   <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
   <script th:src="@{/js/csrf.js}"></script>
-  <title>Productos — Dulce Sueños Posadas</title>
-  <meta name="description" content="Catálogo de productos de Dulce Sueños Posadas." />
-  <!-- Vista previa al compartir el link (WhatsApp, Instagram, Facebook) -->
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Dulce Sueños Posadas">
-  <meta property="og:locale" content="es_AR">
-  <meta property="og:title" content="Productos — Dulce Sueños Posadas">
-  <meta property="og:description" content="Catálogo de productos de Dulce Sueños Posadas.">
-  <meta property="og:url" th:content="${siteUrl} + '/products'">
-  <meta property="og:image" th:content="${siteUrl} + '/img/og-portada.jpg'">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Torta decorada de Dulce Sueños Posadas">
-  <meta name="twitter:card" content="summary_large_image">
+  <title th:text="'Productos — ' + ${negocio.name}">Productos — Dulce Sueños Posadas</title>
+  <!-- Descripción y vista previa al compartir el link (fragments/seo.html, paso 6.3) -->
+  <th:block th:replace="~{fragments/seo :: share('Productos — ' + ${negocio.name}, 'Tortas, mesas dulces y souvenirs de Dulce Sueños Posadas con sus precios. Elegí y pedí por WhatsApp.', '/products')}"></th:block>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -41,6 +31,8 @@
   <div th:replace="~{fragments/header :: header}"></div>
 
   <main id="main" class="shop-main">
+    <!-- Pedidos pausados o mensaje de la tienda (paso 6.4) -->
+    <th:block th:replace="~{fragments/store-notice :: notice}"></th:block>
     <section class="shop-hero" aria-labelledby="products-title">
       <div class="site-container shop-hero-row">
         <div>

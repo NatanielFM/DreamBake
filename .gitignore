@@ -31,3 +31,11 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Fase final ###
+.trabajo/
+config/application.properties
+backups/
+logs/
+cookies.txt
+config/secret.key

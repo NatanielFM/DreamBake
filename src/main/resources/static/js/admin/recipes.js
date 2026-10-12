@@ -12,7 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // El costo se muestra solo en el panel del admin (el del pastelero no ve dinero)
   const showCost = document.body.dataset.panel === 'admin';
-  const money = (n) => '$' + Number(n || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 });
+  const money = (n) => window.DreamFormat ? window.DreamFormat.money(n) : '$ ' + Number(n || 0).toLocaleString('es-AR');
+  const esc = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
   // "Costo: $1.250" o, si algún insumo no tiene costo cargado, "Costo parcial: $800"
   function costLabel(r) {
@@ -28,15 +29,19 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch(e) {}
   }
 
+  let recipesLoaded = false;
   async function loadRecipes() {
+    if (!recipesLoaded) window.DreamUI?.tableLoading(tbody, 2, 'Cargando recetas…');
     try {
       const res = await fetch('/api/recipes');
-      if (res.ok) {
-        dbRecipes = await res.json();
-        renderRecipes();
-        document.dispatchEvent(new CustomEvent('recipesLoaded', { detail: dbRecipes }));
-      }
-    } catch(e) {}
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      dbRecipes = await res.json();
+      recipesLoaded = true;
+      renderRecipes();
+      document.dispatchEvent(new CustomEvent('recipesLoaded', { detail: dbRecipes }));
+    } catch(e) {
+      if (!recipesLoaded) window.DreamUI?.tableMessage(tbody, 2, 'No se pudieron cargar las recetas.', 'Revisá la conexión y recargá la página.', true);
+    }
   }
 
   function renderRecipes() {
@@ -44,14 +49,14 @@ document.addEventListener('DOMContentLoaded', () => {
     tbody.innerHTML = '';
     
     if (dbRecipes.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="2" class="cell-empty">Todavía no hay recetas cargadas.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="2" class="cell-empty">Todavía no hay recetas cargadas.</td></tr>';   // el pastelero no tiene botón de agregar
       return;
     }
 
     dbRecipes.forEach(r => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td class="cell-title cell-strong">${r.name}<span class="cell-soft recipe-count">${(r.items || []).length} ${(r.items || []).length === 1 ? 'insumo' : 'insumos'}${showCost && costLabel(r) ? ` · ${costLabel(r)}` : ''}</span></td>
+        <td class="cell-title cell-strong">${esc(r.name)}<span class="cell-soft recipe-count">${(r.items || []).length} ${(r.items || []).length === 1 ? 'insumo' : 'insumos'}${showCost && costLabel(r) ? ` · ${costLabel(r)}` : ''}</span></td>
         <td class="cell-actions"><div class="action-buttons-container">
           <button type="button" class="btn btn-grey btn-sm btn-view">Ver receta</button>
           <button type="button" class="btn btn-grey btn-sm btn-edit">Editar</button>
@@ -72,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let options = '<option value="">Elegí un insumo…</option>';
     dbInventory.forEach(inv => {
       const selected = item && item.inventoryItem && item.inventoryItem.id === inv.id ? 'selected' : '';
-      options += `<option value="${inv.id}" ${selected}>${inv.name} (${inv.unit})</option>`;
+      options += `<option value="${inv.id}" ${selected}>${esc(inv.name)} (${esc(inv.unit)})</option>`;
     });
 
     const qty = item ? item.quantityRequired : '';
@@ -179,35 +184,36 @@ document.addEventListener('DOMContentLoaded', () => {
       const url = id ? `/api/recipes/${id}` : '/api/recipes';
       const method = id ? 'PUT' : 'POST';
 
-      try {
-        const res = await fetch(url, {
-          method: method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (res.ok) {
-          modalForm.hidden = true;
-          loadRecipes();
-        } else {
-          window.showErrorAlert("Error al guardar la receta.");
+      await window.DreamUI.busy(e.submitter || form.querySelector('button[type="submit"]'), async () => {
+        try {
+          const res = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (res.ok) {
+            modalForm.hidden = true;
+            loadRecipes();
+          } else {
+            await window.DreamUI.fail(res, 'No se pudo guardar la receta.');
+          }
+        } catch(err) {
+          window.DreamUI.offline();
         }
-      } catch(err) {
-        window.showErrorAlert("Error de conexión.");
-      }
+      });
     });
   }
 
   function deleteRecipe(id, name) {
-    window.showConfirmModal('Eliminar Receta', `¿Seguro que deseas eliminar la receta "${name}"?`, 'Eliminar', 'btn-red', async () => {
+    window.showConfirmModal('Eliminar receta', `¿Seguro que querés eliminar la receta "${name}"?`, 'Eliminar', 'btn-red', async () => {
       try {
         const res = await fetch(`/api/recipes/${id}`, { method: 'DELETE' });
         if (res.ok) {
           loadRecipes();
         } else {
-          window.showErrorAlert("No se pudo eliminar.");
+          await window.DreamUI.fail(res, 'No se pudo eliminar la receta (puede estar en un producto).');
         }
-      } catch(e) {}
+      } catch(e) { window.DreamUI.offline(); }
     });
   }
 
@@ -233,7 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
       let options = '<option value="">Elegí un insumo…</option>';
       dbInventory.forEach(inv => {
         const selected = currentValue == inv.id ? 'selected' : '';
-        options += `<option value="${inv.id}" ${selected}>${inv.name} (${inv.unit})</option>`;
+        options += `<option value="${inv.id}" ${selected}>${esc(inv.name)} (${esc(inv.unit)})</option>`;
       });
       select.innerHTML = options;
     });

@@ -1,18 +1,23 @@
 <!doctype html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<html lang="es-AR" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <!-- Color de la barra del navegador en el celular: el mismo fondo del header -->
   <meta name="theme-color" content="#fef9f9" />
-  <link rel="icon" type="image/svg+xml" th:href="@{/img/favicon.svg}" />
+  <!-- Íconos en todos los tamaños (fragments/seo.html, paso 6.3) -->
+  <th:block th:replace="~{fragments/seo :: icons}"></th:block>
   <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
   <script th:src="@{/js/csrf.js}"></script>
-  <title>Crear cuenta — Dulce Sueños Posadas</title>
+  <title th:text="'Crear cuenta — ' + ${negocio.name}">Crear cuenta — Dulce Sueños Posadas</title>
+  <!-- Descripción y vista previa al compartir el link (fragments/seo.html, paso 6.3) -->
+  <th:block th:replace="~{fragments/seo :: share('Crear cuenta — ' + ${negocio.name}, 'Creá tu cuenta gratis en Dulce Sueños Posadas: tus datos quedan cargados para pedir más rápido.', '/register')}"></th:block>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Roboto 500 solo para los botones "Continuar con Google / Facebook" (guías de marca de Google y Meta) -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@500&display=swap" rel="stylesheet">
 
   <!-- Orden: base vieja compartida → tokens → componentes → header → CSS de la página → footer -->
   <link rel="stylesheet" th:href="@{/css/main.css}">
@@ -90,11 +95,15 @@
                 <p class="field__error" id="passwordError" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span>Las contraseñas no coinciden.</span></p>
               </div>
 
-              <p class="register-privacy">Usamos tus datos solo para tus pedidos y nunca los compartimos (Ley 25.326 de Protección de Datos Personales).</p>
+              <p class="register-privacy">Usamos tus datos solo para tus pedidos y nunca los compartimos (Ley 25.326 de Protección de Datos Personales).
+                Al continuar aceptás los <a class="link" th:href="@{/terminos}" target="_blank">Términos</a> y la <a class="link" th:href="@{/privacidad}" target="_blank">Política de privacidad</a>.</p>
 
               <button type="submit" id="register-submit" class="button button--primary button--lg button--block auth-submit">Crear cuenta</button>
             </div>
           </form>
+
+          <!-- Login con Google y Facebook (fragments/social-login.html; cada botón solo si hay credenciales cargadas) -->
+          <th:block th:replace="~{fragments/social-login :: buttons('o registrate con')}"></th:block>
 
           <p class="auth-switch">¿Ya tenés cuenta? <a class="link" th:href="@{/login}">Iniciá sesión</a></p>
         </div>

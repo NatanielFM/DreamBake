@@ -338,3 +338,64 @@
   .qty-btn:active,
   .choice-card:active { transform: none; }
 }
+
+/* Pedidos pausados (paso 6.4) */
+.checkout-paused {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--cherry-50);
+  color: var(--cherry-700);
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-small);
+}
+.checkout-paused[hidden] { display: none; }
+.checkout-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ---------- Pantalla de éxito: código, resumen y pasos (paso 6.5) ---------- */
+.success-code {
+  width: 100%;
+  padding: var(--space-4);
+  border: 2px dashed var(--rose-300);
+  border-radius: var(--radius-lg);
+  background: var(--rose-50);
+}
+.success-code__label { margin: 0; color: var(--rose-800); font-size: var(--fs-small); font-weight: var(--fw-semibold); }
+.success-code__value {
+  margin: var(--space-1) 0;
+  color: var(--ink);
+  font-size: clamp(1.75rem, 1.4rem + 1.6vw, 2.25rem);
+  font-weight: var(--fw-black);
+  letter-spacing: 0.08em;
+  user-select: all;   /* un toque lo selecciona entero para copiarlo */
+}
+.success-code__hint { margin: 0; color: var(--text-strong); font-size: var(--fs-small); }
+.success-summary {
+  display: grid;
+  gap: var(--space-2);
+  width: 100%;
+  margin: 0;
+  text-align: left;
+}
+.success-summary:empty { display: none; }
+.success-summary > div { display: grid; grid-template-columns: 6.5rem 1fr; gap: var(--space-3); }
+.success-summary dt { color: var(--text-muted); font-size: var(--fs-small); font-weight: var(--fw-semibold); }
+.success-summary dd { margin: 0; color: var(--text-strong); overflow-wrap: anywhere; }
+.success-steps {
+  display: grid;
+  gap: var(--space-2);
+  width: 100%;
+  margin: 0;
+  padding: var(--space-4) var(--space-4) var(--space-4) 2.25rem;
+  border-radius: var(--radius-md);
+  background: var(--blush-50, var(--rose-50));
+  color: var(--text-strong);
+  text-align: left;
+  line-height: 1.5;
+}
+.success-steps li::marker { color: var(--accent); font-weight: var(--fw-bold); }
+.success-home { margin: 0; }
+@media (max-width: 29.99rem) {
+  .success-summary > div { grid-template-columns: 1fr; gap: 0; }
+  .success-actions .button { width: 100%; }
+}

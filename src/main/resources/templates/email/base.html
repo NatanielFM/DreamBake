@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<!--/*
+  Plantilla BASE de todos los emails de DreamBake.
+
+  Los programas de correo (Gmail, Outlook…) no entienden el CSS moderno: por eso se usan
+  tablas, estilos escritos "en línea" (style="…") y colores fijos en vez de variables.
+  Los colores son los de la marca (tokens.css): #e0487f acento, #481729 tinta, #fdf4f7 fondo. El gris del texto chico es #666 (el muted #777 oscurecido) para que se lea bien sobre el fondo rosa.
+
+  Cómo la usa otra plantilla (ver prueba.html):
+    <html th:replace="~{email/base :: layout(~{::#cuerpo})}">
+      <body><div id="cuerpo"> …el contenido del mensaje… </div></body>
+    </html>
+
+  Variables que le pasa EmailService: asunto, negocio (name, whatsapp, email), publicUrl y bajaUrl
+  (el link para darse de baja; si es null no se muestra).
+*/-->
+<html xmlns:th="http://www.thymeleaf.org" th:fragment="layout(contenido)" lang="es-AR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="x-apple-disable-message-reformatting">
+  <title th:text="${asunto}">DreamBake</title>
+</head>
+<body style="margin:0;padding:0;background-color:#fdf4f7;">
+  <!--/* Fondo rosa suave que ocupa todo el ancho */-->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#fdf4f7;">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+
+        <!--/* Tarjeta central: 600 px como máximo y se achica sola en el celular (width:100%) */-->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+               style="max-width:600px;background-color:#ffffff;border-radius:16px;border:1px solid #f7d1df;">
+
+          <!--/* Encabezado: franja de acento + logo + nombre */-->
+          <tr>
+            <td style="height:6px;line-height:6px;font-size:6px;background-color:#e0487f;border-radius:16px 16px 0 0;">&nbsp;</td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:28px 24px 8px 24px;">
+              <img src="cid:logo" width="96" alt="Logo de Dulce Sueños" th:alt="'Logo de ' + ${negocio.name}"
+                   style="display:block;border:0;outline:none;text-decoration:none;height:auto;width:96px;max-width:96px;">
+              <p style="margin:12px 0 0 0;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:20px;line-height:26px;font-weight:600;color:#481729;"
+                 th:text="${negocio.name}">Dulce Sueños Posadas</p>
+            </td>
+          </tr>
+
+          <!--/* Contenido propio de cada mensaje */-->
+          <tr>
+            <td style="padding:16px 32px 28px 32px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:25px;color:#222222;">
+              <div th:replace="${contenido}">Acá va el contenido del mensaje.</div>
+            </td>
+          </tr>
+
+          <!--/* Pie: datos del negocio y link de baja */-->
+          <tr>
+            <td style="padding:20px 32px 28px 32px;background-color:#fdf4f7;border-top:1px solid #f7d1df;border-radius:0 0 16px 16px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;line-height:20px;color:#666666;" align="center">
+              <p style="margin:0 0 6px 0;font-weight:600;color:#481729;" th:text="${negocio.name}">Dulce Sueños Posadas</p>
+              <p style="margin:0 0 4px 0;" th:if="${!#strings.isEmpty(negocio.whatsapp)}">
+                WhatsApp:
+                <a th:href="'https://wa.me/' + ${negocio.whatsapp}" style="color:#9d3259;text-decoration:underline;"
+                   th:text="'+' + ${negocio.whatsapp}">+5493764000000</a>
+              </p>
+              <p style="margin:0 0 4px 0;" th:if="${!#strings.isEmpty(negocio.email)}">
+                <a th:href="'mailto:' + ${negocio.email}" style="color:#9d3259;text-decoration:underline;"
+                   th:text="${negocio.email}">hola@ejemplo.com</a>
+              </p>
+              <p style="margin:0 0 4px 0;">
+                <a th:href="${publicUrl}" style="color:#9d3259;text-decoration:underline;"
+                   th:text="${publicUrl}">https://dulcesuenos.example</a>
+              </p>
+              <!--/* Lugar del link de baja: solo aparece en los mails promocionales (bajaUrl con valor) */-->
+              <p style="margin:14px 0 0 0;font-size:12px;line-height:18px;" th:if="${bajaUrl != null}">
+                Si no querés recibir más mensajes nuestros,
+                <a th:href="${bajaUrl}" style="color:#9d3259;text-decoration:underline;">podés darte de baja acá</a>.
+              </p>
+            </td>
+          </tr>
+        </table>
+
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

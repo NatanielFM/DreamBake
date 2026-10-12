@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
+  // Paso 6.8: formato argentino ($ 12.345) y escape de los textos que vienen de la tienda o del panel
+  const money = (n) => window.DreamFormat ? window.DreamFormat.money(n) : '$ ' + Number(n || 0).toLocaleString('es-AR');
+  const esc = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
   let chartRevenue = null;
   let chartStatus = null;
   let chartProducts = null;
@@ -16,7 +19,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnRefresh = document.getElementById('btn-refresh-dashboard');
   const btnPdf = document.getElementById('btn-export-dashboard-pdf');
 
+  let loadedOnce = false;
   async function loadDashboardData() {
+    if (!loadedOnce && window.DreamUI) {
+      [['dash-upcoming-tbody', 4], ['dash-top-clients-tbody', 4], ['dash-low-stock-tbody', 4], ['dash-margin-tbody', 5]]
+        .forEach(([id, cols]) => window.DreamUI.tableLoading(document.getElementById(id), cols));
+    }
     try {
       const [ordRes, invRes, cliRes, prodRes, monthlyRes, topProdRes] = await Promise.all([
         fetch('/api/orders').catch(() => ({ ok: false })),
@@ -36,8 +44,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
       populateYearSelector();
       computeAndRender();
+      loadedOnce = true;
+      // Si no llegaron los pedidos, el resumen quedaría en cero sin explicación: se avisa
+      if (!ordRes.ok && window.DreamUI) {
+        window.DreamUI.tableMessage(document.getElementById('dash-upcoming-tbody'), 4,
+          'No se pudieron cargar los pedidos.', 'Las cifras pueden estar incompletas. Tocá "Actualizar" en un rato.', true);
+      }
     } catch (err) {
-      console.error('Error cargando dashboard:', err);
+      if (window.DreamUI) window.DreamUI.offline();
     }
   }
 
@@ -230,14 +244,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Renderizar KPIs
-    setText('kpi-total-revenue', '$' + totalRevenue.toLocaleString('es-AR'));
-    setText('kpi-month-revenue', 'Este mes: $' + monthRevenue.toLocaleString('es-AR'));
-    setText('kpi-pending-balance', '$' + pendingBalance.toLocaleString('es-AR'));
-    setText('kpi-collected-deposits', 'Cobrado (señas): $' + collectedDeposits.toLocaleString('es-AR'));
+    setText('kpi-total-revenue', money(totalRevenue));
+    setText('kpi-month-revenue', 'Este mes: ' + money(monthRevenue));
+    setText('kpi-pending-balance', money(pendingBalance));
+    setText('kpi-collected-deposits', 'Cobrado (señas): ' + money(collectedDeposits));
     setText('kpi-orders-month', ordersMonthCount);
     setText('kpi-orders-year', `Total en ${selectedYear}: ${ordersYearCount} pedidos`);
     setText('kpi-cakes-sold', cakesSoldCount);
-    setText('kpi-avg-ticket', 'Ticket promedio: $' + avgTicket.toLocaleString('es-AR'));
+    setText('kpi-avg-ticket', 'Ticket promedio: ' + money(avgTicket));
 
     if (upcomingDeliveries.length > 0) {
       const next = upcomingDeliveries[0];
@@ -281,16 +295,16 @@ document.addEventListener('DOMContentLoaded', () => {
         upTbody.innerHTML = `<tr><td colspan="4" class="cell-empty">No hay entregas agendadas por ahora.</td></tr>`;
       } else {
         upTbody.innerHTML = upcomingDeliveries.slice(0, 6).map(o => {
-          // Mismos colores que en Pedidos: Agendado rosa, Pendiente ámbar (con texto e ícono)
+          // Mismos colores y nombres que en Pedidos: Agendado rosa, Nuevo ámbar (con texto e ícono)
           const badge = o.status === 'CONFIRMED'
             ? `<span class="status-badge status-agendado">Agendado</span>`
-            : `<span class="status-badge status-pending">Pendiente</span>`;
+            : `<span class="status-badge status-pending">Nuevo</span>`;
           // data-label: en el celular cada fila se ve como tarjeta con "Etiqueta: valor"
           return `
             <tr>
-              <td class="cell-title"><span class="cell-id">#${o.id}</span> <span class="cell-strong">${o.customerName}</span></td>
+              <td class="cell-title"><span class="cell-id">#${o.id}</span> <span class="cell-strong">${esc(o.customerName)}</span></td>
               <td data-label="Entrega">${formatDateAR(o.deliveryDate)}</td>
-              <td data-label="Total" class="cell-money">$${o.totalPrice.toLocaleString('es-AR')}</td>
+              <td data-label="Total" class="cell-money">${money(o.totalPrice)}</td>
               <td data-label="Estado">${badge}</td>
             </tr>
           `;
@@ -307,10 +321,10 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         cliTbody.innerHTML = topClients.map((c, idx) => `
           <tr>
-            <td class="cell-title"><span class="dash-rank-num">${idx + 1}</span> <span class="cell-strong">${c.name}</span></td>
-            <td data-label="Contacto">${c.phone}</td>
+            <td class="cell-title"><span class="dash-rank-num">${idx + 1}</span> <span class="cell-strong">${esc(c.name)}</span></td>
+            <td data-label="Contacto">${esc(c.phone)}</td>
             <td data-label="Compras">${c.orders}</td>
-            <td data-label="Invertido" class="cell-money">$${c.spent.toLocaleString('es-AR')}</td>
+            <td data-label="Invertido" class="cell-money">${money(c.spent)}</td>
           </tr>
         `).join('');
       }
@@ -333,9 +347,9 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           return `
             <tr>
-              <td class="cell-title cell-strong">${it.name}</td>
-              <td data-label="Stock actual" class="text-danger">${it.current} ${it.unit}</td>
-              <td data-label="Stock mínimo">${it.min} ${it.unit}</td>
+              <td class="cell-title cell-strong">${esc(it.name)}</td>
+              <td data-label="Stock actual" class="text-danger">${it.current} ${esc(it.unit)}</td>
+              <td data-label="Stock mínimo">${it.min} ${esc(it.unit)}</td>
               <td data-label="Condición">${alertBadge}</td>
             </tr>
           `;
@@ -354,7 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const summary = document.getElementById('dash-margin-summary');
     if (!tbody || !summary) return;
 
-    const fmt = (n) => '$' + Math.round(n).toLocaleString('es-AR');
+    const fmt = (n) => money(Math.round(n));
     const products = dashState.products || [];
     const byId = new Map(products.map(p => [p.id, p]));
     const byName = new Map(products.map(p => [String(p.name).toLowerCase(), p]));
@@ -428,7 +442,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       return `
         <tr>
-          <td class="cell-title cell-strong">${p.name}</td>
+          <td class="cell-title cell-strong">${esc(p.name)}</td>
           <td data-label="Precio" class="cell-money">${fmt(price)}</td>
           <td data-label="Costo de insumos" class="cell-money">${costCell}</td>
           <td data-label="Ganancia por unidad" class="cell-money">${profitCell}</td>
@@ -507,7 +521,7 @@ document.addEventListener('DOMContentLoaded', () => {
             y: {
               type: 'linear',
               position: 'left',
-              ticks: { callback: v => '$' + Number(v).toLocaleString('es-AR') }
+              ticks: { callback: v => money(v) }
             },
             y1: {
               type: 'linear',
@@ -614,6 +628,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function exportDashboardPDF() {
     const printArea = document.getElementById('print-area');
     if (!printArea || !dashState.summary) return;
+    window.logDownload?.('informe'); // auditoría: quién descargó el informe
 
     const s = dashState.summary;
     const nowStr = new Date().toLocaleDateString('es-AR', {
@@ -626,19 +641,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const topClientsRows = s.topClients.length
       ? s.topClients.map((c, i) => `
           <tr>
-            <td style="padding:8px; border-bottom:1px solid #eee;">#${i + 1} - <strong>${c.name}</strong></td>
-            <td style="padding:8px; border-bottom:1px solid #eee;">${c.phone}</td>
+            <td style="padding:8px; border-bottom:1px solid #eee;">#${i + 1} - <strong>${esc(c.name)}</strong></td>
+            <td style="padding:8px; border-bottom:1px solid #eee;">${esc(c.phone)}</td>
             <td style="padding:8px; border-bottom:1px solid #eee; text-align:center;">${c.orders}</td>
-            <td style="padding:8px; border-bottom:1px solid #eee; text-align:right; font-weight:700; color:#e0487f;">$${c.spent.toLocaleString('es-AR')}</td>
+            <td style="padding:8px; border-bottom:1px solid #eee; text-align:right; font-weight:700; color:#e0487f;">${money(c.spent)}</td>
           </tr>`).join('')
       : `<tr><td colspan="4" style="padding:10px; text-align:center;">Sin registros</td></tr>`;
 
     const stockRows = s.criticalInventory.length
       ? s.criticalInventory.map(it => `
           <tr>
-            <td style="padding:8px; border-bottom:1px solid #eee;"><strong>${it.name}</strong></td>
-            <td style="padding:8px; border-bottom:1px solid #eee; color:#dc2626; font-weight:700;">${it.current} ${it.unit}</td>
-            <td style="padding:8px; border-bottom:1px solid #eee;">${it.min} ${it.unit}</td>
+            <td style="padding:8px; border-bottom:1px solid #eee;"><strong>${esc(it.name)}</strong></td>
+            <td style="padding:8px; border-bottom:1px solid #eee; color:#dc2626; font-weight:700;">${it.current} ${esc(it.unit)}</td>
+            <td style="padding:8px; border-bottom:1px solid #eee;">${it.min} ${esc(it.unit)}</td>
             <td style="padding:8px; border-bottom:1px solid #eee;">${it.expStr ? formatDateAR(it.expStr) : 'No especificado'}</td>
           </tr>`).join('')
       : `<tr><td colspan="4" style="padding:10px; text-align:center; color:#10b981;">Inventario sin alertas críticas</td></tr>`;
@@ -659,18 +674,18 @@ document.addEventListener('DOMContentLoaded', () => {
         <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-bottom:22px;">
           <div style="border:1px solid #f3d1dc; background:#fff9fb; padding:12px; border-radius:10px;">
             <div style="font-size:11px; color:#666; text-transform:uppercase;">Total Facturado (${s.selectedYear})</div>
-            <div style="font-size:20px; font-weight:800; color:#e0487f;">$${s.totalRevenue.toLocaleString('es-AR')}</div>
-            <div style="font-size:11px; color:#555;">Mes actual: $${s.monthRevenue.toLocaleString('es-AR')}</div>
+            <div style="font-size:20px; font-weight:800; color:#e0487f;">${money(s.totalRevenue)}</div>
+            <div style="font-size:11px; color:#555;">Mes actual: ${money(s.monthRevenue)}</div>
           </div>
           <div style="border:1px solid #e5e7eb; background:#fafafa; padding:12px; border-radius:10px;">
             <div style="font-size:11px; color:#666; text-transform:uppercase;">Saldo Pendiente a Cobrar</div>
-            <div style="font-size:20px; font-weight:800; color:#f59e0b;">$${s.pendingBalance.toLocaleString('es-AR')}</div>
-            <div style="font-size:11px; color:#555;">Cobrado: $${s.collectedDeposits.toLocaleString('es-AR')}</div>
+            <div style="font-size:20px; font-weight:800; color:#f59e0b;">${money(s.pendingBalance)}</div>
+            <div style="font-size:11px; color:#555;">Cobrado: ${money(s.collectedDeposits)}</div>
           </div>
           <div style="border:1px solid #e5e7eb; background:#fafafa; padding:12px; border-radius:10px;">
             <div style="font-size:11px; color:#666; text-transform:uppercase;">Pedidos y Ticket Promedio</div>
             <div style="font-size:20px; font-weight:800; color:#222;">${s.ordersYearCount} pedidos</div>
-            <div style="font-size:11px; color:#555;">Ticket prom: $${s.avgTicket.toLocaleString('es-AR')}</div>
+            <div style="font-size:11px; color:#555;">Ticket prom: ${money(s.avgTicket)}</div>
           </div>
           <div style="border:1px solid #e5e7eb; background:#fafafa; padding:12px; border-radius:10px;">
             <div style="font-size:11px; color:#666; text-transform:uppercase;">Tortas Elaboradas</div>
@@ -682,11 +697,11 @@ document.addEventListener('DOMContentLoaded', () => {
         <div style="display:grid; grid-template-columns: 1.6fr 1fr; gap:18px; margin-bottom:22px; align-items:center;">
           <div style="border:1px solid #eee; border-radius:10px; padding:12px;">
             <h3 style="margin:0 0 8px 0; font-size:14px; color:#e0487f;">Evolución Mensual de Ingresos y Pedidos</h3>
-            ${revImg ? `<img src="${revImg}" style="width:100%; max-height:200px; object-fit:contain;">` : ''}
+            ${revImg ? `<img src="${revImg}" alt="Gráfico de ingresos y pedidos por mes" style="width:100%; max-height:200px; object-fit:contain;">` : ''}
           </div>
           <div style="border:1px solid #eee; border-radius:10px; padding:12px;">
             <h3 style="margin:0 0 8px 0; font-size:14px; color:#e0487f;">Distribución de Pedidos</h3>
-            ${statusImg ? `<img src="${statusImg}" style="width:100%; max-height:200px; object-fit:contain;">` : ''}
+            ${statusImg ? `<img src="${statusImg}" alt="Gráfico de pedidos por estado" style="width:100%; max-height:200px; object-fit:contain;">` : ''}
           </div>
         </div>
 
@@ -750,7 +765,7 @@ document.addEventListener('DOMContentLoaded', () => {
     computeAndRender();
   });
 
-  btnRefresh?.addEventListener('click', loadDashboardData);
+  btnRefresh?.addEventListener('click', () => window.DreamUI ? window.DreamUI.busy(btnRefresh, loadDashboardData) : loadDashboardData());
   // Al cambiar entre modo claro y oscuro, los gráficos se vuelven a dibujar con los colores nuevos
   document.addEventListener('themechange', () => { if (dashState.summary) computeAndRender(); });
   btnPdf?.addEventListener('click', exportDashboardPDF);

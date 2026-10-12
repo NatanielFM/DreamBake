@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<!--/* Email de prueba: usa la plantilla base. Lo manda el botón "Enviar email de prueba" del panel. */-->
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{email/base :: layout(~{::#cuerpo})}">
+<body>
+  <div id="cuerpo">
+    <h1 style="margin:0 0 12px 0;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:24px;line-height:32px;font-weight:600;color:#481729;">
+      ¡El correo funciona!
+    </h1>
+    <p style="margin:0 0 16px 0;">
+      Este es un email de prueba de <strong th:text="${negocio.name}">Dulce Sueños Posadas</strong>.
+      Si lo estás leyendo, el sistema ya puede enviar mensajes a tus clientes.
+    </p>
+    <p style="margin:0 0 20px 0;">
+      Así se ven los mensajes del sistema: el logo arriba, el color de la marca y los datos
+      del negocio abajo. Revisá cómo se ve en el celular.
+    </p>
+    <!--/* Botón: se arma con una tabla porque Outlook y Gmail no respetan el padding de un link común */-->
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px 0;">
+      <tr>
+        <td align="center" bgcolor="#be3d6c" style="border-radius:999px;background-color:#be3d6c;">
+          <a th:href="${publicUrl}" href="#"
+             style="display:inline-block;padding:13px 28px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:20px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:999px;">
+            Visitar la tienda
+          </a>
+        </td>
+      </tr>
+    </table>
+    <p style="margin:16px 0 0 0;font-size:13px;line-height:20px;color:#666666;">
+      (En los mensajes promocionales, abajo aparece el link para darse de baja.)
+    </p>
+  </div>
+</body>
+</html>

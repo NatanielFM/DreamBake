@@ -1,0 +1,349 @@
+/* =========================================================
+   BAKEY — ventana del asistente (paso 5.5). Lo usan admin.html y baker.html.
+   ---------------------------------------------------------
+   Solo usa las variables de tokens.css y del panel (--admin-*, --st-*): sin colores nuevos y con
+   modo oscuro automático (las variables cambian solas con [data-theme="dark"]).
+   ========================================================= */
+
+/* Espacio abajo en cada pestaña: así lo último (tablas, botones) se puede subir por encima del botón flotante */
+.dashboard { padding-bottom: calc(var(--space-8) + 48px); }
+
+/* ---------- Botón flotante ---------- */
+.bk-fab {
+  position: fixed;
+  right: calc(var(--space-5) + env(safe-area-inset-right));
+  bottom: calc(var(--space-5) + env(safe-area-inset-bottom));
+  z-index: 1400;                         /* debajo del aviso de recordatorios (1500) y de las ventanas (2000) */
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 2px solid var(--admin-surface);
+  border-radius: 50%;
+  background: var(--rose-100);
+  box-shadow: var(--shadow-2);
+  cursor: pointer;
+  transition: transform var(--dur-press) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+.bk-fab svg { width: 46px; height: 46px; }
+.bk-fab:active { transform: scale(0.94); }
+.bk-fab:focus-visible { outline: 3px solid var(--admin-primary); outline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) {
+  .bk-fab:hover { box-shadow: var(--shadow-3); transform: translateY(-2px); }
+}
+/* Tooltip "Preguntale a Bakey" (al pasar el mouse o con el foco del teclado) */
+.bk-fab__tip {
+  position: absolute;
+  right: calc(100% + var(--space-3));
+  top: 50%;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--ink);
+  color: var(--white);
+  font: 600 var(--fs-small)/1.2 var(--font-sans);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(4px, -50%);
+  transition: opacity var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+.bk-fab:focus-visible .bk-fab__tip { opacity: 1; transform: translate(0, -50%); }
+@media (hover: hover) and (pointer: fine) {
+  .bk-fab:hover .bk-fab__tip { opacity: 1; transform: translate(0, -50%); }
+}
+.bk-fab.is-hidden { display: none; }
+
+/* Colores del avatar (cupcake con cara): los mismos de la marca */
+.bk-avatar .bk-cup { fill: var(--rose-500); }
+.bk-avatar .bk-stripe { stroke: var(--rose-600); stroke-width: 1.6; stroke-linecap: round; }
+.bk-avatar .bk-frost { fill: var(--white); stroke: var(--rose-300); stroke-width: 1.2; }
+.bk-avatar .bk-cherry { fill: var(--cherry-500); }
+.bk-avatar .bk-stem { stroke: var(--ink); stroke-width: 1.4; fill: none; stroke-linecap: round; }
+.bk-avatar .bk-eye { fill: var(--ink); }
+.bk-avatar .bk-smile { stroke: var(--ink); stroke-width: 1.6; fill: none; stroke-linecap: round; }
+.bk-avatar .bk-cheek { fill: var(--rose-300); }
+
+/* ---------- Panel del chat ---------- */
+.bk-panel {
+  position: fixed;
+  right: calc(var(--space-5) + env(safe-area-inset-right));
+  bottom: calc(var(--space-5) + 64px + var(--space-3) + env(safe-area-inset-bottom));
+  z-index: 1450;
+  display: flex;
+  flex-direction: column;
+  width: min(25rem, calc(100vw - 2 * var(--space-5)));
+  height: min(38rem, calc(100vh - var(--header-height, 64px) - 64px - 3 * var(--space-5)));
+  border: 1px solid var(--admin-line);
+  border-radius: var(--radius-lg);
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  font-family: var(--font-sans);
+  box-shadow: var(--shadow-3);
+  overflow: hidden;
+  /* Animación suave: aparece desde el botón (abajo a la derecha) */
+  transform-origin: bottom right;
+  opacity: 0;
+  transform: translateY(12px) scale(0.96);
+  transition: opacity var(--dur-base) var(--ease-out), transform var(--dur-slow) var(--ease-drawer);
+}
+.bk-panel[hidden] { display: none; }
+.bk-panel.is-open { opacity: 1; transform: none; }
+
+.bk-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--admin-line);
+  background: var(--admin-surface-2);
+}
+.bk-head__avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--rose-100);
+}
+.bk-head__avatar svg { width: 34px; height: 34px; }
+.bk-head__text { flex: 1; min-width: 0; }
+.bk-head__title { margin: 0; font-size: 1.0625rem; font-weight: var(--fw-semibold); color: var(--admin-heading); }
+.bk-status { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--admin-text-soft); font-size: var(--fs-small); }
+.bk-status::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--admin-primary);
+}
+.bk-status.is-off::before { background: var(--admin-line-strong); }
+.bk-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--admin-heading);
+  cursor: pointer;
+}
+.bk-icon-btn:hover { background: var(--admin-hover); }
+.bk-icon-btn:focus-visible { outline: 2px solid var(--admin-primary); outline-offset: 1px; }
+
+/* ---------- Mensajes ---------- */
+.bk-messages {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* Ningún mensaje ni tarjeta se achica: si no entran, la lista hace scroll (sin esto, las tarjetas,
+   que tienen overflow: hidden, se aplastaban hasta casi desaparecer) */
+.bk-messages > * { flex-shrink: 0; }
+.bk-msg {
+  max-width: 88%;
+  padding: var(--space-3) var(--space-4);
+  border-radius: 18px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  animation: bk-in var(--dur-base) var(--ease-out);
+}
+.bk-msg--user {
+  align-self: flex-end;
+  border-bottom-right-radius: 6px;
+  background: var(--admin-primary);
+  color: var(--admin-on-primary);
+  white-space: pre-wrap;
+}
+.bk-msg--bakey {
+  align-self: flex-start;
+  border-bottom-left-radius: 6px;
+  background: var(--admin-surface-2);
+  color: var(--admin-text);
+}
+.bk-msg--error { background: var(--st-cancel-bg); color: var(--st-cancel-text); }
+.bk-msg p { margin: 0; }
+.bk-msg p + p, .bk-msg p + ul, .bk-msg p + ol, .bk-msg ul + p, .bk-msg ol + p { margin-top: var(--space-2); }
+.bk-msg ul, .bk-msg ol { margin: 0; padding-left: 1.2em; }
+.bk-msg li + li { margin-top: 2px; }
+.bk-msg strong { font-weight: var(--fw-semibold); }
+
+/* Bienvenida y sugerencias */
+.bk-welcome { display: grid; gap: var(--space-3); }
+.bk-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.bk-chip {
+  min-height: 40px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--admin-primary);
+  border-radius: var(--radius-pill);
+  background: var(--admin-surface);
+  color: var(--admin-primary);
+  font: 600 var(--fs-small)/1.2 var(--font-sans);
+  cursor: pointer;
+}
+.bk-chip:hover { background: var(--admin-hover); }
+.bk-chip:focus-visible { outline: 2px solid var(--admin-primary); outline-offset: 2px; }
+
+/* "Bakey está escribiendo…" */
+.bk-typing {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-4) var(--space-2);
+  color: var(--admin-text-soft);
+  font-size: var(--fs-small);
+}
+.bk-typing[hidden] { display: none; }
+.bk-dots { display: inline-flex; gap: 4px; }
+.bk-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--admin-primary);
+  animation: bk-dot 1.2s infinite ease-in-out;
+}
+.bk-dots span:nth-child(2) { animation-delay: 0.15s; }
+.bk-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+/* ---------- Tarjetas de acción (paso 5.4): distintas a las burbujas, con botones claros ---------- */
+.bk-card {
+  align-self: stretch;
+  border: 2px solid var(--admin-primary);
+  border-radius: var(--radius-md);
+  background: var(--admin-surface);
+  overflow: hidden;
+  animation: bk-in var(--dur-base) var(--ease-out);
+}
+.bk-card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--st-sched-bg);
+  color: var(--st-sched-text);
+  font-weight: var(--fw-semibold);
+}
+.bk-card__head svg { flex: none; }
+.bk-card__lines { margin: 0; padding: var(--space-3) var(--space-4) 0 calc(var(--space-4) + 1em); line-height: 1.5; overflow-wrap: anywhere; }
+.bk-card__lines li + li { margin-top: 2px; }
+.bk-card__foot { display: grid; gap: var(--space-3); padding: var(--space-3) var(--space-4) var(--space-4); }
+.bk-card__expires { margin: 0; color: var(--admin-text-soft); font-size: var(--fs-small); }
+.bk-card__buttons { display: flex; gap: var(--space-2); }
+.bk-card__buttons .btn { flex: 1 1 0; justify-content: center; min-height: 48px; }
+.bk-card__result {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--admin-surface-2);
+  font-weight: var(--fw-semibold);
+}
+.bk-card[data-state="CONFIRMADA"] { border-color: var(--admin-line-strong); }
+.bk-card[data-state="CANCELADA"], .bk-card[data-state="VENCIDA"] { border-color: var(--admin-line); opacity: 0.85; }
+.bk-card[data-state="FALLO"] { border-color: var(--st-cancel-line); }
+.bk-card[data-state="FALLO"] .bk-card__result { background: var(--st-cancel-bg); color: var(--st-cancel-text); }
+
+/* ---------- Caja de texto ---------- */
+.bk-form {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-top: 1px solid var(--admin-line);
+  background: var(--admin-surface);
+}
+.bk-input {
+  flex: 1;
+  min-height: 48px;
+  max-height: 140px;
+  padding: 12px var(--space-3);
+  border: 1px solid var(--admin-input-line);
+  border-radius: var(--radius-md);
+  background: var(--admin-input-bg);
+  color: var(--admin-text);
+  font: var(--fs-body)/1.4 var(--font-sans);   /* 16px: el iPhone no hace zoom */
+  resize: none;
+}
+.bk-input:focus { outline: 2px solid var(--admin-primary); outline-offset: 0; border-color: transparent; }
+.bk-send {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--admin-primary);
+  color: var(--admin-on-primary);
+  cursor: pointer;
+}
+.bk-send:hover { background: var(--admin-primary-hover); }
+.bk-send:disabled { opacity: 0.5; cursor: not-allowed; }
+.bk-send:focus-visible { outline: 3px solid var(--admin-primary); outline-offset: 2px; }
+.bk-hint { margin: 0; padding: 0 var(--space-4) var(--space-2); color: var(--admin-text-soft); font-size: 0.75rem; }
+
+@keyframes bk-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes bk-dot { 0%, 80%, 100% { opacity: 0.3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .bk-panel, .bk-panel.is-open { transform: none; transition: opacity var(--dur-fast) linear; }
+  .bk-msg, .bk-card { animation: none; }
+  .bk-dots span { animation: none; opacity: 0.7; }
+  .bk-fab, .bk-fab:hover { transition: none; transform: none; }
+}
+
+/* ---------- Celular: el chat ocupa toda la pantalla ---------- */
+@media (max-width: 47.99rem) {
+  .bk-fab { width: 58px; height: 58px; right: calc(var(--space-4) + env(safe-area-inset-right)); bottom: calc(var(--space-4) + env(safe-area-inset-bottom)); }
+  .bk-fab svg { width: 42px; height: 42px; }
+  .bk-fab__tip { display: none; }
+  .bk-panel {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    border: 0;
+    border-radius: 0;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    transform-origin: bottom center;
+  }
+  .bk-close { width: 52px; height: 52px; }
+  .bk-close svg { width: 28px; height: 28px; }
+  .bk-msg { max-width: 92%; }
+  .bk-hint { display: none; }
+  /* El aviso de recordatorios (abajo en el celular) se sube por encima del botón de Bakey */
+  .reminder-alerts { bottom: calc(var(--space-4) + 58px + var(--space-3) + env(safe-area-inset-bottom)); }
+}
+
+/* ---------- Tarjeta "Uso de Bakey hoy" del Resumen (paso 5.6) ---------- */
+.bk-usage { margin: 0 0 var(--space-5); }
+.bk-usage[hidden] { display: none; }
+.bk-usage__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+.bk-usage__grid > div {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--admin-surface-2);
+}
+.bk-usage__grid dt { color: var(--admin-text-soft); font-size: var(--fs-small); }
+.bk-usage__grid dd {
+  margin: var(--space-1) 0 0;
+  color: var(--admin-heading);
+  font-size: 1.75rem;
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 47.99rem) {
+  .bk-usage__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

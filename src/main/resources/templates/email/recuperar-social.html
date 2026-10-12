@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<!--/* "Olvidé mi contraseña" (paso 6.1, PasswordResetService.requestReset) para una cuenta de cliente que entra
+       con Google o Facebook: no tiene una contraseña que recuperar, se le explica que use ese botón. */-->
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{email/base :: layout(~{::#cuerpo})}">
+<body>
+  <div id="cuerpo">
+    <h1 style="margin:0 0 12px 0;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:24px;line-height:32px;font-weight:600;color:#481729;">
+      <th:block th:if="${nombre != null and !nombre.isEmpty()}">¡Hola, <span th:text="${nombre}">Ana</span>!</th:block>
+      <th:block th:unless="${nombre != null and !nombre.isEmpty()}">¡Hola!</th:block>
+    </h1>
+    <p style="margin:0 0 16px 0;">
+      Nos pediste recuperar la contraseña de tu cuenta en <strong th:text="${negocio.name}">Dulce Sueños Posadas</strong>,
+      pero tu cuenta entra con <strong th:text="${red}">Google</strong>, así que no necesitás contraseña.
+    </p>
+    <p style="margin:0 0 16px 0;">
+      Para entrar, andá a la página de inicio de sesión y tocá el botón
+      <strong>"Continuar con <span th:text="${red}">Google</span>"</strong>.
+    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px 0;">
+      <tr>
+        <td align="center" bgcolor="#be3d6c" style="border-radius:999px;background-color:#be3d6c;">
+          <a th:href="${loginUrl}" href="#"
+             style="display:inline-block;padding:13px 28px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:20px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:999px;">
+            Ir a iniciar sesión
+          </a>
+        </td>
+      </tr>
+    </table>
+    <p style="margin:16px 0 0 0;font-size:13px;line-height:20px;color:#666666;">
+      Si no fuiste vos, ignorá este mensaje: no se hizo ningún cambio en tu cuenta.
+    </p>
+  </div>
+</body>
+</html>

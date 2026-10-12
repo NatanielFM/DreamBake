@@ -1,20 +1,22 @@
 package com.dreambake.controller;
 
+import com.dreambake.audit.Auditable;
+import com.dreambake.entity.AuditAction;
+import com.dreambake.entity.AuditModule;
 import com.dreambake.entity.GalleryImage;
 import com.dreambake.repository.GalleryImageRepository;
 import com.dreambake.repository.ProductRepository;
+import com.dreambake.service.FileStorageService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/gallery")
@@ -26,7 +28,10 @@ public class GalleryRestController {
     @Autowired
     private ProductRepository productRepository;
 
-    private final String UPLOAD_DIR = "uploads/";
+    @Autowired
+    private FileStorageService fileStorage;
+
+    private static final Logger log = LoggerFactory.getLogger(GalleryRestController.class);
 
     @GetMapping
     public List<GalleryImage> getAllImages() {
@@ -34,47 +39,29 @@ public class GalleryRestController {
     }
 
     @PostMapping
+    @Auditable(action = AuditAction.CREATE, module = AuditModule.GALERIA, entityType = "Foto", entityId = "#body.id",
+            description = "Subió una foto a la galería (#{#file.originalFilename})")
     public ResponseEntity<?> uploadImage(@RequestParam("file") MultipartFile file) {
-        if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "No llegó ninguna foto. Probá de nuevo."));
-        }
         try {
-            // Crear carpeta si no existe
-            Path uploadPath = Paths.get(UPLOAD_DIR);
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
-
-            // Seguridad: solo imágenes. Sin este control se podría subir, por ejemplo, un .html con
-            // código que quedaría publicado en /uploads y se ejecutaría en nuestro propio dominio.
-            String original = file.getOriginalFilename() == null ? "" : file.getOriginalFilename().toLowerCase();
-            String extension = original.contains(".") ? original.substring(original.lastIndexOf('.') + 1) : "";
-            String contentType = file.getContentType() == null ? "" : file.getContentType();
-            if (!List.of("jpg", "jpeg", "png", "webp", "gif").contains(extension) || !contentType.startsWith("image/")) {
-                // (Las fotos HEIC del iPhone las convierte a JPG el panel antes de subirlas: gallery.js)
-                return ResponseEntity.badRequest().body(Map.of("message", "Solo se pueden subir fotos JPG, PNG, WEBP o GIF."));
-            }
-
-            // Nombre nuevo y único: no se usa el nombre original (podría traer rutas raras como "../")
-            String fileName = UUID.randomUUID() + "." + extension;
-            Path filePath = uploadPath.resolve(fileName);
-            Files.copy(file.getInputStream(), filePath);
-
-            // Guardar en BD
+            // Validación (contenido real, 5 MB), achicado a 1600 px y nombre UUID: FileStorageService (paso 6.7)
+            FileStorageService.Stored stored = fileStorage.storeImage(file);
             GalleryImage image = new GalleryImage();
-            image.setUrl("/uploads/" + fileName);
+            image.setUrl(stored.url());
             galleryImageRepository.save(image);
-
             return ResponseEntity.ok(image);
+        } catch (FileStorageService.UploadException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (IOException e) {
-            System.err.println("No se pudo guardar la foto subida: " + e.getMessage());
+            log.error("No se pudo guardar la foto subida: {}", e.getMessage());
             return ResponseEntity.internalServerError().body(Map.of("message", "No se pudo guardar la foto en el servidor. Probá de nuevo."));
         }
     }
 
-    // Borra una foto de la galería: la fila de la base y el archivo de la carpeta uploads/.
+    // Borra una foto de la galería: la fila de la base y, si ya nadie la usa, el archivo de uploads/.
     // Si algún producto la usa como foto, no se borra (el producto quedaría sin imagen).
     @DeleteMapping("/{id}")
+    @Auditable(action = AuditAction.DELETE, module = AuditModule.GALERIA, entityType = "Foto", entityId = "#id",
+            description = "Borró una foto de la galería (foto #{#id})")
     public ResponseEntity<?> deleteImage(@PathVariable Long id) {
         return galleryImageRepository.findById(id).map(image -> {
             List<String> usedBy = productRepository.findAll().stream()
@@ -85,21 +72,9 @@ public class GalleryRestController {
                 return ResponseEntity.status(409).body(Map.of("message",
                         "Esta foto es la imagen de: " + String.join(", ", usedBy) + ". Cambiale la foto a ese producto y después borrala."));
             }
-
             galleryImageRepository.delete(image);
-
-            // Borrar el archivo. Seguridad: solo dentro de uploads/ (normalize() resuelve los "../")
-            try {
-                Path uploadDir = Paths.get(UPLOAD_DIR).toAbsolutePath().normalize();
-                String fileName = image.getUrl().replaceFirst("^/uploads/", "");
-                Path file = uploadDir.resolve(fileName).normalize();
-                if (file.startsWith(uploadDir)) {
-                    Files.deleteIfExists(file);
-                }
-            } catch (IOException e) {
-                // Si el archivo no se pudo borrar, la foto igual deja de aparecer en el sitio
-                System.err.println("No se pudo borrar el archivo de la galería: " + e.getMessage());
-            }
+            // El archivo se borra solo si no lo usa nadie más (por ejemplo, una campaña guardada)
+            fileStorage.deleteIfUnused(image.getUrl());
             return ResponseEntity.ok().build();
         }).orElse(ResponseEntity.notFound().build());
     }

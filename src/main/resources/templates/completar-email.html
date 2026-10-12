@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="es-AR" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <!-- Color de la barra del navegador en el celular: el mismo fondo del header -->
+  <meta name="theme-color" content="#fef9f9" />
+  <!-- Página de un trámite a medias: que no aparezca en buscadores -->
+  <meta name="robots" content="noindex" />
+  <!-- Íconos en todos los tamaños (fragments/seo.html, paso 6.3) -->
+  <th:block th:replace="~{fragments/seo :: icons}"></th:block>
+  <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
+  <script th:src="@{/js/csrf.js}"></script>
+  <title th:text="'Completá tu email — ' + ${negocio.name}">Completá tu email — Dulce Sueños Posadas</title>
+  <meta name="description" content="Completá tu email para terminar de crear tu cuenta en Dulce Sueños Posadas.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Orden: base vieja compartida → tokens → componentes → header → CSS de la página → footer -->
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+  <link rel="stylesheet" th:href="@{/css/tokens.css}">
+  <link rel="stylesheet" th:href="@{/css/components.css}">
+  <link rel="stylesheet" th:href="@{/css/header.css}">
+  <link rel="stylesheet" th:href="@{/css/login.css}">
+  <link rel="stylesheet" th:href="@{/css/footer.css}">
+</head>
+<!--
+  "Completá tu email" (SocialSignupController): alguien entró con Facebook y Facebook no mandó su email.
+  Paso "email": escribe su email. Paso "code": escribe el código de 6 números que le mandamos.
+-->
+<body class="page-auth page-complete-email">
+
+  <div th:replace="~{fragments/header :: header}"></div>
+
+  <main id="main" class="auth-main">
+    <div class="auth">
+      <aside class="auth-brand" aria-hidden="true">
+        <img class="auth-brand-photo" th:src="@{/img/galeria/torta-06.webp}" alt="" width="720" height="900" loading="lazy">
+        <p class="auth-brand-title">Ya casi está.</p>
+        <p class="auth-brand-text">Con tu email te avisamos cómo va tu pedido.</p>
+      </aside>
+
+      <section class="auth-panel" aria-labelledby="complete-title">
+        <div class="auth-card">
+          <h1 id="complete-title" class="auth-title">
+            <th:block th:if="${firstName != ''}">Hola, <span th:text="${firstName}">Ana</span></th:block>
+            <th:block th:unless="${firstName != ''}">Completá tu email</th:block>
+          </h1>
+
+          <!-- Errores: "existing" y "nomail" llevan links; el resto es texto -->
+          <div th:if="${error == 'existing'}" class="login-alert login-alert--error" role="alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+            <span>Ya hay una cuenta con ese email. Entrá con tu <a class="link" th:href="@{/login}">email y contraseña</a><th:block th:if="${googleLoginEnabled}"> o con Google</th:block>.</span>
+          </div>
+          <div th:if="${error == 'nomail'}" class="login-alert login-alert--error" role="alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+            <span>Ahora no podemos mandar emails para confirmar tu cuenta. Podés <a class="link" th:href="@{/register}">crear una cuenta con email y contraseña</a>.</span>
+          </div>
+          <div th:if="${error != null and error != 'existing' and error != 'nomail'}" class="login-alert login-alert--error" role="alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+            <span th:text="${error}">Mensaje</span>
+          </div>
+
+          <!-- Paso 1: escribir el email -->
+          <th:block th:if="${step == 'email'}">
+            <p class="auth-lead">Facebook no nos pasó tu email. Escribilo y te mandamos un código para confirmarlo.</p>
+            <form th:action="@{/login/completar-email}" method="post" class="auth-form" id="complete-email-form" novalidate>
+              <div class="field-stack">
+                <div class="field">
+                  <label for="email" class="field__label">Email</label>
+                  <input id="email" name="email" type="email" class="input" autocomplete="email" inputmode="email"
+                         placeholder="nombre@gmail.com" required maxlength="120" aria-describedby="email-error" th:value="${typedEmail}">
+                  <p class="field__error" id="email-error" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span></span></p>
+                </div>
+                <button type="submit" class="button button--primary button--lg button--block auth-submit" id="complete-submit">Mandarme el código</button>
+              </div>
+            </form>
+          </th:block>
+
+          <!-- Paso 2: escribir el código -->
+          <th:block th:if="${step == 'code'}">
+            <div class="login-alert" role="status" th:if="${error == null}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+              <span>Te mandamos un código a <strong th:text="${sentTo}">nombre@gmail.com</strong>. Si no lo ves, revisá la carpeta de spam.</span>
+            </div>
+            <form th:action="@{/login/completar-email/codigo}" method="post" class="auth-form" id="complete-code-form" novalidate>
+              <div class="field-stack">
+                <div class="field">
+                  <label for="code" class="field__label">Código de 6 números</label>
+                  <input id="code" name="code" type="text" class="input input--code" autocomplete="one-time-code" inputmode="numeric"
+                         pattern="[0-9]{6}" maxlength="6" required aria-describedby="code-hint code-error">
+                  <p class="field__hint" id="code-hint">Vale 15 minutos.</p>
+                  <p class="field__error" id="code-error" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span></span></p>
+                </div>
+                <button type="submit" class="button button--primary button--lg button--block auth-submit" id="complete-submit">Crear mi cuenta</button>
+              </div>
+            </form>
+            <form th:action="@{/login/completar-email/cambiar}" method="post" class="auth-secondary-action">
+              <button type="submit" class="button button--ghost button--block">Usar otro email o pedir otro código</button>
+            </form>
+          </th:block>
+
+          <p class="auth-switch"><a class="link" th:href="@{/login}">Volver a iniciar sesión</a></p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div th:replace="~{fragments/footer :: footer}"></div>
+
+  <script th:src="@{/js/header.js}" defer></script>
+  <script th:src="@{/js/form-helpers.js}" defer></script>
+  <script th:src="@{/js/complete-email.js}" defer></script>
+</body>
+</html>

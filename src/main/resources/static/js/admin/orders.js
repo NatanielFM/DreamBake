@@ -16,21 +16,28 @@ document.addEventListener('DOMContentLoaded', () => {
   const iconRevert = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>`;
 
   // Escapa texto antes de meterlo en HTML (dirección, turno, cupón…)
+  const money = (n) => window.DreamFormat ? window.DreamFormat.money(n) : '$ ' + Number(n || 0).toLocaleString('es-AR');
   const esc = (text) => String(text ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
   const months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
   // ================= 1. CARGA DE DATOS =================
+  let loadedOnce = false;
   async function loadOrders() {
+    const tbody = document.getElementById('orders-tbody');
+    // La primera vez la tabla muestra "Cargando…" (después se actualiza sin parpadear)
+    if (!loadedOnce) window.DreamUI?.tableLoading(tbody, 7, 'Cargando pedidos…');
     try {
       const res = await fetch('/api/orders');
-      if (res.ok) {
-        dbOrders = await res.json();
-        renderCalendar();
-        renderTable();
-        updateBadges();
-      }
-    } catch (e) { console.error(e); }
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      dbOrders = await res.json();
+      loadedOnce = true;
+      renderCalendar();
+      renderTable();
+      updateBadges();
+    } catch (e) {
+      if (!loadedOnce) window.DreamUI?.tableMessage(tbody, 7, 'No se pudieron cargar los pedidos.', 'Revisá la conexión y recargá la página.', true);
+    }
   }
 
   function updateBadges() {
@@ -44,10 +51,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function getStatusBadge(status) {
     switch(status) {
-      case 'PENDING': return `<span class="status-badge status-pending">Pendiente</span>`;
+      case 'PENDING': return `<span class="status-badge status-pending">Nuevo</span>`;
       case 'CONFIRMED': return `<span class="status-badge status-agendado">Agendado</span>`;
       case 'IN_PROGRESS': return `<span class="status-badge status-progress">En preparación</span>`;
-      case 'COMPLETED': return `<span class="status-badge status-completado">Completado</span>`;
+      case 'COMPLETED': return `<span class="status-badge status-completado">Entregado</span>`;
+      case 'REJECTED': return `<span class="status-badge status-cancelled">Rechazado</span>`;
       default: return `<span class="status-badge status-cancelled">Cancelado</span>`;
     }
   }
@@ -238,10 +246,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // El orden de las columnas no cambia (baker.html oculta la 5.ª, el total).
       tr.innerHTML = `
         <td class="cell-id" data-label="Pedido">#${o.id}</td>
-        <td class="cell-strong" data-label="Cliente">${o.customerName || 'Sin nombre'}</td>
-        <td class="cell-soft" data-label="Teléfono">${o.customerPhone || '—'}</td>
+        <td class="cell-strong" data-label="Cliente">${esc(o.customerName || 'Sin nombre')}</td>
+        <td class="cell-soft" data-label="Teléfono">${esc(o.customerPhone || '—')}</td>
         <td data-label="Entrega">${o.deliveryDate ? `${day}/${month}/${year}` : 'Sin fecha'}${deliveryInfo(o)}</td>
-        <td class="cell-money" data-label="Total">$${o.totalPrice.toLocaleString('es-AR')}</td>
+        <td class="cell-money" data-label="Total">${money(o.totalPrice)}</td>
         <td data-label="Estado"><div class="status-stack">${getStatusBadge(o.status)}${stockBadge}</div></td>
         <td class="cell-actions"><div class="action-buttons-container">${actionsHtml}</div></td>
       `;
@@ -333,11 +341,12 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     if (depositValue > total) {
-      window.showErrorAlert(`La seña ($${depositValue}) no puede ser mayor al total del pedido ($${total}).`);
+      window.showErrorAlert(`La seña (${money(depositValue)}) no puede ser mayor al total del pedido (${money(total)}).`);
       return;
     }
 
-    handleDateWarning(newDate, async () => {
+    const submitBtn = document.getElementById('btn-submit-confirm');
+    handleDateWarning(newDate, () => window.DreamUI.busy(submitBtn, async () => {
       try {
         const res = await fetch(`/api/orders/${orderToConfirm.id}/confirm`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' },
@@ -346,23 +355,27 @@ document.addEventListener('DOMContentLoaded', () => {
         if (res.ok) {
           document.getElementById('modal-confirm-order').hidden = true;
           jumpCalendarToDate(newDate); // Auto actualiza
-        } else if (res.status === 400) {
-          const errData = await res.json();
-          if (errData.error === 'INSUFFICIENT_STOCK') {
-            window.showConfirmModal('Alerta de Inventario', errData.message, 'Forzar', 'btn-red', async () => {
-              const forceRes = await fetch(`/api/orders/${orderToConfirm.id}/confirm`, {
-                method: 'PUT', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ deposit: depositValue, deliveryDate: newDate, force: true })
-              });
-              if (forceRes.ok) {
-                document.getElementById('modal-confirm-order').hidden = true;
-                jumpCalendarToDate(newDate);
-              }
-            });
-          }
+          return;
         }
-      } catch(e) { console.error(e); }
-    });
+        const errData = await res.clone().json().catch(() => ({}));
+        if (errData.error === 'INSUFFICIENT_STOCK') {
+          window.showConfirmModal('Faltan insumos', errData.message, 'Confirmar igual', 'btn-red', async () => {
+            const forceRes = await fetch(`/api/orders/${orderToConfirm.id}/confirm`, {
+              method: 'PUT', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ deposit: depositValue, deliveryDate: newDate, force: true })
+            });
+            if (forceRes.ok) {
+              document.getElementById('modal-confirm-order').hidden = true;
+              jumpCalendarToDate(newDate);
+            } else {
+              await window.DreamUI.fail(forceRes, 'No se pudo confirmar el pedido.');
+            }
+          });
+        } else {
+          await window.DreamUI.fail(res, 'No se pudo confirmar el pedido.');
+        }
+      } catch (e) { window.DreamUI.offline(); }
+    }));
   });
 
   // ================= 5. RECHAZAR Y ELIMINAR =================
@@ -373,28 +386,34 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('modal-reject-order').hidden = false;
   };
 
-  document.getElementById('btn-confirm-reject')?.addEventListener('click', async () => {
+  document.getElementById('btn-confirm-reject')?.addEventListener('click', (e) => {
     if(!orderToRejectId) return;
-    try {
-      const res = await fetch(`/api/orders/${orderToRejectId}/status`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'REJECTED' })
-      });
-      if (res.ok) {
-        document.getElementById('modal-reject-order').hidden = true;
-        loadOrders();
-      }
-    } catch(e) {}
+    window.DreamUI.busy(e.currentTarget, async () => {
+      try {
+        const res = await fetch(`/api/orders/${orderToRejectId}/status`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'REJECTED' })
+        });
+        if (res.ok) {
+          document.getElementById('modal-reject-order').hidden = true;
+          loadOrders();
+        } else {
+          await window.DreamUI.fail(res, 'No se pudo rechazar el pedido.');
+        }
+      } catch (err) { window.DreamUI.offline(); }
+    });
   });
 
   window.actionDelete = async function(id) {
-    window.showConfirmModal("Eliminar Pedido", "¿Seguro que deseas eliminar este pedido permanentemente?", "Eliminar", "btn-red", async () => {
+    window.showConfirmModal("Eliminar pedido", "¿Seguro que querés eliminar este pedido? No se puede deshacer.", "Eliminar", "btn-red", async () => {
       try {
         const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' });
         if (res.ok) {
           document.getElementById('modal-day-orders').hidden = true;
           loadOrders();
+        } else {
+          await window.DreamUI.fail(res, 'No se pudo eliminar el pedido.');
         }
-      } catch(e) {}
+      } catch(e) { window.DreamUI.offline(); }
     });
   };
 
@@ -488,8 +507,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const order = dbOrders.find(o => o.id === id);
     if (!order) return;
     const newStatus = order.status === 'CONFIRMED' ? 'COMPLETED' : 'CONFIRMED';
-    const actionName = newStatus === 'COMPLETED' ? 'completar' : 'revertir';
-    window.showConfirmModal(`¿${actionName.charAt(0).toUpperCase() + actionName.slice(1)} Pedido?`, `¿Seguro que deseas ${actionName} el pedido #${order.id}?`, 'Aceptar', 'btn-pink', async () => {
+    const delivering = newStatus === 'COMPLETED';
+    window.showConfirmModal(delivering ? 'Marcar como entregado' : 'Volver a agendado',
+      delivering ? `¿El pedido #${order.id} ya se entregó?` : `El pedido #${order.id} vuelve a la lista de agendados.`,
+      delivering ? 'Sí, entregado' : 'Volver a agendado', 'btn-pink', async () => {
       try {
         const res = await fetch(`/api/orders/${order.id}/status`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus })
@@ -497,8 +518,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (res.ok) {
           if (!fromList) document.getElementById('modal-view-order').hidden = true;
           loadOrders();
+        } else {
+          await window.DreamUI.fail(res, 'No se pudo cambiar el estado del pedido.');
         }
-      } catch(e) {}
+      } catch(e) { window.DreamUI.offline(); }
     });
   };
 
@@ -508,7 +531,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.actionCancelViewingOrder = function() {
     if (!viewingOrder) return;
-    window.showConfirmModal("Cancelar Pedido", `¿Seguro que deseas abortar el pedido #${viewingOrder.id}? Se marcará como CANCELADO.`, "Cancelar Pedido", "btn-red", async () => {
+    window.showConfirmModal("Cancelar pedido", `¿Seguro que querés cancelar el pedido #${viewingOrder.id}? Queda como Cancelado.`, "Cancelar pedido", "btn-red", async () => {
       try {
         const res = await fetch(`/api/orders/${viewingOrder.id}/status`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'CANCELLED' })
@@ -516,8 +539,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (res.ok) {
           document.getElementById('modal-view-order').hidden = true;
           loadOrders();
+        } else {
+          await window.DreamUI.fail(res, 'No se pudo cancelar el pedido.');
         }
-      } catch(e) {}
+      } catch(e) { window.DreamUI.offline(); }
     });
   };
 
@@ -537,12 +562,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // Botón "Imprimir Recibo"
   document.getElementById('btn-print-receipt')?.addEventListener('click', () => {
     if (!viewingOrder) return;
+    window.logDownload?.('recibo', viewingOrder.id); // auditoría: quién imprimió el recibo
     
     const printSection = document.getElementById('print-receipt-section');
     if (!printSection) return;
 
     const today = new Date();
-    const dateStr = today.toLocaleDateString('es-AR');
+    const dateStr = window.DreamFormat ? window.DreamFormat.date(today) : today.toLocaleDateString('es-AR');
     
     // Calcular saldo pendiente
     const pendingBalance = viewingOrder.totalPrice - viewingOrder.deposit;
@@ -552,10 +578,10 @@ document.addEventListener('DOMContentLoaded', () => {
     viewingOrder.items.forEach(i => {
       itemsHtml += `
         <div class="receipt-item" style="display: flex; justify-content: space-between; font-weight: bold; margin-top: 10px;">
-          <span>${i.productType}</span>
-          <span>$${i.price ? i.price.toLocaleString('es-AR') : '0'}</span>
+          <span>${esc(i.productType)}</span>
+          <span>${money(i.price)}</span>
         </div>
-        <div class="receipt-item-details" style="font-size: 0.9em; color: #444; margin-bottom: 5px; white-space: pre-wrap;">${i.details}</div>
+        <div class="receipt-item-details" style="font-size: 0.9em; color: #444; margin-bottom: 5px; white-space: pre-wrap;">${esc(i.details)}</div>
       `;
     });
 
@@ -578,10 +604,10 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         <hr style="border-top: 2px dashed #000; margin: 15px 0;">
         <div class="receipt-financials" style="text-align: right; font-size: 1.1em;">
-          <p><strong>Total:</strong> $${viewingOrder.totalPrice.toLocaleString('es-AR')}</p>
+          <p><strong>Total:</strong> ${money(viewingOrder.totalPrice)}</p>
           ${viewingOrder.couponCode ? `<p><strong>Cupón:</strong> ${esc(viewingOrder.couponCode)}</p>` : ''}
-          <p><strong>Seña:</strong> $${viewingOrder.deposit.toLocaleString('es-AR')}</p>
-          <p class="receipt-balance" style="font-size: 1.2em; margin-top: 10px;"><strong>Saldo Pendiente:</strong> $${pendingBalance.toLocaleString('es-AR')}</p>
+          <p><strong>Seña:</strong> ${money(viewingOrder.deposit)}</p>
+          <p class="receipt-balance" style="font-size: 1.2em; margin-top: 10px;"><strong>Saldo pendiente:</strong> ${money(pendingBalance)}</p>
         </div>
         <div style="text-align: center; margin-top: 40px; font-size: 0.9em; color: #666;">
           <p>¡Gracias por elegir Dulce Sueños!</p>
@@ -620,7 +646,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const newDeposit = parseFloat(document.getElementById('vo-deposit').value);
 
     if (newDeposit > newTotal) {
-      window.showPublicAlert("La seña no puede ser mayor al total del pedido.");
+      window.showErrorAlert("La seña no puede ser mayor al total del pedido.");
       return;
     }
 
@@ -649,7 +675,7 @@ document.addEventListener('DOMContentLoaded', () => {
         : [{ productType: "Detalles del Pedido", details: itemsText, price: newTotal }]
     };
 
-    handleDateWarning(newDate, async () => {
+    handleDateWarning(newDate, () => window.DreamUI.busy(document.getElementById('btn-save-edit'), async () => {
       try {
         const res = await fetch(`/api/orders/${viewingOrder.id}`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatedOrder)
@@ -658,11 +684,10 @@ document.addEventListener('DOMContentLoaded', () => {
           document.getElementById('modal-view-order').hidden = true;
           jumpCalendarToDate(newDate); // Actualiza y salta al calendario correcto
         } else {
-          const data = await res.json().catch(() => ({}));
-          window.showErrorAlert(data.message || 'No se pudo guardar el pedido.');
+          await window.DreamUI.fail(res, 'No se pudo guardar el pedido.');
         }
-      } catch(e) { console.error(e); }
-    });
+      } catch(e) { window.DreamUI.offline(); }
+    }));
   };
 
   // ================= 7. CREAR PEDIDO MANUAL =================
@@ -678,7 +703,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const res = await fetch('/api/products');
         if (res.ok) manualCatalogProducts = await res.json();
-      } catch (e) { console.error(e); }
+      } catch (e) { /* sin catálogo: igual se puede cargar una torta personalizada */ }
     }
     
     if (typeof window.addManualOrderItem === 'function') {
@@ -694,7 +719,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     let optionsHtml = '<option value="custom">Torta personalizada u otro</option>';
     manualCatalogProducts.forEach(p => {
-        optionsHtml += `<option value="${p.id}" data-name="${p.name}">Catálogo: ${p.name}</option>`;
+        optionsHtml += `<option value="${p.id}" data-name="${esc(p.name)}">Catálogo: ${esc(p.name)}</option>`;
     });
 
     const itemHtml = `
@@ -755,8 +780,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const deposit = parseFloat(document.getElementById('mo-deposit').value);
 
     if(deposit > total) {
-      if(window.showErrorAlert) window.showErrorAlert("La seña no puede ser mayor al total.");
-      else alert("La seña no puede ser mayor al total.");
+      window.showErrorAlert("La seña no puede ser mayor al total.");
       return;
     }
 
@@ -806,7 +830,8 @@ document.addEventListener('DOMContentLoaded', () => {
       items: items
     };
 
-    handleDateWarning(newDate, async () => {
+    const submitBtn = e.submitter || document.querySelector('#form-manual-order button[type="submit"]');
+    handleDateWarning(newDate, () => window.DreamUI.busy(submitBtn, async () => {
       try {
         const res = await fetch('/api/orders', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderData)
@@ -815,11 +840,10 @@ document.addEventListener('DOMContentLoaded', () => {
           document.getElementById('modal-manual-order').hidden = true;
           jumpCalendarToDate(newDate);
         } else {
-          const data = await res.json().catch(() => ({}));
-          window.showErrorAlert(data.message || 'No se pudo guardar el pedido.');
+          await window.DreamUI.fail(res, 'No se pudo guardar el pedido.');
         }
-      } catch(err) { console.error(err); }
-    });
+      } catch(err) { window.DreamUI.offline(); }
+    }));
   });
 
   // ================= 8. MODAL DEL CALENDARIO =================
@@ -858,8 +882,8 @@ document.addEventListener('DOMContentLoaded', () => {
       tbody.innerHTML += `
         <tr>
           <td class="cell-id" data-label="Pedido">#${o.id}</td>
-          <td data-label="Cliente"><span class="cell-strong">${o.customerName}</span><br><span class="cell-soft">${o.customerPhone}</span></td>
-          <td class="cell-money" data-label="Total">$${o.totalPrice.toLocaleString('es-AR')}</td>
+          <td data-label="Cliente"><span class="cell-strong">${esc(o.customerName)}</span><br><span class="cell-soft">${esc(o.customerPhone)}</span></td>
+          <td class="cell-money" data-label="Total">${money(o.totalPrice)}</td>
           <td data-label="Estado">${getStatusBadge(o.status)}</td>
           <td class="cell-actions"><div class="action-buttons-container">${actionsHtml}</div></td>
         </tr>
@@ -876,15 +900,15 @@ document.addEventListener('DOMContentLoaded', () => {
         await loadOrders(); 
         const dayOrders = dbOrders.filter(o => o.deliveryDate === currentDayModalDate && (o.status === 'CONFIRMED' || o.status === 'COMPLETED'));
         renderDayModalTable(dayOrders);
-      } else if (res.status === 400) {
-        const errData = await res.json();
+      } else {
+        const errData = await res.clone().json().catch(() => ({}));
         if (errData.error === 'INSUFFICIENT_STOCK') {
-          window.showConfirmModal('Alerta de Inventario', errData.message, 'Forzar', 'btn-red', () => {
-            setOrderStatus(id, newStatus, true);
-          });
+          window.showConfirmModal('Faltan insumos', errData.message, 'Confirmar igual', 'btn-red', () => setOrderStatus(id, newStatus, true));
+        } else {
+          await window.DreamUI.fail(res, 'No se pudo cambiar el estado del pedido.');
         }
       }
-    } catch(e) { console.error(e); }
+    } catch(e) { window.DreamUI.offline(); }
   };
 
   // ================= 9. BOTONES (antes eran onclick="…" en el HTML) =================
@@ -900,14 +924,43 @@ document.addEventListener('DOMContentLoaded', () => {
       case 'reject':   window.actionReject(id); break;
       case 'complete': window.actionToggleComplete(id, true); break;
       case 'delete':   window.actionDelete(id); break;
-      case 'deliver':  window.setOrderStatus(id, 'COMPLETED'); break;
-      case 'revert':   window.setOrderStatus(id, 'CONFIRMED'); break;
+      case 'deliver':  window.DreamUI.busy(btn, () => window.setOrderStatus(id, 'COMPLETED')); break;
+      case 'revert':   window.DreamUI.busy(btn, () => window.setOrderStatus(id, 'CONFIRMED')); break;
     }
   });
 
   document.getElementById('btn-new-order')?.addEventListener('click', () => window.openManualOrderModal());
   document.getElementById('btn-add-manual-item')?.addEventListener('click', () => window.addManualOrderItem());
   document.getElementById('co-payment-type')?.addEventListener('change', () => window.toggleDepositInput());
+  // "Avisar por WhatsApp" (solo está en el panel de administración): el servidor arma el mensaje
+  // según el estado actual del pedido y devuelve el link wa.me al número del cliente.
+  document.getElementById('btn-whatsapp-order')?.addEventListener('click', async (e) => {
+    if (!viewingOrder) return;
+    const btn = e.currentTarget;
+    // La ventana se abre YA (en el clic): si se abriera después de esperar al servidor,
+    // el navegador la bloquearía como ventana emergente.
+    const win = window.open('', '_blank');
+    btn.disabled = true;
+    try {
+      const res = await fetch(`/api/order-notices/${viewingOrder.id}/whatsapp`);
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && win) {
+        win.opener = null;
+        win.location.href = data.url;
+      } else {
+        if (win) win.close();
+        window.showErrorAlert(res.ok
+          ? 'El navegador bloqueó la ventana. Permití las ventanas emergentes de este sitio y probá de nuevo.'
+          : (data.message || 'No se pudo preparar el mensaje.'));
+      }
+    } catch (err) {
+      if (win) win.close();
+      window.showErrorAlert('No se pudo conectar con el servidor.');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
   document.getElementById('btn-complete-view-order')?.addEventListener('click', () => window.actionToggleCompleteViewingOrder());
   document.getElementById('btn-enable-edit')?.addEventListener('click', () => window.enableEditMode());
   document.getElementById('btn-cancel-view-order')?.addEventListener('click', () => window.actionCancelViewingOrder());

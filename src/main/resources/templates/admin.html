@@ -1,10 +1,11 @@
 <!doctype html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security6">
+<html lang="es-AR" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security6">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#ffffff" />
-  <link rel="icon" type="image/svg+xml" th:href="@{/img/favicon.svg}" />
+  <!-- Íconos en todos los tamaños (fragments/seo.html, paso 6.3) -->
+  <th:block th:replace="~{fragments/seo :: icons}"></th:block>
   <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
   <script th:src="@{/js/csrf.js}"></script>
   <title>Administración — Dulce Sueños</title>
@@ -14,8 +15,13 @@
   <link rel="stylesheet" th:href="@{/css/tokens.css}">
   <link rel="stylesheet" th:href="@{/css/components.css}">
   <link rel="stylesheet" th:href="@{/css/admin.css}">
+  <!-- Bakey, el asistente (paso 5.5) -->
+  <link rel="stylesheet" th:href="@{/css/bakey.css}">
   <!-- Modo oscuro guardado: se aplica antes de dibujar la página (sin "defer") -->
   <script th:src="@{/js/admin/theme-init.js}"></script>
+  <!-- Formatos argentinos ($ 12.345,50, dd/mm/aaaa) y ayudas de carga/envío (paso 6.8) -->
+  <script th:src="@{/js/format.js}"></script>
+  <script th:src="@{/js/admin/ui.js}"></script>
 </head>
 <body data-panel="admin">
 
@@ -41,14 +47,22 @@
           <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
           <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
         </button>
-        <button type="button" id="btn-notifications" class="header-icon-btn btn-bell" aria-label="Avisos de pedidos nuevos">
+        <button type="button" id="btn-notifications" class="header-icon-btn btn-bell" aria-label="Avisos" aria-haspopup="true" aria-expanded="false" aria-controls="notif-dropdown">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           <span id="notif-badge" style="display: none;">0</span>
         </button>
-        <!-- Menú desplegable de avisos (lo llena notifications-simple.js) -->
-        <div id="notif-dropdown" class="notification-dropdown" hidden>
-          <div class="notif-title">Pedidos nuevos para confirmar</div>
-          <div id="notif-list"></div>
+        <!-- Menú desplegable de avisos (lo llena notifications-simple.js con /api/notifications, paso 6.6) -->
+        <div id="notif-dropdown" class="notification-dropdown" role="region" aria-labelledby="notif-title" hidden>
+          <div class="notif-head">
+            <span class="notif-title" id="notif-title">Avisos</span>
+            <button type="button" class="notif-link" id="notif-read-all" hidden>Marcar todas como leídas</button>
+          </div>
+          <div id="notif-list" aria-live="polite"></div>
+          <!-- Sonido suave al llegar un pedido nuevo: apagado por defecto, se recuerda en este navegador -->
+          <label class="notif-sound">
+            <input type="checkbox" id="notif-sound">
+            <span>Sonido para pedidos nuevos</span>
+          </label>
         </div>
         <form id="logoutForm" th:action="@{/logout}" method="post">
           <button type="button" id="btn-logout-header" class="header-icon-btn btn-logout" aria-label="Cerrar sesión" title="Cerrar sesión">
@@ -78,6 +92,8 @@
           <button class="tab-btn" data-tab="galeria"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg><span>Galería</span></button>
           <button class="tab-btn" data-tab="armador"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 21h16M5 21v-7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7M5 16c1.5 0 1.5 1 3.5 1s2-1 3.5-1 1.5 1 3.5 1 2-1 3.5-1M12 12V8M12 5.5V5"/></svg><span>Armador de tortas</span></button>
           <button class="tab-btn" data-tab="equipo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 13a4 4 0 0 1-1-7.9A4 4 0 0 1 12 3a4 4 0 0 1 7 2.1A4 4 0 0 1 18 13v7H6v-7Z"/><path d="M6 17h12"/></svg><span>Equipo</span></button>
+          <button class="tab-btn" data-tab="registro"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1Z"/><path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M8 11h8M8 15h5"/></svg><span>Registro de actividad</span></button>
+          <button class="tab-btn" data-tab="backups"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg><span>Backups</span></button>
           <button class="tab-btn" data-tab="ajustes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span>Ajustes</span></button>
         </div>
         <div class="sidebar-foot">
@@ -87,6 +103,19 @@
     </aside>
 
     <main class="dashboard">
+      <!-- Aviso de seguridad (paso 3.2): la revisión semanal encontró el registro de auditoría alterado
+           (AuditIntegrityService). Queda visible hasta que el administrador toca "Entendido". -->
+      <div class="audit-alert" role="alert" th:if="${auditAlert != null}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17v.5"/></svg>
+        <div class="audit-alert__text">
+          <strong>Alerta de seguridad: el registro de auditoría fue alterado desde la base de datos.</strong>
+          <span th:text="|${auditAlert.message} Detectado el ${auditAlert.detectedAt}.|">El registro #45 fue modificado. Detectado el 12/10/2026 07:00.</span>
+          <span>Revisá quién tiene acceso a MySQL y compará con la última copia de seguridad.</span>
+        </div>
+        <form th:action="@{/admin/auditoria/entendido}" method="post">
+          <button type="submit" class="btn btn-grey btn-sm">Entendido</button>
+        </form>
+      </div>
       <!-- ==================== SECCIÓN RESUMEN (DASHBOARD ANALÍTICO) ==================== -->
       <section id="resumen" class="tab-content active">
         <div class="dashboard-header-bar">
@@ -105,6 +134,53 @@
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg> Descargar informe
             </button>
           </div>
+        </div>
+
+        <!-- Aviso de copias de seguridad (paso 4.2, BackupService.staleWarning): más de 48 horas sin un
+             backup bueno o backups desactivados. No tiene botón: se va solo cuando hay un backup bueno. -->
+        <div class="audit-alert backup-alert" role="alert" th:if="${backupWarning != null}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17v.5"/></svg>
+          <div class="audit-alert__text">
+            <strong th:text="${backupWarning.title}">Hace más de 2 días que no se hace una copia de seguridad.</strong>
+            <span th:text="${backupWarning.detail}">La última copia buena es del 09/10/2026 a las 03:00.</span>
+            <span th:text="${backupWarning.action}">Revisá que la computadora haya estado prendida a las 3:00.</span>
+          </div>
+        </div>
+
+        <!-- Recordatorios de hoy y vencidos (paso 5.2, admin/reminders.js). El admin ve también los del equipo. -->
+        <div id="reminders-box" class="chart-box reminders-box">
+          <div class="reminders-head">
+            <h3 id="reminders-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              Recordatorios de hoy
+            </h3>
+            <button type="button" id="btn-new-reminder" class="btn btn-pink btn-sm">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>
+              Nuevo recordatorio
+            </button>
+          </div>
+          <p class="reminders-sub">Los tuyos y los del equipo: los de hoy y los que quedaron pendientes.</p>
+          <ul id="reminders-list" class="reminders-list" aria-labelledby="reminders-title"></ul>
+          <p id="reminders-empty" class="reminders-empty" hidden>No hay recordatorios para hoy.</p>
+          <!-- Confirmación al guardar uno para otro día (si no, parece que no se guardó: no es "de hoy") -->
+          <p id="reminders-status" class="reminders-status" role="status" hidden></p>
+        </div>
+
+        <!-- Uso de Bakey hoy (paso 5.6, bakey.js lo completa con GET /api/bakey/usage). Solo en el admin. -->
+        <div id="bakey-usage" class="chart-box bk-usage" hidden>
+          <div class="reminders-head">
+            <h3>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Uso de Bakey hoy
+            </h3>
+          </div>
+          <p class="reminders-sub" id="bk-usage-sub">Cuántas veces se usó el asistente hoy (se reinicia cada día).</p>
+          <dl class="bk-usage__grid">
+            <div><dt>Mensajes</dt><dd id="bk-usage-messages">0</dd></div>
+            <div><dt>Acciones propuestas</dt><dd id="bk-usage-proposed">0</dd></div>
+            <div><dt>Acciones confirmadas</dt><dd id="bk-usage-confirmed">0</dd></div>
+            <div><dt>Errores</dt><dd id="bk-usage-errors">0</dd></div>
+          </dl>
         </div>
 
         <!-- FILA 1: TARJETAS KPI -->
@@ -381,6 +457,69 @@
             <label class="visually-hidden" for="search-client">Buscar cliente</label>
             <input type="search" id="search-client" class="form-input search-large" placeholder="Buscar por nombre o teléfono" autocomplete="off">
             <div class="filter-chips" id="client-filters" role="group" aria-label="Filtrar por etiqueta"></div>
+          </div>
+        </div>
+
+        <!-- Fidelización: saludos de cumpleaños con cupón de regalo (loyalty.js).
+             La configuración se guarda en la base de datos (business_settings). -->
+        <div class="panel-block loyalty-block" id="loyalty-block">
+          <h3 class="section-label">Fidelización</h3>
+          <p class="form-hint loyalty-intro">Cada día a las 9:00 el sistema le manda un email de cumpleaños con un cupón de regalo a los clientes que aceptaron recibir promociones.</p>
+
+          <div class="loyalty-config">
+            <label class="toggle-switch">
+              <input type="checkbox" id="loyalty-enabled">
+              <span class="slider"></span>
+              Saludos automáticos
+            </label>
+            <div class="form-group loyalty-percent">
+              <label for="loyalty-percentage">Descuento del cupón</label>
+              <div class="input-group">
+                <input type="number" id="loyalty-percentage" class="form-input price-input" min="1" max="100" step="1" inputmode="numeric">
+                <span aria-hidden="true">%</span>
+              </div>
+            </div>
+            <button type="button" id="btn-loyalty-save" class="btn btn-pink">Guardar descuento</button>
+            <button type="button" id="btn-loyalty-run" class="btn btn-grey">Revisar cumpleaños de hoy</button>
+          </div>
+          <p class="form-hint" id="loyalty-hint" role="status"></p>
+
+          <h3 class="section-label loyalty-subtitle">Próximos cumpleaños (30 días)</h3>
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr><th>Cliente</th><th>Cumpleaños</th><th>Emails</th><th><span class="visually-hidden">Acciones</span></th></tr>
+              </thead>
+              <tbody id="loyalty-tbody"></tbody>
+            </table>
+          </div>
+
+          <!-- Campañas de promociones por email (campaigns.js). Solo les llegan a quienes aceptaron promociones. -->
+          <div class="campaigns" id="campaigns-block">
+            <div class="config-block-head campaigns-head">
+              <h3 class="section-label">Campañas</h3>
+              <button type="button" id="btn-new-campaign" class="btn btn-pink">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg> Nueva campaña
+              </button>
+            </div>
+            <p class="form-hint campaigns-intro">Mandá promociones por email a tus clientes. Salen de a una, con 2 segundos entre cada email, para no superar el límite de Gmail.</p>
+            <div class="campaigns-limit">
+              <div class="form-group">
+                <label for="campaign-daily-limit">Máximo de emails por día</label>
+                <input type="number" id="campaign-daily-limit" class="form-input" min="1" max="2000" step="1" inputmode="numeric" aria-describedby="campaign-daily-limit-hint">
+              </div>
+              <button type="button" id="btn-save-daily-limit" class="btn btn-grey">Guardar máximo</button>
+            </div>
+            <p class="form-hint" id="campaign-daily-limit-hint">Cuenta todos los emails del día (también los de cumpleaños). Gmail gratis permite unos 500. Si se llega al máximo, la campaña sigue al día siguiente.</p>
+
+            <div class="table-responsive campaigns-table">
+              <table class="admin-table">
+                <thead>
+                  <tr><th>Campaña</th><th>Estado</th><th>A quién</th><th>Progreso</th><th>Fecha</th><th><span class="visually-hidden">Acciones</span></th></tr>
+                </thead>
+                <tbody id="campaigns-tbody"></tbody>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -684,46 +823,291 @@
         </div>
       </section>
 
+      <!-- ==================== SECCIÓN REGISTRO DE ACTIVIDAD (auditoría, paso 3.4) ====================
+           Solo lectura: no hay ninguna opción para editar ni borrar registros (ni acá ni en la API).
+           La paginación y los filtros los hace el servidor (GET /api/audit/logs). JS: admin/audit.js -->
+      <section id="registro" class="tab-content">
+        <div class="panel-head">
+          <div class="panel-head-text">
+            <h2 class="panel-title">Registro de actividad</h2>
+            <p class="panel-sub">Quién hizo qué y cuándo en el sistema. Los registros no se pueden cambiar ni borrar.</p>
+          </div>
+          <div class="panel-actions">
+            <button type="button" id="btn-audit-verify" class="btn btn-grey">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg> Verificar integridad
+            </button>
+            <button type="button" id="btn-audit-csv" class="btn btn-grey" title="Con los filtros aplicados">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg> Excel (CSV)
+            </button>
+            <button type="button" id="btn-audit-pdf" class="btn btn-pink" title="Con los filtros aplicados">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg> PDF
+            </button>
+          </div>
+        </div>
+
+        <form id="audit-filters" class="audit-filters" novalidate>
+          <div class="form-group">
+            <label for="audit-from">Desde</label>
+            <input type="date" id="audit-from" class="form-input">
+          </div>
+          <div class="form-group">
+            <label for="audit-to">Hasta</label>
+            <input type="date" id="audit-to" class="form-input">
+          </div>
+          <div class="form-group">
+            <label for="audit-actor">Usuario</label>
+            <select id="audit-actor" class="form-input"><option value="">Todos</option></select>
+          </div>
+          <div class="form-group">
+            <label for="audit-module">Módulo</label>
+            <select id="audit-module" class="form-input"><option value="">Todos</option></select>
+          </div>
+          <div class="form-group">
+            <label for="audit-action">Acción</label>
+            <select id="audit-action" class="form-input"><option value="">Todas</option></select>
+          </div>
+          <div class="form-group audit-filters__search">
+            <label for="audit-q">Buscar</label>
+            <input type="search" id="audit-q" class="form-input" placeholder="Texto, nombre, n° de pedido…" autocomplete="off">
+          </div>
+          <div class="audit-filters__actions">
+            <button type="submit" class="btn btn-pink btn-sm">Buscar</button>
+            <button type="button" id="audit-clear" class="btn btn-grey btn-sm">Limpiar</button>
+          </div>
+        </form>
+
+        <p class="audit-summary" id="audit-summary" aria-live="polite"></p>
+
+        <div class="table-responsive">
+          <table class="admin-table audit-table">
+            <thead>
+              <tr>
+                <th>Fecha y hora</th>
+                <th>Usuario</th>
+                <th>Rol</th>
+                <th>Módulo</th>
+                <th>Acción</th>
+                <th>Descripción</th>
+              </tr>
+            </thead>
+            <tbody id="audit-tbody"></tbody>
+          </table>
+        </div>
+
+        <nav class="audit-pagination" id="audit-pagination" aria-label="Páginas del registro" hidden>
+          <button type="button" class="btn btn-grey btn-sm" id="audit-prev">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m15 18-6-6 6-6"/></svg> Anterior
+          </button>
+          <span id="audit-page-info"></span>
+          <button type="button" class="btn btn-grey btn-sm" id="audit-next">
+            Siguiente <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+        </nav>
+      </section>
+
+      <!-- ==================== SECCIÓN BACKUPS (paso 4.3, solo admin) ====================
+           Lo arma admin/backups.js con GET /api/backups (BackupRestController). -->
+      <section id="backups" class="tab-content">
+        <div class="panel-head">
+          <div class="panel-head-text">
+            <h2 class="panel-title">Copias de seguridad</h2>
+            <p class="panel-sub">Se hacen solas todos los días a las 3:00 y se guardan en esta computadora.</p>
+          </div>
+          <div class="panel-actions">
+            <button type="button" id="btn-backup-now" class="btn btn-pink">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg> Hacer backup ahora
+            </button>
+          </div>
+        </div>
+
+        <!-- Aviso (backups desactivados, más de 48 h sin backup o el último intento falló) -->
+        <div class="audit-alert backup-alert" id="backup-panel-alert" role="alert" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17v.5"/></svg>
+          <div class="audit-alert__text" id="backup-panel-alert-text"></div>
+        </div>
+
+        <div class="backup-stats">
+          <div class="backup-stat">
+            <span class="backup-stat__label">Última copia</span>
+            <strong class="backup-stat__value" id="backup-last">—</strong>
+            <span class="backup-stat__sub" id="backup-last-sub"></span>
+          </div>
+          <div class="backup-stat">
+            <span class="backup-stat__label">Espacio que ocupan</span>
+            <strong class="backup-stat__value" id="backup-used">—</strong>
+            <span class="backup-stat__sub" id="backup-free"></span>
+          </div>
+          <div class="backup-stat">
+            <span class="backup-stat__label">Copias guardadas</span>
+            <strong class="backup-stat__value" id="backup-count">—</strong>
+            <span class="backup-stat__sub">Se guardan hasta 7 diarias, 4 semanales y 12 mensuales</span>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="admin-table backup-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>Tamaño</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="backup-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
       <!-- ==================== SECCIÓN AJUSTES ==================== -->
       <section id="ajustes" class="tab-content">
         <div class="panel-head">
           <div class="panel-head-text">
             <h2 class="panel-title">Ajustes</h2>
-            <p class="panel-sub">Datos del negocio que usa la tienda.</p>
+            <p class="panel-sub">Datos del negocio, correo de envío y pausa de pedidos.</p>
           </div>
         </div>
+        <!-- Configuración del negocio (paso 6.4, settings.js → /api/settings, BusinessProfileService).
+             Estos datos salen en toda la tienda, en los emails y en los mensajes de WhatsApp. -->
         <form id="settings-form" class="config-block settings-form" novalidate>
-          <h3 class="section-label">WhatsApp del negocio</h3>
-          <p class="form-hint settings-intro">A este número llegan los pedidos de la tienda y los botones "Escribinos".</p>
-          <!-- País + número local. settings.js los junta en el formato que usa WhatsApp (ej: 549 + 3765224107) -->
-          <div class="phone-field">
-            <div class="form-group phone-country">
-              <label for="setting-country">País</label>
-              <select id="setting-country" class="form-input">
-                <option value="549" selected>Argentina (+54 9)</option>
-                <option value="595">Paraguay (+595)</option>
-                <option value="55">Brasil (+55)</option>
-                <option value="598">Uruguay (+598)</option>
-                <option value="56">Chile (+56)</option>
-                <option value="591">Bolivia (+591)</option>
-                <option value="34">España (+34)</option>
-                <option value="1">Estados Unidos (+1)</option>
-              </select>
+          <h3 class="section-label">Configuración del negocio</h3>
+          <p class="form-hint settings-intro">Estos datos se muestran en la tienda, en los emails y en las páginas legales. Los cambios se ven enseguida.</p>
+
+          <!-- Pausar pedidos: arriba de todo porque es lo que se usa en vacaciones -->
+          <label class="checkbox-label biz-pause">
+            <input type="checkbox" id="biz-ordersPaused">
+            <span>Pausar los pedidos online <small class="form-hint">La tienda avisa y no deja enviar pedidos. Vos podés seguir cargándolos desde el panel.</small></span>
+          </label>
+
+          <div class="form-grid-2 biz-grid">
+            <div class="form-group form-group--full">
+              <label for="biz-name">Nombre del negocio</label>
+              <input type="text" id="biz-name" class="form-input" maxlength="80" required aria-describedby="biz-name-error">
+              <p class="form-error" id="biz-name-error" hidden></p>
             </div>
-            <div class="form-group phone-number">
-              <label for="setting-whatsapp">Número</label>
-              <input type="tel" id="setting-whatsapp" class="form-input" inputmode="tel" autocomplete="off" required placeholder="3765224107" aria-describedby="setting-whatsapp-hint setting-whatsapp-error">
+
+            <div class="form-group form-group--full">
+              <label for="biz-whatsapp">WhatsApp</label>
+              <!-- Formato argentino: se guarda como 549 + código de área + número (ej: 5493764159312) -->
+              <div class="phone-input">
+                <span class="phone-prefix" aria-hidden="true">+54 9</span>
+                <input type="tel" id="biz-whatsapp" class="form-input" inputmode="tel" autocomplete="off" required placeholder="3764 159312" aria-describedby="biz-whatsapp-hint biz-whatsapp-error">
+              </div>
+              <p class="form-hint" id="biz-whatsapp-hint">Código de área y número, sin el 0 ni el 15. A este número llegan los pedidos de la tienda.</p>
+              <p class="form-error" id="biz-whatsapp-error" hidden></p>
+              <p class="phone-preview" id="biz-whatsapp-preview" aria-live="polite"></p>
+              <a id="biz-whatsapp-test" class="btn btn-grey" href="#" target="_blank" rel="noopener">Probar el número</a>
+            </div>
+
+            <div class="form-group">
+              <label for="biz-email">Email de contacto</label>
+              <input type="email" id="biz-email" class="form-input" inputmode="email" maxlength="150" placeholder="dulcesuenos@gmail.com" aria-describedby="biz-email-error">
+              <p class="form-error" id="biz-email-error" hidden></p>
+            </div>
+            <div class="form-group">
+              <label for="biz-address">Dirección o zona</label>
+              <input type="text" id="biz-address" class="form-input" maxlength="200" placeholder="Posadas, Misiones">
+            </div>
+
+            <div class="form-group">
+              <label for="biz-instagram">Instagram</label>
+              <input type="text" id="biz-instagram" class="form-input" maxlength="80" autocomplete="off" placeholder="dulcessuenos_posadas" aria-describedby="biz-instagram-error">
+              <p class="form-error" id="biz-instagram-error" hidden></p>
+            </div>
+            <div class="form-group">
+              <label for="biz-facebook">Facebook</label>
+              <input type="text" id="biz-facebook" class="form-input" maxlength="120" autocomplete="off" placeholder="Usuario de la página (opcional)" aria-describedby="biz-facebook-error">
+              <p class="form-error" id="biz-facebook-error" hidden></p>
+            </div>
+
+            <div class="form-group form-group--full">
+              <label for="biz-openingHours">Horario de atención</label>
+              <input type="text" id="biz-openingHours" class="form-input" maxlength="200" placeholder="Lunes a sábado de 9 a 19 h">
+            </div>
+
+            <div class="form-group">
+              <label for="biz-minLeadDays">Días de anticipación para pedir</label>
+              <input type="number" id="biz-minLeadDays" class="form-input" min="0" max="60" step="1" inputmode="numeric" required aria-describedby="biz-minLeadDays-error">
+              <p class="form-error" id="biz-minLeadDays-error" hidden></p>
+            </div>
+            <div class="form-group">
+              <label for="biz-depositPercent">Seña sugerida (%)</label>
+              <input type="number" id="biz-depositPercent" class="form-input" min="0" max="100" step="1" inputmode="numeric" required aria-describedby="biz-depositPercent-error">
+              <p class="form-error" id="biz-depositPercent-error" hidden></p>
+            </div>
+
+            <div class="form-group form-group--full">
+              <label for="biz-storeBanner">Mensaje de la tienda (opcional)</label>
+              <input type="text" id="biz-storeBanner" class="form-input" maxlength="200" placeholder="Ej: ¡Ya podés pedir las tortas para el Día de la Madre!" aria-describedby="biz-storeBanner-hint">
+              <p class="form-hint" id="biz-storeBanner-hint">Se muestra arriba en la tienda. Dejalo vacío para no mostrar nada.</p>
             </div>
           </div>
-          <p class="form-hint" id="setting-whatsapp-hint">Código de área y número, sin el 0 ni el 15. Ejemplo: 3765224107.</p>
-          <p class="form-error" id="setting-whatsapp-error" hidden></p>
-          <p class="phone-preview" id="setting-whatsapp-preview" aria-live="polite"></p>
+
           <div class="form-actions">
-            <a id="setting-whatsapp-test" class="btn btn-grey" href="#" target="_blank" rel="noopener">Probar el número</a>
             <button type="submit" class="btn btn-pink">Guardar</button>
           </div>
           <p class="settings-status" id="settings-status" role="status" hidden></p>
         </form>
+
+        <!-- Correo de envío (settings.js): la cuenta desde la que salen los emails a los clientes.
+             Se guarda en la base con la contraseña cifrada; la contraseña nunca vuelve al navegador. -->
+        <div class="config-block settings-form" id="mail-account-block">
+          <h3 class="section-label">Correo de envío</h3>
+          <p class="form-hint settings-intro">Desde esta cuenta salen los emails a los clientes: saludos de cumpleaños y promociones. Lo ideal es el Gmail del emprendimiento.</p>
+          <p class="mail-status" id="mail-status" role="status"></p>
+
+          <form id="mail-form" class="form-grid mail-form" novalidate>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="mail-username">Email de la cuenta</label>
+                <input type="email" id="mail-username" class="form-input" inputmode="email" autocomplete="off" maxlength="150" placeholder="dulcesuenos@gmail.com">
+              </div>
+              <div class="form-group">
+                <label for="mail-password">Contraseña de aplicación</label>
+                <input type="password" id="mail-password" class="form-input" autocomplete="new-password" maxlength="200" aria-describedby="mail-password-hint">
+                <p class="form-hint" id="mail-password-hint">16 letras que da Gmail. No es la contraseña normal de la cuenta.</p>
+              </div>
+            </div>
+
+            <details class="mail-details">
+              <summary>¿Cómo consigo la contraseña de aplicación de Gmail?</summary>
+              <ol class="mail-steps">
+                <li>Entrá a la cuenta de Google del emprendimiento y abrí <a href="https://myaccount.google.com/security" target="_blank" rel="noopener">Seguridad</a>.</li>
+                <li>Activá la <strong>Verificación en dos pasos</strong> (Google lo pide para crear la contraseña).</li>
+                <li>Abrí <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Contraseñas de aplicaciones</a>, escribí un nombre (por ejemplo "DreamBake") y tocá Crear.</li>
+                <li>Copiá las 16 letras que aparecen y pegalas acá arriba.</li>
+              </ol>
+            </details>
+
+            <details class="mail-details" id="mail-advanced">
+              <summary>Otro proveedor de correo (avanzado)</summary>
+              <div class="form-grid-2 mail-advanced-fields">
+                <div class="form-group">
+                  <label for="mail-host">Servidor SMTP</label>
+                  <input type="text" id="mail-host" class="form-input" autocomplete="off" maxlength="100" placeholder="smtp.gmail.com">
+                </div>
+                <div class="form-group">
+                  <label for="mail-port">Puerto</label>
+                  <input type="number" id="mail-port" class="form-input" min="1" max="65535" inputmode="numeric" placeholder="587">
+                </div>
+              </div>
+              <label class="checkbox-label">
+                <input type="checkbox" id="mail-starttls" checked> Conexión segura (STARTTLS)
+              </label>
+            </details>
+
+            <p class="form-error" id="mail-error" role="alert" hidden></p>
+            <div class="form-actions">
+              <button type="button" class="btn btn-grey" id="btn-mail-remove" hidden>Quitar cuenta</button>
+              <button type="submit" class="btn btn-pink" id="btn-mail-save">Guardar y probar conexión</button>
+            </div>
+          </form>
+
+          <div class="mail-test">
+            <p class="form-hint">Para comprobar cómo llegan los emails, mandá uno de prueba a tu casilla (la de tu usuario de administrador).</p>
+            <button type="button" class="btn btn-grey" id="btn-email-test">Enviar email de prueba</button>
+          </div>
+        </div>
       </section>
 
     </main>
@@ -731,9 +1115,9 @@
 
   <!-- ==================== MODALES DE PEDIDOS ==================== -->
   <div id="modal-manual-order" class="modal-overlay" hidden style="z-index: 2100;">
-    <div class="modal-card modal-large">
+    <div class="modal-card modal-large" role="dialog" aria-modal="true" aria-labelledby="modal-manual-order-title">
       <div class="modal-header">
-        <h3>Nuevo pedido</h3>
+        <h3 id="modal-manual-order-title">Nuevo pedido</h3>
         <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-manual-order">&times;</button>
       </div>
       <div class="modal-body">
@@ -789,9 +1173,9 @@
   </div>
 
   <div id="modal-reject-order" class="modal-overlay" hidden style="z-index: 2400;">
-    <div class="modal-card confirm-card">
+    <div class="modal-card confirm-card" role="dialog" aria-modal="true" aria-labelledby="modal-reject-order-title">
       <div class="modal-header">
-        <h3>¿Rechazar este pedido?</h3>
+        <h3 id="modal-reject-order-title">¿Rechazar este pedido?</h3>
       </div>
       <div class="modal-body">
         <p class="modal-message">El pedido pasa a "Cancelados". El cliente no recibe ningún aviso automático.</p>
@@ -804,9 +1188,9 @@
   </div>
 
   <div id="modal-past-date" class="modal-overlay" hidden style="z-index: 2500;">
-    <div class="modal-card confirm-card">
+    <div class="modal-card confirm-card" role="dialog" aria-modal="true" aria-labelledby="modal-past-date-title">
       <div class="modal-header">
-        <h3>La fecha ya pasó</h3>
+        <h3 id="modal-past-date-title">La fecha ya pasó</h3>
       </div>
       <div class="modal-body">
         <p class="modal-message">La fecha de entrega que pusiste es anterior a hoy. ¿Querés guardarla igual?</p>
@@ -819,9 +1203,9 @@
   </div>
 
   <div id="modal-confirm-order" class="modal-overlay" hidden style="z-index: 2300;">
-    <div class="modal-card">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-confirm-order-title">
       <div class="modal-header">
-        <h3>Confirmar pedido #<span id="co-id-label"></span></h3>
+        <h3 id="modal-confirm-order-title">Confirmar pedido #<span id="co-id-label"></span></h3>
         <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-confirm-order">&times;</button>
       </div>
       <div class="modal-body">
@@ -849,7 +1233,7 @@
   </div>
 
   <div id="modal-view-order" class="modal-overlay" hidden style="z-index: 2200;">
-    <div class="modal-card modal-large">
+    <div class="modal-card modal-large" role="dialog" aria-modal="true" aria-labelledby="view-order-title">
       <div class="modal-header">
         <h3 id="view-order-title">Pedido #</h3>
         <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-view-order">&times;</button>
@@ -861,6 +1245,11 @@
           <button type="button" class="btn btn-grey btn-sm" id="btn-print-receipt" style="display: none;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
             Imprimir recibo
+          </button>
+          <!-- Solo en el panel de administración: el mensaje lleva el total y la seña (orders.js lo conecta) -->
+          <button type="button" class="btn btn-grey btn-sm" id="btn-whatsapp-order">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 20.5l1.7-5.4A8.4 8.4 0 1 1 21 11.5Z"/></svg>
+            Avisar por WhatsApp
           </button>
           <button type="button" class="btn btn-grey btn-sm" id="btn-enable-edit">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
@@ -924,7 +1313,7 @@
   </div>
 
   <div id="modal-day-orders" class="modal-overlay" hidden style="z-index: 2000;">
-    <div class="modal-card modal-large">
+    <div class="modal-card modal-large" role="dialog" aria-modal="true" aria-labelledby="day-orders-title">
       <div class="modal-header">
         <h3 id="day-orders-title">Entregas del día</h3>
         <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-day-orders">&times;</button>
@@ -941,7 +1330,7 @@
   </div>
 
   <div id="modal-custom-prompt" class="modal-overlay" hidden style="z-index: 3000;">
-    <div class="modal-card confirm-card">
+    <div class="modal-card confirm-card" role="dialog" aria-modal="true" aria-labelledby="custom-prompt-title">
       <div class="modal-header">
         <h3 id="custom-prompt-title"></h3>
       </div>
@@ -959,7 +1348,7 @@
 
   <!-- ==================== MODALES GENERALES Y OTROS MÓDULOS ==================== -->
   <div id="modal-confirm" class="modal-overlay" hidden>
-    <div class="modal-card confirm-card">
+    <div class="modal-card confirm-card" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
       <div class="modal-header">
         <h3 id="confirm-title">Confirmar</h3>
       </div>
@@ -974,7 +1363,7 @@
   </div>
 
   <div id="modal-view-recipe" class="modal-overlay" hidden>
-    <div class="modal-card">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="view-recipe-title">
       <div class="modal-header">
         <h3 id="view-recipe-title">Receta</h3>
         <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-view-recipe">&times;</button>
@@ -992,9 +1381,9 @@
   </div>
 
   <div id="modal-alert" class="modal-overlay" hidden>
-    <div class="modal-card confirm-card">
+    <div class="modal-card confirm-card" role="dialog" aria-modal="true" aria-labelledby="alert-title">
       <div class="modal-header">
-        <h3>Revisá esto</h3>
+        <h3 id="alert-title">Revisá esto</h3>
         <button type="button" class="close-modal" aria-label="Cerrar">&times;</button>
       </div>
       <div class="modal-body">
@@ -1006,8 +1395,49 @@
     </div>
   </div>
 
+  <!-- Nuevo recordatorio (paso 5.2, admin/reminders.js). Fecha y hora en dos campos: más fácil en el celular. -->
+  <div id="modal-reminder" class="modal-overlay" hidden>
+    <div class="modal-card confirm-card" role="dialog" aria-modal="true" aria-labelledby="modal-reminder-title">
+      <div class="modal-header">
+        <h3 id="modal-reminder-title">Nuevo recordatorio</h3>
+        <button type="button" class="close-modal" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="reminder-form" class="form-grid" novalidate>
+          <div class="form-group">
+            <label for="rem-title">Qué hay que hacer</label>
+            <input type="text" id="rem-title" class="form-input" maxlength="120" placeholder="Ej: Hornear los bizcochuelos" required>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="rem-date">Día</label>
+              <input type="date" id="rem-date" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label for="rem-time">Hora</label>
+              <input type="time" id="rem-time" class="form-input" step="300" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="rem-notes">Notas <span class="label-hint">(opcional)</span></label>
+            <textarea id="rem-notes" class="form-input textarea-input" rows="3" maxlength="1000"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="rem-order">Pedido N° <span class="label-hint">(opcional)</span></label>
+            <input type="number" id="rem-order" class="form-input" min="1" step="1" inputmode="numeric" placeholder="Ej: 45">
+          </div>
+          <p class="reminders-form-hint">Te avisamos en el panel cuando llegue la hora y, si tenés email, también una hora antes.</p>
+          <div class="form-actions">
+            <button type="button" class="btn btn-grey btn-uniform close-modal">Cancelar</button>
+            <button type="submit" id="rem-save" class="btn btn-pink btn-uniform">Guardar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <div id="modal-inventory-form" class="modal-overlay" hidden>
-    <div class="modal-card confirm-card">
+    <div class="modal-card confirm-card" role="dialog" aria-modal="true" aria-labelledby="inv-modal-title">
       <div class="modal-header">
         <h3 id="inv-modal-title">Nuevo insumo</h3>
         <button type="button" class="close-modal" aria-label="Cerrar">&times;</button>
@@ -1064,9 +1494,9 @@
   </div>
 
   <div id="modal-category" class="modal-overlay" hidden>
-    <div class="modal-card">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-category-title">
       <div class="modal-header">
-        <h3>Categorías de productos</h3>
+        <h3 id="modal-category-title">Categorías de productos</h3>
         <button type="button" class="close-modal" aria-label="Cerrar">&times;</button>
       </div>
       <div class="modal-body">
@@ -1082,9 +1512,9 @@
   </div>
 
   <div id="modal-gallery-picker" class="modal-overlay" hidden>
-    <div class="modal-card modal-large">
+    <div class="modal-card modal-large" role="dialog" aria-modal="true" aria-labelledby="modal-gallery-picker-title">
       <div class="modal-header">
-        <h3>Elegir una foto de la galería</h3>
+        <h3 id="modal-gallery-picker-title">Elegir una foto de la galería</h3>
         <button type="button" class="close-modal" aria-label="Cerrar">&times;</button>
       </div>
       <div class="modal-body">
@@ -1094,7 +1524,7 @@
   </div>
 
   <div id="modal-client-form" class="modal-overlay" hidden>
-    <div class="modal-card">
+    <div class="modal-card modal-large" role="dialog" aria-modal="true" aria-labelledby="client-modal-title">
       <div class="modal-header">
         <h3 id="client-modal-title">Nuevo cliente</h3>
         <button type="button" class="close-modal" aria-label="Cerrar">&times;</button>
@@ -1135,13 +1565,134 @@
             <button type="submit" class="btn btn-pink btn-uniform">Guardar</button>
           </div>
         </form>
+
+        <!-- Emails del cliente (solo al editar): permiso para promociones e historial de envíos (clients.js).
+             El panel solo puede DESACTIVAR el permiso; activarlo lo hace el cliente en la tienda (Ley 25.326). -->
+        <div class="config-block client-emails" id="client-emails-block" hidden>
+          <h3 class="section-label">Emails</h3>
+          <div class="client-consent-row">
+            <p class="modal-message" id="client-consent-status"></p>
+            <button type="button" class="btn btn-grey btn-sm" id="btn-client-unsubscribe" hidden>Dar de baja de promociones</button>
+          </div>
+          <p class="form-hint">Solo el cliente puede aceptar recibir promociones, tildando la casilla al hacer un pedido en la tienda.</p>
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead><tr><th>Fecha</th><th>Tipo</th><th>Asunto</th><th>Estado</th></tr></thead>
+              <tbody id="client-emails-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Editor de campañas (campaigns.js): formulario a la izquierda y vista previa real del email a la derecha -->
+  <div id="modal-campaign" class="modal-overlay" hidden>
+    <div class="modal-card modal-large campaign-modal" role="dialog" aria-modal="true" aria-labelledby="campaign-modal-title">
+      <div class="modal-header">
+        <h3 id="campaign-modal-title">Nueva campaña</h3>
+        <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-campaign">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="settings-status campaign-note" id="campaign-note" role="status" hidden></p>
+        <div class="campaign-editor">
+          <form id="campaign-form" class="form-grid campaign-form" novalidate>
+            <input type="hidden" id="campaign-id">
+            <div class="form-group">
+              <label for="campaign-name">Nombre de la campaña <span class="label-hint">(solo lo ves vos)</span></label>
+              <input type="text" id="campaign-name" class="form-input" maxlength="120" required placeholder="Ej: Promo Día de la Madre">
+            </div>
+            <div class="form-group">
+              <label for="campaign-subject">Asunto del email</label>
+              <input type="text" id="campaign-subject" class="form-input" maxlength="150" required placeholder="Ej: 20% en tortas para mamá">
+            </div>
+            <div class="form-group">
+              <label for="campaign-title">Título</label>
+              <input type="text" id="campaign-title" class="form-input" maxlength="150" placeholder="Ej: ¡Llega el Día de la Madre!">
+            </div>
+            <div class="form-group">
+              <label for="campaign-text">Texto</label>
+              <textarea id="campaign-text" class="form-input" rows="6" maxlength="5000" aria-describedby="campaign-text-hint" placeholder="Contá la promo. Dejá una línea en blanco para empezar otro párrafo."></textarea>
+              <p class="form-hint" id="campaign-text-hint">Se escribe como texto común: no hace falta saber de diseño.</p>
+            </div>
+
+            <div class="form-group">
+              <span class="field-label" id="campaign-image-label">Foto <span class="label-hint">(opcional)</span></span>
+              <div class="campaign-image" aria-labelledby="campaign-image-label">
+                <div class="campaign-image-preview" id="campaign-image-preview"><span class="cell-soft">Sin foto</span></div>
+                <div class="campaign-image-actions">
+                  <button type="button" class="btn btn-grey btn-sm" id="btn-campaign-image">Elegir de la galería</button>
+                  <button type="button" class="btn btn-grey btn-sm" id="btn-campaign-image-remove" hidden>Quitar foto</button>
+                </div>
+              </div>
+              <div class="gallery-grid campaign-gallery" id="campaign-gallery" hidden></div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="campaign-button-text">Botón <span class="label-hint">(opcional)</span></label>
+                <input type="text" id="campaign-button-text" class="form-input" maxlength="40" placeholder="Texto, ej: Ver tortas">
+              </div>
+              <div class="form-group">
+                <label for="campaign-button-url">Link del botón</label>
+                <input type="text" id="campaign-button-url" class="form-input" maxlength="500" placeholder="/products" aria-describedby="campaign-button-url-hint">
+                <p class="form-hint" id="campaign-button-url-hint">Vacío = la página de productos.</p>
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="campaign-audience">¿A quién le llega?</label>
+                <select id="campaign-audience" class="form-input">
+                  <option value="ALL_CONSENTED">Todos los que aceptan promociones</option>
+                  <option value="TAG">Los de una etiqueta</option>
+                  <option value="BIRTHDAY_THIS_MONTH">Los que cumplen años este mes</option>
+                  <option value="INACTIVE_90_DAYS">Los que no compran hace más de 90 días</option>
+                </select>
+              </div>
+              <div class="form-group" id="campaign-tag-group" hidden>
+                <label for="campaign-tag">Etiqueta</label>
+                <select id="campaign-tag" class="form-input"></select>
+              </div>
+            </div>
+            <p class="campaign-count" id="campaign-count" role="status" aria-live="polite"></p>
+
+            <div class="form-group">
+              <label for="campaign-coupon">Cupón <span class="label-hint">(opcional)</span></label>
+              <select id="campaign-coupon" class="form-input" aria-describedby="campaign-coupon-hint"></select>
+              <p class="form-hint" id="campaign-coupon-hint"></p>
+            </div>
+
+            <div class="campaign-schedule" id="campaign-schedule" hidden>
+              <div class="form-group">
+                <label for="campaign-when">Fecha y hora de envío</label>
+                <input type="datetime-local" id="campaign-when" class="form-input">
+              </div>
+              <button type="button" class="btn btn-pink" id="btn-campaign-schedule-confirm">Programar para esa hora</button>
+            </div>
+
+            <div class="form-actions campaign-actions">
+              <button type="button" class="btn btn-grey" id="btn-campaign-save">Guardar borrador</button>
+              <button type="button" class="btn btn-grey" id="btn-campaign-test">Enviar prueba a mi email</button>
+              <button type="button" class="btn btn-grey" id="btn-campaign-schedule">Programar</button>
+              <button type="button" class="btn btn-pink" id="btn-campaign-send">Enviar ahora</button>
+            </div>
+          </form>
+
+          <section class="campaign-preview" aria-labelledby="campaign-preview-title">
+            <h4 class="section-label" id="campaign-preview-title">Vista previa</h4>
+            <p class="form-hint campaign-preview-error" id="campaign-preview-error" hidden></p>
+            <!-- sandbox: el email se muestra sin poder ejecutar nada -->
+            <iframe id="campaign-preview-frame" class="campaign-preview-frame" title="Vista previa del email" sandbox></iframe>
+          </section>
+        </div>
       </div>
     </div>
   </div>
 
 <!-- Historial de pedidos de un cliente (clients.js) -->
   <div id="modal-client-orders" class="modal-overlay" hidden>
-    <div class="modal-card modal-large">
+    <div class="modal-card modal-large" role="dialog" aria-modal="true" aria-labelledby="client-orders-title">
       <div class="modal-header">
         <h3 id="client-orders-title">Pedidos del cliente</h3>
         <button type="button" class="close-modal" aria-label="Cerrar">&times;</button>
@@ -1162,9 +1713,9 @@
   </div>
 
     <div id="modal-tags" class="modal-overlay" hidden>
-    <div class="modal-card">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-tags-title">
       <div class="modal-header">
-        <h3>Etiquetas de clientes</h3>
+        <h3 id="modal-tags-title">Etiquetas de clientes</h3>
         <button type="button" class="close-modal" aria-label="Cerrar">&times;</button>
       </div>
       <div class="modal-body">
@@ -1180,9 +1731,9 @@
   </div>
 
   <div id="modal-coupons" class="modal-overlay" hidden>
-    <div class="modal-card">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-coupons-title">
       <div class="modal-header">
-        <h3>Cupones</h3>
+        <h3 id="modal-coupons-title">Cupones</h3>
         <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-coupons">&times;</button>
       </div>
       <div class="modal-body">
@@ -1232,7 +1783,7 @@
 
   <!-- ==================== MODALES DEL ARMADOR DE TORTAS (Alerta v1) ==================== -->
   <div id="modal-cake-size" class="modal-overlay" hidden>
-    <div class="modal-card">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-size-title">
       <div class="modal-header">
         <h3 id="modal-size-title">Nuevo tamaño</h3>
         <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-cake-size">&times;</button>
@@ -1270,7 +1821,7 @@
   </div>
 
   <div id="modal-cake-option" class="modal-overlay" hidden>
-    <div class="modal-card">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-option-title">
       <div class="modal-header">
         <h3 id="modal-option-title">Nuevo sabor</h3>
         <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-cake-option">&times;</button>
@@ -1303,7 +1854,7 @@
   </div>
 
   <div id="modal-recipe-form" class="modal-overlay" hidden>
-    <div class="modal-card modal-large">
+    <div class="modal-card modal-large" role="dialog" aria-modal="true" aria-labelledby="recipe-modal-title">
       <div class="modal-header">
         <h3 id="recipe-modal-title">Nueva receta</h3>
         <button type="button" class="close-modal" aria-label="Cerrar">&times;</button>
@@ -1337,8 +1888,76 @@
     </div>
   </div>
 
+  <!-- Backups: restaurar una copia (paso 4.3, admin/backups.js). Tiene <form>, así que tocar el fondo NO la
+       cierra. El botón se habilita recién con el tilde, la palabra RESTAURAR y la contraseña; el servidor
+       vuelve a comprobar las tres cosas (RestoreService). -->
+  <div id="modal-restore" class="modal-overlay" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="restore-title">
+      <div class="modal-header">
+        <h3 id="restore-title">Restaurar copia de seguridad</h3>
+        <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-restore">&times;</button>
+      </div>
+      <form id="form-restore" class="modal-body restore-form" novalidate>
+        <div class="audit-alert restore-warning">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17v.5"/></svg>
+          <div class="audit-alert__text">
+            <strong>Vas a volver los datos al <span id="restore-date">—</span>.</strong>
+            <span>Se pierde todo lo que se cargó después: pedidos, clientes, stock, recetas, productos…</span>
+          </div>
+        </div>
+        <ul class="restore-facts">
+          <li>Antes se guarda una copia de cómo está todo ahora (en "Antes de restaurar"), por si querés deshacerlo.</li>
+          <li>No se pierden el registro de actividad ni la lista de copias.</li>
+          <li>Mientras se restaura (unos segundos), el sitio muestra "En mantenimiento".</li>
+          <li>Al terminar vas a tener que volver a ingresar.</li>
+        </ul>
+        <label class="restore-check">
+          <input type="checkbox" id="restore-understood">
+          <span>Entiendo que se reemplazan los datos actuales.</span>
+        </label>
+        <div class="form-group">
+          <label for="restore-confirm">Escribí <strong>RESTAURAR</strong> para confirmar</label>
+          <input type="text" id="restore-confirm" class="form-input" autocomplete="off" autocapitalize="characters" spellcheck="false">
+        </div>
+        <div class="form-group">
+          <label for="restore-password">Tu contraseña</label>
+          <input type="password" id="restore-password" class="form-input" autocomplete="current-password">
+        </div>
+        <p class="form-error" id="restore-error" role="alert" hidden></p>
+        <p class="restore-progress" id="restore-progress" role="status" hidden>Restaurando… no cierres esta ventana.</p>
+        <div class="form-actions">
+          <button type="button" class="btn btn-grey btn-uniform" data-close-modal="modal-restore">Cancelar</button>
+          <button type="submit" class="btn btn-red btn-uniform" id="restore-submit" disabled>Restaurar</button>
+          <a th:href="@{/login(restored=1)}" class="btn btn-pink btn-uniform" id="restore-done" hidden>Ingresar de nuevo</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Registro de actividad: detalle de un registro (lo arma audit.js con el antes y el después) -->
+  <div id="modal-audit-detail" class="modal-overlay" hidden>
+    <div class="modal-card modal-large" role="dialog" aria-modal="true" aria-labelledby="audit-detail-title">
+      <div class="modal-header">
+        <h3 id="audit-detail-title">Detalle del registro</h3>
+        <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-audit-detail">&times;</button>
+      </div>
+      <div class="modal-body" id="audit-detail-body"></div>
+    </div>
+  </div>
+
+  <!-- Registro de actividad: resultado de "Verificar integridad" -->
+  <div id="modal-audit-verify" class="modal-overlay" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="audit-verify-title">
+      <div class="modal-header">
+        <h3 id="audit-verify-title">Verificar integridad</h3>
+        <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-audit-verify">&times;</button>
+      </div>
+      <div class="modal-body" id="audit-verify-body" aria-live="polite"></div>
+    </div>
+  </div>
+
   <div id="modal-team" class="modal-overlay" hidden>
-    <div class="modal-card">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-team-title">
       <div class="modal-header">
         <h3 id="modal-team-title">Agregar pastelero</h3>
         <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-team">&times;</button>
@@ -1374,12 +1993,18 @@
     </div>
   </div>
 
-  <input type="file" id="hidden-file-input" accept="image/*" hidden>
+  <input type="file" id="hidden-file-input" accept="image/*" hidden> <!-- el panel pasa la foto a JPG; el servidor acepta JPG, PNG y WebP de hasta 5 MB (paso 6.7) -->
 
   <div id="print-area" class="print-area"></div>
 
   <script th:src="@{/js/admin/clients.js}" defer></script>
+  <script th:src="@{/js/admin/loyalty.js}" defer></script>
+  <script th:src="@{/js/admin/campaigns.js}" defer></script>
   <script th:src="@{/js/admin/main.js}" defer></script>
+  <!-- Recordatorios (paso 5.2): también lo usa baker.html -->
+  <script th:src="@{/js/admin/reminders.js}" defer></script>
+  <!-- Bakey, el asistente (paso 5.5): botón flotante y ventana del chat -->
+  <script th:src="@{/js/bakey.js}" defer></script>
   <script th:src="@{/js/admin/gallery.js}" defer></script>
   <script th:src="@{/js/admin/inventory.js}" defer></script>
   <script th:src="@{/js/admin/recipes.js}" defer></script>
@@ -1389,6 +2014,8 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script th:src="@{/js/admin/dashboard.js}" defer></script>
   <script th:src="@{/js/admin/team.js}" defer></script>
+  <script th:src="@{/js/admin/audit.js}" defer></script>
+  <script th:src="@{/js/admin/backups.js}" defer></script>
   <script th:src="@{/js/admin/settings.js}" defer></script>
   <script th:src="@{/js/admin/notifications-simple.js}" defer></script>
 

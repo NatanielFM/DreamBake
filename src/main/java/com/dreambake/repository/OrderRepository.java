@@ -6,9 +6,17 @@ import com.dreambake.entity.OrderStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
+
+    // Seguimiento de pedidos (paso 6.5): se busca por el código que tiene el cliente
+    java.util.Optional<Order> findByTrackingCode(String trackingCode);
+
+    // Campanita de avisos (paso 6.6): pedidos nuevos sin confirmar
+    List<Order> findByStatus(OrderStatus status);
     
     @Query("SELECT CASE WHEN i.isCustomCake = true THEN 'Torta Personalizada' WHEN i.product IS NOT NULL THEN i.product.name ELSE COALESCE(i.productType, 'Desconocido') END, COUNT(i) FROM OrderItem i WHERE i.order.status IN :statuses GROUP BY CASE WHEN i.isCustomCake = true THEN 'Torta Personalizada' WHEN i.product IS NOT NULL THEN i.product.name ELSE COALESCE(i.productType, 'Desconocido') END ORDER BY COUNT(i) DESC")
     List<Object[]> findTopProductsAggregation(@Param("statuses") List<OrderStatus> statuses);
@@ -19,4 +27,16 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     // Para borrar un cliente: primero se desvinculan sus pedidos (los pedidos no se borran)
     List<Order> findByCustomer(Customer customer);
+
+    // "Mis pedidos" del área del cliente: los pedidos unidos a una ficha de cliente con ese email,
+    // y los que todavía no tienen ficha (pedidos nuevos de la tienda) pero se hicieron con ese email.
+    // Los más nuevos primero.
+    @Query("SELECT o FROM Order o LEFT JOIN o.customer c " +
+           "WHERE LOWER(c.email) = LOWER(:email) OR (c IS NULL AND LOWER(o.customerEmail) = LOWER(:email)) " +
+           "ORDER BY o.deliveryDate DESC, o.id DESC")
+    List<Order> findForAccount(@Param("email") String email);
+
+    // Pedidos que se entregan entre dos fechas (inclusive) y están en alguno de esos estados
+    // (los usa la tarea de las 8:00: recordatorios y resumen de entregas)
+    List<Order> findByDeliveryDateBetweenAndStatusIn(LocalDate from, LocalDate to, Collection<OrderStatus> statuses);
 }

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<!--/* Recordatorio de una persona del equipo, 1 hora antes (paso 5.2, ReminderService.sendDueEmails).
+       Todo con th:text (se escapa). */-->
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{email/base :: layout(~{::#cuerpo})}">
+<body>
+  <div id="cuerpo">
+    <h1 style="margin:0 0 12px 0;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:24px;line-height:32px;font-weight:600;color:#481729;">
+      Tenés un recordatorio
+    </h1>
+    <p style="margin:0 0 16px 0;">
+      Hola<th:block th:if="${nombre != null and !nombre.isEmpty()}">, <span th:text="${nombre}">Ana</span></th:block>.
+      Falta poco para esto que anotaste:
+    </p>
+    <p style="margin:0 0 16px 0;padding:12px 16px;background-color:#fdf0f4;border-radius:12px;color:#481729;word-break:break-word;">
+      <strong th:text="${titulo}">Hacer las decoraciones de la torta de María</strong><br>
+      <span th:text="${cuando}">hoy a las 10:00</span>
+      <th:block th:if="${pedido != null}"><br>Pedido N° <span th:text="${pedido}">45</span></th:block>
+    </p>
+    <p th:if="${notas != null}" style="margin:0 0 16px 0;white-space:pre-line;word-break:break-word;" th:text="${notas}">
+      Usar el fondant celeste.
+    </p>
+    <!--/* Botón: se arma con una tabla porque Outlook y Gmail no respetan el padding de un link común */-->
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px 0;">
+      <tr>
+        <td align="center" bgcolor="#be3d6c" style="border-radius:999px;background-color:#be3d6c;">
+          <a th:href="${panelUrl}" href="#"
+             style="display:inline-block;padding:13px 28px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:20px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:999px;">
+            Abrir el panel
+          </a>
+        </td>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>

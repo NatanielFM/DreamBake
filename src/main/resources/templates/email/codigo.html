@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<!--/* Código de 6 dígitos para confirmar un email (EmailCodeService): al crear una cuenta con Facebook
+       sin email (SocialSignupController) o en "Confirmá tu email" del perfil (ProfileController). */-->
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{email/base :: layout(~{::#cuerpo})}">
+<body>
+  <div id="cuerpo">
+    <h1 style="margin:0 0 12px 0;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:24px;line-height:32px;font-weight:600;color:#481729;">
+      <th:block th:if="${nombre != null and !nombre.isEmpty()}">¡Hola, <span th:text="${nombre}">Ana</span>!</th:block>
+      <th:block th:unless="${nombre != null and !nombre.isEmpty()}">¡Hola!</th:block>
+    </h1>
+    <p style="margin:0 0 16px 0;">
+      <th:block th:if="${motivo == 'confirmación de email'}">Para confirmar tu email en</th:block>
+      <th:block th:unless="${motivo == 'confirmación de email'}">Para terminar de crear tu cuenta en</th:block>
+      <strong th:text="${negocio.name}">Dulce Sueños Posadas</strong>, escribí este código en la página:
+    </p>
+    <p style="margin:0 0 20px 0;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:34px;line-height:42px;font-weight:700;letter-spacing:8px;color:#481729;"
+       th:text="${codigo}">123456</p>
+    <p style="margin:0 0 8px 0;">El código vale 15 minutos.</p>
+    <p style="margin:16px 0 0 0;font-size:13px;line-height:20px;color:#666666;">
+      Si no fuiste vos, ignorá este mensaje: sin el código no se hace ningún cambio.
+    </p>
+  </div>
+</body>
+</html>

@@ -18,9 +18,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const newBtnCancel = btnCancel.cloneNode(true);
     btnCancel.replaceWith(newBtnCancel);
 
+    // Paso 6.8: mientras se hace la acción el botón queda bloqueado ("cargando") y recién después se
+    // cierra la ventana. Si la acción abrió OTRA confirmación (ej: "falta stock, ¿forzar?"), el botón
+    // ya fue reemplazado y la ventana nueva no se cierra.
     newBtnOk.addEventListener('click', () => {
-      document.getElementById('modal-confirm').hidden = true;
-      onConfirm();
+      const run = async () => {
+        try { await onConfirm(); }
+        finally { if (newBtnOk.isConnected) document.getElementById('modal-confirm').hidden = true; }
+      };
+      if (window.DreamUI) window.DreamUI.busy(newBtnOk, run); else run();
     });
 
     newBtnCancel.addEventListener('click', () => {
@@ -28,7 +34,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  window.showErrorAlert = function(errors) {
+  // "title" es opcional: por defecto "Revisá esto". Se puede cambiar para avisos que no son errores (ej: "Listo").
+  window.showErrorAlert = function(errors, title) {
     let msg = "";
     if (typeof errors === 'object') {
       for (const key in errors) {
@@ -37,6 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       msg += errors;
     }
+    const alertTitle = document.getElementById('alert-title');
+    if (alertTitle) alertTitle.innerText = title || 'Revisá esto';
     document.getElementById('alert-message').innerText = msg.trim();
     document.getElementById('modal-alert').hidden = false;
   };
@@ -207,3 +216,18 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
 });
+
+// Registro de auditoría (paso 3.3): avisa al servidor "quién descargó qué". El informe, la lista de
+// compras y los recibos se arman acá en el navegador (imprimir / guardar como PDF), así que el
+// servidor no se entera solo. type: "informe", "lista-compras" o "recibo" (con orderId).
+// Si el aviso falla, la descarga sigue igual (no se muestra ningún error).
+window.logDownload = function (type, orderId) {
+  try {
+    fetch('/api/audit/download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, orderId: orderId || null }),
+      keepalive: true
+    }).catch(() => {});
+  } catch (e) { /* nada: la auditoría nunca frena al usuario */ }
+};

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<!--/* Aviso a los administradores: falló una copia de seguridad (paso 4.2,
+       BackupAlertService). Va a cada usuario ADMIN. Todo con th:text (se escapa). */-->
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{email/base :: layout(~{::#cuerpo})}">
+<body>
+  <div id="cuerpo">
+    <h1 style="margin:0 0 12px 0;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:24px;line-height:32px;font-weight:600;color:#481729;"
+        th:text="${titulo}">
+      Falló la copia de seguridad
+    </h1>
+    <p style="margin:0 0 16px 0;">
+      Hola<th:block th:if="${nombre != null and !nombre.isEmpty()}">, <span th:text="${nombre}">Ana</span></th:block>.
+      <span th:text="${resumen}">No se pudo hacer la copia de seguridad diaria.</span>
+    </p>
+    <p style="margin:0 0 16px 0;padding:12px 16px;background-color:#fcf1f1;border-radius:12px;color:#91110b;">
+      <strong>Qué pasó:</strong> <span th:text="${que}">La base de datos MySQL no estaba encendida.</span>
+    </p>
+    <p style="margin:0 0 16px 0;">
+      <strong>Qué revisar:</strong> <span th:text="${revisar}">Revisá que el servicio MySQL esté iniciado.</span>
+    </p>
+    <p style="margin:0 0 16px 0;">
+      La próxima copia automática se intenta a las 3:00. También podés ver el estado en el Resumen del panel.
+    </p>
+    <p style="margin:16px 0 0 0;font-size:13px;line-height:20px;color:#666666;word-break:break-word;">
+      Detalle técnico (<span th:text="${fecha}">12/10/2026 03:00</span>):
+      <span th:text="${tecnico}">mysqldump: Got error: 2003: Can't connect to MySQL server</span>
+    </p>
+  </div>
+</body>
+</html>

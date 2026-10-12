@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<!--/*
+  Email de cumpleaños con cupón de regalo. Lo manda BirthdayService (tipo BIRTHDAY).
+  Variables: nombre (primer nombre, puede ser null), codigo (CUMPLE-XXXX), porcentaje, vencimiento (dd/MM/aaaa).
+  Usa el diseño común de base.html; el link de baja del pie lo agrega EmailService.
+*/-->
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{email/base :: layout(~{::#cuerpo})}">
+<body>
+  <div id="cuerpo">
+    <h1 style="margin:0 0 12px 0;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:26px;line-height:34px;font-weight:600;color:#481729;"
+        th:text="${nombre != null} ? '¡Feliz cumpleaños, ' + ${nombre} + '!' : '¡Feliz cumpleaños!'">
+      ¡Feliz cumpleaños, Ana!
+    </h1>
+    <p style="margin:0 0 20px 0;">
+      En <strong th:text="${negocio.name}">Dulce Sueños Posadas</strong> queremos festejar con vos.
+      Te regalamos un <strong><span th:text="${porcentaje}">15</span>% de descuento</strong>
+      en tu próximo pedido: una torta, una mesa dulce o lo que se te antoje.
+    </p>
+
+    <!--/* Código del cupón bien visible */-->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px 0;">
+      <tr>
+        <td align="center" bgcolor="#fdf4f7" style="background-color:#fdf4f7;border:2px dashed #e0487f;border-radius:14px;padding:20px 12px;">
+          <p style="margin:0 0 6px 0;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;line-height:18px;color:#666666;">
+            Tu código de regalo
+          </p>
+          <p style="margin:0;font-family:'Courier New',Courier,monospace;font-size:30px;line-height:38px;font-weight:700;letter-spacing:3px;color:#481729;"
+             th:text="${codigo}">CUMPLE-AB3K</p>
+          <p style="margin:8px 0 0 0;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;line-height:18px;color:#666666;">
+            Válido hasta el <strong th:text="${vencimiento}">30/10/2026</strong> · un solo uso
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    <p style="margin:0 0 20px 0;">
+      Ingresalo en el carrito, en el campo "¿Tenés un cupón?", antes de enviar tu pedido.
+      Acordate de pedir con 3 días de anticipación.
+    </p>
+
+    <!--/* Botón: se arma con una tabla porque Outlook y Gmail no respetan el padding de un link común */-->
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px 0;">
+      <tr>
+        <td align="center" bgcolor="#be3d6c" style="border-radius:999px;background-color:#be3d6c;">
+          <a th:href="${publicUrl} + '/products'" href="#"
+             style="display:inline-block;padding:13px 28px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:20px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:999px;">
+            Ir a la tienda
+          </a>
+        </td>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>

@@ -11,6 +11,8 @@
   <header th:fragment="header" class="site-header" id="siteHeader">
     <!-- Primer elemento enfocable: permite saltear el menú con el teclado -->
     <a class="skip-link" href="#main">Saltar al contenido</a>
+    <!-- Formatos argentinos de precios y fechas para el JS de la tienda (paso 6.8, DreamFormat) -->
+    <script th:src="@{/js/format.js}" defer></script>
 
     <div class="header-inner">
       <!-- Marca: isotipo (cupcake) + nombre -->
@@ -141,7 +143,7 @@
             </svg>
             WhatsApp
           </a>
-          <a class="button button--secondary button--block" href="https://www.instagram.com/dulcessuenos_posadas/" target="_blank" rel="noopener">
+          <a class="button button--secondary button--block" th:href="${negocio.instagramUrl}" th:if="${negocio.instagramUrl != null}" target="_blank" rel="noopener">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
               <rect x="3" y="3" width="18" height="18" rx="5"></rect>
               <circle cx="12" cy="12" r="4"></circle>

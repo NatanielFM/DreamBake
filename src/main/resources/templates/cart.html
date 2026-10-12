@@ -1,14 +1,17 @@
 <!doctype html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<html lang="es-AR" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <!-- Color de la barra del navegador en el celular: el mismo fondo del header -->
   <meta name="theme-color" content="#fef9f9" />
-  <link rel="icon" type="image/svg+xml" th:href="@{/img/favicon.svg}" />
+  <!-- Íconos en todos los tamaños (fragments/seo.html, paso 6.3) -->
+  <th:block th:replace="~{fragments/seo :: icons}"></th:block>
   <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
   <script th:src="@{/js/csrf.js}"></script>
-  <title>Tu pedido — Dulce Sueños Posadas</title>
+  <title th:text="'Tu pedido — ' + ${negocio.name}">Tu pedido — Dulce Sueños Posadas</title>
+  <!-- Descripción y vista previa al compartir el link (fragments/seo.html, paso 6.3) -->
+  <th:block th:replace="~{fragments/seo :: share('Tu pedido — ' + ${negocio.name}, 'Revisá tu pedido de Dulce Sueños Posadas, aplicá tu cupón y confirmalo por WhatsApp.', '/cart')}"></th:block>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -25,6 +28,8 @@
   <div th:replace="~{fragments/header :: header}"></div>
 
   <main id="main" class="shop-main">
+    <!-- Pedidos pausados o mensaje de la tienda (paso 6.4) -->
+    <th:block th:replace="~{fragments/store-notice :: notice}"></th:block>
     <section class="shop-hero">
       <div class="site-container">
         <h1 class="text-h1">Tu pedido</h1>
@@ -51,7 +56,23 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
         </span>
         <h2 class="text-h2" tabindex="-1">¡Listo! Tu pedido quedó registrado</h2>
-        <p class="text-lead">Número de pedido <strong id="success-order-id">#0</strong>. Para confirmarlo, mandanos el mensaje por WhatsApp: ya está escrito con todo el detalle.</p>
+        <!-- Código de seguimiento (paso 6.5): con él el cliente ve el estado en /seguimiento -->
+        <div class="success-code">
+          <p class="success-code__label">Tu código de seguimiento</p>
+          <p class="success-code__value" id="success-tracking-code">DB-XXXXXX</p>
+          <p class="success-code__hint">Pedido <strong id="success-order-id">#0</strong>. Guardalo: con este código ves en qué anda tu pedido.</p>
+        </div>
+
+        <!-- Resumen (lo completa store.js con lo que devolvió el servidor) -->
+        <dl class="success-summary" id="success-summary"></dl>
+
+        <!-- Pasos siguientes -->
+        <ol class="success-steps">
+          <li><strong>Mandanos el mensaje por WhatsApp</strong> (ya está escrito con el detalle y el código).</li>
+          <li><strong>Coordinamos la seña</strong><th:block th:if="${negocio.depositPercent > 0}"> (el <th:block th:text="${negocio.depositPercent}">50</th:block>&nbsp;% del total)</th:block> y el diseño final.</li>
+          <li><strong>Te confirmamos el pedido</strong> y podés seguirlo con tu código.</li>
+        </ol>
+
         <div class="success-actions">
           <a id="success-whatsapp" class="button button--ink button--lg" href="#" target="_blank" rel="noopener">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
@@ -60,8 +81,9 @@
             </svg>
             Enviar pedido por WhatsApp
           </a>
-          <a class="button button--secondary button--lg" th:href="@{/}">Volver al inicio</a>
+          <a id="success-tracking-link" class="button button--secondary button--lg" th:href="@{/seguimiento}">Seguir mi pedido</a>
         </div>
+        <p class="success-home"><a class="link" th:href="@{/}">Volver al inicio</a></p>
       </div>
 
       <!-- Carrito + formulario -->
@@ -104,6 +126,23 @@
                   <p class="field__error" id="chk-email-error" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span></span></p>
                 </div>
               </div>
+
+              <!-- Fidelización (opcional): el cumpleaños y el permiso para mandarle promociones.
+                   Se guardan en su ficha de cliente cuando se confirma el pedido (Ley 25.326: solo con su permiso). -->
+              <div class="field">
+                <label class="field__label" for="chk-birthdate">Fecha de cumpleaños <span class="field__optional">(opcional)</span></label>
+                <input type="date" id="chk-birthdate" class="input" autocomplete="bday" aria-describedby="chk-birthdate-hint chk-birthdate-error">
+                <p class="field__hint" id="chk-birthdate-hint">Para mandarte un regalo en tu cumpleaños.</p>
+                <p class="field__error" id="chk-birthdate-error" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span></span></p>
+              </div>
+
+              <div class="field">
+                <label class="check">
+                  <input type="checkbox" id="chk-marketing" aria-describedby="chk-marketing-hint">
+                  <span>Quiero recibir promociones y un regalo en mi cumpleaños</span>
+                </label>
+                <p class="field__hint" id="chk-marketing-hint">Te escribimos al email de arriba. Podés darte de baja cuando quieras desde cualquier email.</p>
+              </div>
             </div>
           </section>
 
@@ -113,7 +152,7 @@
               <div class="field">
                 <label class="field__label" for="chk-date">¿Para qué día?</label>
                 <input type="date" id="chk-date" class="input" required aria-describedby="chk-date-hint chk-date-error">
-                <p class="field__hint" id="chk-date-hint">Pedidos con 3 días de anticipación.</p>
+                <p class="field__hint" id="chk-date-hint">Pedidos con <th:block th:text="${negocio.minLeadDays}">3</th:block> días de anticipación.</p>
                 <p class="field__error" id="chk-date-error" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span></span></p>
               </div>
 
@@ -193,13 +232,15 @@
           </div>
 
           <dl class="summary-rows">
-            <div><dt>Subtotal</dt><dd>$<span id="cart-subtotal">0</span></dd></div>
-            <div id="cart-discount-row" class="summary-discount" hidden><dt id="cart-discount-label">Descuento</dt><dd>−$<span id="cart-discount">0</span></dd></div>
+            <div><dt>Subtotal</dt><dd>$&nbsp;<span id="cart-subtotal">0</span></dd></div>
+            <div id="cart-discount-row" class="summary-discount" hidden><dt id="cart-discount-label">Descuento</dt><dd>−$&nbsp;<span id="cart-discount">0</span></dd></div>
             <div id="cart-benefit-row" class="summary-discount" hidden><dt>Beneficio</dt><dd id="cart-benefit"></dd></div>
           </dl>
-          <p class="summary-total"><span>Total</span><strong>$<span id="full-cart-total">0</span></strong></p>
+          <p class="summary-total"><span>Total</span><strong>$&nbsp;<span id="full-cart-total">0</span></strong></p>
 
-          <button type="submit" form="final-checkout-form" class="button button--ink button--lg button--block checkout-submit">
+          <!-- Pedidos pausados desde el panel (paso 6.4): el botón queda deshabilitado; el servidor también rechaza el pedido -->
+          <p class="checkout-paused" id="checkout-paused" role="status" th:hidden="${!negocio.ordersPaused}">Por ahora no tomamos pedidos por la web. Escribinos por WhatsApp.</p>
+          <button type="submit" form="final-checkout-form" class="button button--ink button--lg button--block checkout-submit" th:disabled="${negocio.ordersPaused}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
               <path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3Z"></path>
               <path d="M9.2 8.6c.2 2.9 3.3 6 6.2 6.2l1.1-1.4-1.9-1-.9.8c-1-.4-2-1.4-2.4-2.4l.8-.9-1-1.9-1.9.6Z" fill="currentColor" stroke="none"></path>
@@ -207,6 +248,8 @@
             Confirmar pedido por WhatsApp
           </button>
           <p class="summary-note">Guardamos tu pedido y abrimos WhatsApp con el mensaje listo para enviar. La seña y el diseño final se coordinan por ahí.</p>
+          <!-- Consentimiento (paso 6.2): se abren en otra pestaña para no perder el carrito -->
+          <p class="summary-note summary-legal">Al continuar aceptás los <a class="link" th:href="@{/terminos}" target="_blank">Términos</a> y la <a class="link" th:href="@{/privacidad}" target="_blank">Política de privacidad</a>.</p>
         </aside>
       </div>
     </div>

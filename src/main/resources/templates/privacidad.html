@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="es-AR" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <!-- Color de la barra del navegador en el celular: el mismo fondo del header -->
+  <meta name="theme-color" content="#fef9f9" />
+  <!-- Íconos en todos los tamaños (fragments/seo.html, paso 6.3) -->
+  <th:block th:replace="~{fragments/seo :: icons}"></th:block>
+  <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
+  <script th:src="@{/js/csrf.js}"></script>
+  <title th:text="'Política de privacidad — ' + ${negocio.name}">Política de privacidad — Dulce Sueños Posadas</title>
+  <!-- Descripción y vista previa al compartir el link (fragments/seo.html, paso 6.3) -->
+  <th:block th:replace="~{fragments/seo :: share('Política de privacidad — ' + ${negocio.name}, 'Qué datos personales guarda Dulce Sueños Posadas, para qué los usa, cuánto tiempo y cómo ejercer tus derechos (Ley 25.326).', '/privacidad')}"></th:block>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Orden: base vieja compartida → tokens → componentes → header → CSS de la página → footer -->
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+  <link rel="stylesheet" th:href="@{/css/tokens.css}">
+  <link rel="stylesheet" th:href="@{/css/components.css}">
+  <link rel="stylesheet" th:href="@{/css/header.css}">
+  <link rel="stylesheet" th:href="@{/css/public.css}">
+  <link rel="stylesheet" th:href="@{/css/legal.css}">
+  <link rel="stylesheet" th:href="@{/css/footer.css}">
+</head>
+<body class="page-shop page-legal">
+
+  <div th:replace="~{fragments/header :: header}"></div>
+
+  <main id="main" class="shop-main">
+    <section class="shop-hero">
+      <div class="site-container site-container--narrow">
+        <h1 class="text-h1">Política de privacidad</h1>
+        <p class="text-lead">Qué datos tuyos guardamos, para qué los usamos y cómo podés pedir verlos, corregirlos o borrarlos.</p>
+      </div>
+    </section>
+
+    <div class="site-container site-container--narrow legal-page">
+      <!--/* Política de privacidad (paso 6.2, WebController.privacyPage). Facebook la exige para el login con Facebook.
+             Los datos marcados [COMPLETAR] los carga el dueño del negocio.
+             Estos textos son una base: no reemplazan el asesoramiento de un abogado. */-->
+      <p class="legal-updated">Última actualización: octubre de 2026.</p>
+
+      <section class="legal-section" aria-labelledby="who">
+        <h2 id="who">Quiénes somos</h2>
+        <p><strong><th:block th:text="${negocio.name}">Dulce Sueños Posadas</th:block></strong> es una pastelería de Posadas, Misiones, que hace tortas personalizadas y mesas dulces. Somos responsables de los datos personales que nos dejás en este sitio.</p>
+        <ul>
+          <li><strong>Responsable:</strong> <mark class="legal-todo">[COMPLETAR: razón social o nombre del titular]</mark></li>
+          <li><strong>CUIT:</strong> <mark class="legal-todo">[COMPLETAR: CUIT, si corresponde]</mark></li>
+          <li><strong>Domicilio:</strong> <th:block th:if="${!#strings.isEmpty(negocio.address)}" th:text="${negocio.address}">Posadas, Misiones</th:block><mark class="legal-todo" th:if="${#strings.isEmpty(negocio.address)}">[COMPLETAR: dirección]</mark>.</li>
+          <li><strong>Contacto:</strong> <th:block th:if="${!#strings.isEmpty(negocio.email)}"><a class="link" th:href="|mailto:${negocio.email}|" th:text="${negocio.email}">hola@ejemplo.com</a></th:block><mark class="legal-todo" th:if="${#strings.isEmpty(negocio.email)}">[COMPLETAR: email de contacto]</mark> o por <a class="link" th:href="|https://wa.me/${whatsappNumber}|" target="_blank" rel="noopener">WhatsApp</a>.</li>
+        </ul>
+      </section>
+
+      <section class="legal-section" aria-labelledby="what">
+        <h2 id="what">Qué datos guardamos</h2>
+        <ul>
+          <li><strong>Si hacés un pedido:</strong> nombre, celular, email (si lo dejás), dirección de entrega (si pedís envío), fecha y turno de entrega y el detalle del pedido (productos, sabores, dedicatorias).</li>
+          <li><strong>Si creás una cuenta:</strong> nombre, email, celular y tu contraseña, guardada cifrada (nadie puede leerla, ni siquiera nosotros).</li>
+          <li><strong>Si entrás con Google o Facebook:</strong> solo tu nombre, tu email y tu foto de perfil. No recibimos tu contraseña, tus publicaciones ni tus contactos.</li>
+          <li><strong>Si nos la das:</strong> tu fecha de cumpleaños, para saludarte y mandarte un regalo.</li>
+          <li><strong>Emails:</strong> un historial de los emails que te mandamos (a quién, cuándo, el asunto y si salió bien), no su contenido.</li>
+          <li><strong>Seguridad:</strong> la fecha de tu último ingreso y, en las acciones importantes, la dirección IP y el navegador.</li>
+        </ul>
+      </section>
+
+      <section class="legal-section" aria-labelledby="why">
+        <h2 id="why">Para qué los usamos</h2>
+        <ul>
+          <li>Para preparar y entregar tus pedidos y avisarte cómo van (recibido, confirmado, listo, recordatorio de entrega).</li>
+          <li>Para que no tengas que escribir tus datos cada vez que pedís y puedas ver "Mis pedidos".</li>
+          <li>Para mandarte promociones y el saludo de cumpleaños <strong>solo si aceptaste recibirlos</strong>. Cada uno de esos emails trae un link para darte de baja.</li>
+          <li>Para cuidar la seguridad del sitio (por ejemplo, frenar intentos de entrar a tu cuenta).</li>
+        </ul>
+        <p>No vendemos ni compartimos tus datos con nadie para publicidad. Solo los ve el personal del negocio que prepara tus pedidos.</p>
+      </section>
+
+      <section class="legal-section" aria-labelledby="third">
+        <h2 id="third">Servicios de otras empresas que usamos</h2>
+        <ul>
+          <li><strong>Google y Facebook (Meta), para iniciar sesión:</strong> solo si elegís "Continuar con Google" o "Continuar con Facebook". Ellas confirman quién sos y nos pasan tu nombre, email y foto.</li>
+          <li><strong>Gmail (Google), para mandar los emails:</strong> los emails salen desde una cuenta de Gmail del negocio, así que pasan por los servidores de Google.</li>
+          <li><strong>API de Gemini (Google), para el asistente interno:</strong> el personal del negocio usa un asistente con inteligencia artificial ("Bakey") para consultar pedidos y stock. Para responder, Gemini puede recibir datos de los pedidos (por ejemplo, el nombre del cliente, los productos y la fecha de entrega). Tu teléfono, email y dirección no se le mandan completos, salvo que el personal los pida expresamente. Con el plan gratuito, Google puede usar esa información para mejorar sus servicios.</li>
+        </ul>
+        <p>Cada una de esas empresas tiene su propia política de privacidad: <a class="link" href="https://policies.google.com/privacy?hl=es-419" target="_blank" rel="noopener">Google</a> y <a class="link" href="https://www.facebook.com/privacy/policy/" target="_blank" rel="noopener">Meta</a>. Sus servidores pueden estar fuera de la Argentina.</p>
+      </section>
+
+      <section class="legal-section" aria-labelledby="time">
+        <h2 id="time">Cuánto tiempo los guardamos</h2>
+        <ul>
+          <li><strong>Tu cuenta:</strong> hasta que la elimines (desde "Mi cuenta") o nos pidas que la borremos.</li>
+          <li><strong>Los pedidos:</strong> se conservan para las cuentas del negocio durante <mark class="legal-todo">[COMPLETAR: plazo, por ejemplo 5 años]</mark>. Si eliminás tu cuenta, quedan guardados sin tu nombre, teléfono, email ni dirección.</li>
+          <li><strong>Tu cumpleaños y el permiso para promociones:</strong> hasta que los quites desde "Mi cuenta", te des de baja o elimines la cuenta.</li>
+          <li><strong>El registro de seguridad:</strong> se guarda sin fecha de borrado porque sirve para comprobar qué se hizo en el sistema, pero ahí tu teléfono, email y dirección aparecen tapados.</li>
+          <li><strong>Copias de seguridad:</strong> se borran solas con el tiempo (las más viejas, a los 12 meses). Un dato que borraste puede seguir en una copia hasta que esa copia se borre; solo se usan para recuperar el sistema si falla.</li>
+        </ul>
+      </section>
+
+      <section class="legal-section" aria-labelledby="cookies">
+        <h2 id="cookies">Cookies</h2>
+        <p>Usamos solo las cookies necesarias para que el sitio funcione: la que mantiene tu sesión abierta, la de "Mantener la sesión iniciada" (si la marcás, dura 14 días) y una de seguridad para los formularios. El carrito y el aviso de cookies se guardan en tu propio navegador. No usamos cookies de publicidad ni de estadísticas.</p>
+      </section>
+
+      <section class="legal-section" aria-labelledby="rights">
+        <h2 id="rights">Tus derechos</h2>
+        <p>Por la Ley 25.326 de Protección de Datos Personales podés pedirnos, en forma gratuita:</p>
+        <ul>
+          <li><strong>Acceso:</strong> saber qué datos tuyos tenemos. Te respondemos dentro de los 10 días corridos.</li>
+          <li><strong>Rectificación:</strong> corregir o actualizar tus datos. Los de tu cuenta los podés cambiar vos en "Mi cuenta"; si no, lo hacemos dentro de los 5 días hábiles.</li>
+          <li><strong>Supresión:</strong> que borremos tus datos. Mirá cómo en <a class="link" th:href="@{/eliminar-datos}">Eliminar mis datos</a>.</li>
+        </ul>
+        <p><strong>Cómo pedirlo:</strong> escribinos a <th:block th:if="${!#strings.isEmpty(negocio.email)}"><a class="link" th:href="|mailto:${negocio.email}|" th:text="${negocio.email}">hola@ejemplo.com</a></th:block><mark class="legal-todo" th:if="${#strings.isEmpty(negocio.email)}">[COMPLETAR: email de contacto]</mark> o por <a class="link" th:href="|https://wa.me/${whatsappNumber}|" target="_blank" rel="noopener">WhatsApp</a> desde el email o el celular con el que hiciste tus pedidos (así sabemos que sos vos) y contanos qué necesitás.</p>
+        <p class="legal-note">La AGENCIA DE ACCESO A LA INFORMACIÓN PÚBLICA, en su carácter de Órgano de Control de la Ley N° 25.326, tiene la atribución de atender las denuncias y reclamos que interpongan quienes resulten afectados en sus derechos por incumplimiento de las normas vigentes en materia de protección de datos personales. Más información en <a class="link" href="https://www.argentina.gob.ar/aaip" target="_blank" rel="noopener">argentina.gob.ar/aaip</a>.</p>
+      </section>
+
+      <section class="legal-section" aria-labelledby="security">
+        <h2 id="security">Cómo los cuidamos</h2>
+        <p>Las contraseñas se guardan cifradas, el ingreso se bloquea un rato después de varios intentos fallidos, solo el personal del negocio puede ver los datos de los pedidos y cada acción importante queda registrada.</p>
+      </section>
+
+      <section class="legal-section" aria-labelledby="changes">
+        <h2 id="changes">Cambios en esta política</h2>
+        <p>Si cambiamos algo importante, lo vas a ver en esta página con la fecha de actualización.</p>
+      </section>
+
+      <p class="legal-note">Ver también los <a class="link" th:href="@{/terminos}">Términos y condiciones</a>.</p>
+    </div>
+  </main>
+
+  <div th:replace="~{fragments/footer :: footer}"></div>
+
+  <script th:src="@{/js/header.js}" defer></script>
+  <script th:src="@{/js/public/store.js}" defer></script>
+</body>
+</html>

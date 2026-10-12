@@ -40,13 +40,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (img.complete && img.naturalWidth === 0 && img.getAttribute('src')) replaceBrokenImage(img);
   });
 
-  // Número de WhatsApp del negocio. Se cambia desde Panel → Ajustes y llega en el footer
-  // (data-whatsapp); el número de respaldo es el de siempre, por si la página no tiene footer.
-  const BUSINESS_PHONE = document.querySelector('[data-whatsapp]')?.dataset.whatsapp || '5493764159312';
+  // Número de WhatsApp del negocio. Se cambia desde Panel → Ajustes → Configuración del negocio y llega
+  // en el footer (data-whatsapp). Ya no hay un número escrito acá (paso 6.4): si la página no tuviera
+  // footer, lo completa loadBusiness() con /api/public/settings.
+  let BUSINESS_PHONE = document.querySelector('[data-whatsapp]')?.dataset.whatsapp || '';
+
+  // Datos públicos del negocio (paso 6.4): anticipación mínima, pedidos pausados… Los da el servidor
+  // en /api/public/settings, que es el mismo dato que después revisa al recibir el pedido.
+  let business = null;
+  async function loadBusiness() {
+    try {
+      const res = await fetch('/api/public/settings', { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) return null;
+      business = await res.json();
+      if (!BUSINESS_PHONE && business.whatsapp) BUSINESS_PHONE = business.whatsapp;
+      return business;
+    } catch (err) {
+      return null;   // sin conexión: el servidor igual valida al recibir el pedido
+    }
+  }
 
   // Utilidades ------------------------------------------------------------
-  // Formato de precio argentino: 82000 -> "82.000"
-  const money = (n) => Number(n || 0).toLocaleString('es-AR');
+  // Formato de precio argentino (paso 6.8, DreamFormat de format.js):
+  //   price(82000) -> "$ 82.000"   |   price(82000.5) -> "$ 82.000,50"
+  //   money(82000) -> "82.000"     (solo el número: para los lugares donde el "$" ya está en el HTML)
+  const price = (n) => window.DreamFormat ? window.DreamFormat.money(n) : '$\u00a0' + Number(n || 0).toLocaleString('es-AR');
+  const money = (n) => price(n).replace(/^\$\u00a0/, '');
 
   // Escapa texto antes de meterlo en HTML (evita que un nombre con "<" rompa la página)
   function esc(text) {
@@ -385,7 +404,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="line-main">
               <p class="cart-item-title">${esc(g.item.productType)}${g.indexes.length > 1 ? ` <span class="line-qty-inline">× ${g.indexes.length}</span>` : ''}</p>
             </div>
-            <p class="line-price">$${money(g.item.price * g.indexes.length)}</p>
+            <p class="line-price">${price(g.item.price * g.indexes.length)}</p>
             <button type="button" class="line-remove" data-cart-action="remove" data-key="${esc(g.key)}" aria-label="Quitar ${esc(g.item.productType)}">${ICON_TRASH}</button>
           </div>`).join('');
       }
@@ -412,10 +431,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="line-main">
               <h3 class="cart-item-title">${name}</h3>
               ${detailsToHtml(g.item.details)}
-              <p class="line-unit">$${money(g.item.price)} c/u</p>
+              <p class="line-unit">${price(g.item.price)} c/u</p>
             </div>
             <div class="line-side">
-              <p class="line-price">$${money(g.item.price * qty)}</p>
+              <p class="line-price">${price(g.item.price * qty)}</p>
               <div class="qty" role="group" aria-label="Cantidad de ${name}">
                 <button type="button" class="qty-btn" data-cart-action="dec" data-key="${esc(g.key)}" aria-label="${qty === 1 ? 'Quitar' : 'Restar uno de'} ${name}">${qty === 1 ? ICON_TRASH : ICON_MINUS}</button>
                 <span class="qty-value" aria-live="polite">${qty}</span>
@@ -489,7 +508,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <span class="option-check" aria-hidden="true">${ICON_CHECK}</span>
           ${portions ? `<span class="size-portions">${esc(portions)}</span><span class="size-unit">porciones</span>` : ''}
           <span class="size-name">${esc(portions ? rest : size.name)}</span>
-          <span class="price">$${money(size.price)}</span>
+          <span class="price">${price(size.price)}</span>
         </button>`;
     }).join('');
   }
@@ -733,7 +752,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     set('[data-sum="fillings"]', d.fillings.length ? d.fillings.join(', ') : 'Sin elegir');
     set('[data-sum="details"]', details || 'Sin detalles');
 
-    const priceText = d.size ? `$${money(d.size.price)}` : '—';
+    const priceText = d.size ? `${price(d.size.price)}` : '—';
     document.querySelectorAll('[data-sum="price"]').forEach(el => {
       if (el.textContent !== priceText && d.size && !reduceMotion.matches) {
         el.classList.remove('is-bumped'); void el.offsetWidth; el.classList.add('is-bumped');
@@ -839,16 +858,33 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
   // ================= 7. CHECKOUT (/cart) =================
-  // Fecha mínima: 3 días de anticipación
+  // Fecha mínima: hoy + los días de anticipación configurados en el panel (paso 6.4).
+  // Mientras llega el dato se usan 3 días; la fecha exacta la calcula el servidor (firstDeliveryDate).
   const dateInput = document.getElementById('chk-date');
   let minDate = '';
-  if (dateInput) {
-    const today = new Date();
-    today.setDate(today.getDate() + 3);
-    minDate = today.toISOString().split('T')[0];
+  let leadDays = 3;
+  function applyMinDate(firstDate, days) {
+    if (!dateInput) return;
+    minDate = firstDate;
+    leadDays = days;
     dateInput.setAttribute('min', minDate);
     const hint = document.getElementById('chk-date-hint');
-    if (hint) hint.textContent = `Pedidos con 3 días de anticipación: elegí una fecha desde el ${minDate.split('-').reverse().join('/')}.`;
+    if (hint) hint.textContent = `Pedidos con ${days} días de anticipación: elegí una fecha desde el ${minDate.split('-').reverse().join('/')}.`;
+  }
+  if (dateInput) {
+    applyMinDate(window.DreamFormat ? window.DreamFormat.todayISO(3) : new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 10), 3);
+    loadBusiness().then(b => {
+      if (!b) return;
+      applyMinDate(b.firstDeliveryDate, b.minLeadDays);
+      // Pedidos pausados: el botón de confirmar queda deshabilitado con el aviso (el servidor también lo rechaza)
+      if (b.ordersPaused) setOrdersPaused();
+    });
+  }
+  function setOrdersPaused() {
+    const btn = document.querySelector('button[type="submit"][form="final-checkout-form"]');
+    if (btn) btn.disabled = true;
+    const note = document.getElementById('checkout-paused');
+    if (note) note.hidden = false;
   }
 
   document.querySelector('[data-close-alert]')?.addEventListener('click', () => {
@@ -872,8 +908,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   const validators = {
     'chk-name': (v) => v.trim().length >= 3 ? '' : 'Escribí tu nombre y apellido.',
     'chk-phone': (v) => /^[+\d][\d\s\-()]{7,19}$/.test(v.trim()) && (v.match(/\d/g) || []).length >= 8 ? '' : 'Escribí un celular válido, con código de área (por ejemplo 3764 123456).',
-    'chk-email': (v) => !v.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? '' : 'Revisá el email (por ejemplo nombre@gmail.com) o dejalo vacío.',
-    'chk-date': (v) => !v ? 'Elegí la fecha de entrega.' : (minDate && v < minDate ? `La fecha tiene que ser desde el ${minDate.split('-').reverse().join('/')} (3 días de anticipación).` : '')
+    'chk-email': (v) => {
+      if (!v.trim()) {
+        // El email es opcional, salvo que pida promociones (es a donde se las mandamos)
+        const wantsPromos = document.getElementById('chk-marketing')?.checked;
+        return wantsPromos ? 'Para recibir promociones necesitamos tu email.' : '';
+      }
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? '' : 'Revisá el email (por ejemplo nombre@gmail.com) o dejalo vacío.';
+    },
+    // Cumpleaños (opcional): no puede ser una fecha futura
+    'chk-birthdate': (v) => {
+      if (!v) return '';
+      const today = window.DreamFormat ? window.DreamFormat.todayISO() : new Date().toISOString().slice(0, 10);   // fecha de acá
+      return v > today || v < '1900-01-01' ? 'Revisá la fecha de tu cumpleaños.' : '';
+    },
+    'chk-date': (v) => !v ? 'Elegí la fecha de entrega.' : (minDate && v < minDate ? `La fecha tiene que ser desde el ${minDate.split('-').reverse().join('/')} (${leadDays} días de anticipación).` : '')
   };
 
   function showFieldError(id, message) {
@@ -916,6 +965,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     input.addEventListener('input', () => { if (input.getAttribute('aria-invalid') === 'true') validateField(id); });
   });
   document.querySelectorAll('input[name="shift"]').forEach(r => r.addEventListener('change', () => validateChoice('shift', 'chk-shift-error', '')));
+  // Al destildar "Quiero recibir promociones", el email deja de ser obligatorio: se borra el error
+  document.getElementById('chk-marketing')?.addEventListener('change', () => {
+    const email = document.getElementById('chk-email');
+    if (email && (email.getAttribute('aria-invalid') === 'true' || email.value)) validateField('chk-email');
+  });
 
   // Retiro o envío: la dirección se pide solo si es envío
   const addressField = document.getElementById('chk-address-field');
@@ -936,6 +990,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     finalForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (cart.length === 0) return;
+      // Pedidos pausados desde el panel (paso 6.4)
+      if (business && business.ordersPaused) {
+        setOrdersPaused();
+        showPublicAlert('Por ahora no estamos tomando pedidos por la web. Escribinos por WhatsApp y te contamos cuándo volvemos.');
+        return;
+      }
 
       // 1. Validar todo y llevar el foco al primer error
       const okFields = Object.keys(validators).map(validateField);
@@ -960,6 +1020,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const cPay = (document.querySelector('input[name="payment"]:checked') || {}).value || 'Transferencia';
       const cDelivery = isDelivery() ? 'Envío' : 'Retiro';
       const cAddress = isDelivery() ? document.getElementById('chk-address').value.trim() : '';
+      const cBirthDate = document.getElementById('chk-birthdate')?.value || null;
+      const cMarketing = Boolean(document.getElementById('chk-marketing')?.checked);
 
       // Texto de los ítems para el mensaje de WhatsApp
       const itemsText = cart.map(item => `> *${item.productType}*\n${item.details}`).join('\n\n');
@@ -975,6 +1037,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         deliveryMethod: cDelivery,
         deliveryAddress: cAddress,
         couponCode: appliedCoupon ? appliedCoupon.code : null,
+        customerBirthDate: cBirthDate,
+        marketingConsent: cMarketing,
         items: cart.map((item, index) => {
           const extra = (index === 0 && cDetails) ? `\n\n> *Aclaraciones:* ${cDetails}` : '';
           const isCake = item.productType === 'Torta Personalizada';
@@ -1014,8 +1078,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const savedOrder = await res.json();
         const total = savedOrder.totalPrice;   // el total que calculó el servidor
 
-        // 3. Mensaje de WhatsApp con el número de pedido
-        let waMsg = `Hola! 👋 Confirmo mi pedido 🩷\n\n> N° Referencia: #${savedOrder.id}\n\n`;
+        // 3. Mensaje de WhatsApp con el número de pedido y el código de seguimiento (paso 6.5)
+        let waMsg = `Hola! 👋 Confirmo mi pedido 🩷\n\n> N° Referencia: #${savedOrder.id}\n> Código de seguimiento: ${savedOrder.trackingCode}\n\n`;
         waMsg += itemsText + '\n\n';
         if (appliedCoupon) {
           if (appliedCoupon.type === 'DESCUENTO') {
@@ -1031,7 +1095,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         waMsg += cDelivery === 'Envío' ? `> *Envío a:* ${cAddress}\n` : `> *Retira en el local*\n`;
         waMsg += `> *Pago:* ${cPay}\n`;
         if (cDetails.trim() !== '') waMsg += `> *Aclaraciones:* ${cDetails}\n\n`;
-        waMsg += `El total es de $${total.toLocaleString('es-AR')}.`;
+        waMsg += `El total es de ${price(total)}.`;
 
         const waUrl = `https://wa.me/${BUSINESS_PHONE}?text=${encodeURIComponent(waMsg)}`;
 
@@ -1044,6 +1108,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         const success = document.getElementById('checkout-success');
         if (success) {
           document.getElementById('success-order-id').textContent = `#${savedOrder.id}`;
+          // Código de seguimiento y resumen (paso 6.5). Todo con textContent: son datos que escribió el cliente.
+          document.getElementById('success-tracking-code').textContent = savedOrder.trackingCode || '';
+          const trackLink = document.getElementById('success-tracking-link');
+          if (trackLink && savedOrder.trackingCode) trackLink.href = `/seguimiento?codigo=${encodeURIComponent(savedOrder.trackingCode)}`;
+          const summary = document.getElementById('success-summary');
+          if (summary) {
+            summary.replaceChildren();
+            const row = (label, value) => {
+              const div = document.createElement('div');
+              const dt = document.createElement('dt'); dt.textContent = label;
+              const dd = document.createElement('dd'); dd.textContent = value;
+              div.append(dt, dd);
+              summary.append(div);
+            };
+            row('Productos', (savedOrder.items || []).map(i => i.productType).join(', '));
+            row('Entrega', `${cDate.split('-').reverse().join('/')} · ${cShift}`);
+            row('Cómo', cDelivery === 'Envío' ? `Envío a ${cAddress}` : 'Retiro en el local');
+            row('Total', price(total));
+          }
           const waLink = document.getElementById('success-whatsapp');
           waLink.href = waUrl;
           document.querySelector('[data-cart-layout]').hidden = true;

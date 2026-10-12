@@ -1,15 +1,17 @@
 // /js/admin/clients.js - Módulo de Clientes (Búsqueda Avanzada Multicampo)
 document.addEventListener('DOMContentLoaded', () => {
+  // Paso 6.8: precios con formato argentino ($ 12.345)
+  const money = (n) => window.DreamFormat ? window.DreamFormat.money(n) : '$ ' + Number(n || 0).toLocaleString('es-AR');
 
   let dbClients = [];
   let dbTags = [];
-  
+
   const clientsTbody = document.getElementById('clients-tbody');
   const searchClient = document.getElementById('search-client');
   const clientSelectTag = document.getElementById('client-tag');
 
   // Estado de Ordenamiento y Filtro
-  let sortCol = ''; 
+  let sortCol = '';
   let sortAsc = true;
   let currentClientFilter = 'all';
 
@@ -19,10 +21,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const iconDown = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"></path></svg>`;
 
   function getSortIcon(col) {
-    let colorUp = '#ccc'; 
+    let colorUp = '#ccc';
     let colorDown = '#ccc';
     if (sortCol === col) {
-      if (sortAsc) { colorUp = 'var(--accent)'; colorDown = '#eee'; } 
+      if (sortAsc) { colorUp = 'var(--accent)'; colorDown = '#eee'; }
       else { colorUp = '#eee'; colorDown = 'var(--accent)'; }
     }
     return `<svg class="sort-svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -45,17 +47,21 @@ document.addEventListener('DOMContentLoaded', () => {
         dbTags = await res.json();
         updateTagUI();
       }
-    } catch (e) {}
+    } catch (e) { /* sin etiquetas: la lista de clientes igual funciona */ }
   }
 
+  let clientsLoaded = false;
   async function loadClientsFromServer() {
+    if (!clientsLoaded) window.DreamUI?.tableLoading(clientsTbody, 7, 'Cargando clientes…');
     try {
       const res = await fetch('/api/customers');
-      if (res.ok) {
-        dbClients = await res.json();
-        renderClients();
-      }
-    } catch (e) {}
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      dbClients = await res.json();
+      clientsLoaded = true;
+      renderClients();
+    } catch (e) {
+      if (!clientsLoaded) window.DreamUI?.tableMessage(clientsTbody, 7, 'No se pudieron cargar los clientes.', 'Revisá la conexión y recargá la página.', true);
+    }
   }
 
   // ================= 2. GESTIÓN DE CLIENTES =================
@@ -74,14 +80,14 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderClients() {
     if (!clientsTbody) return;
     clientsTbody.innerHTML = '';
-    
+
     if (thName) thName.innerHTML = `Cliente <span class="sort-icon">${getSortIcon('name')}</span>`;
     if (thDate) thDate.innerHTML = `Registro <span class="sort-icon">${getSortIcon('dateAdded')}</span>`;
 
     const query = searchClient ? searchClient.value.toLowerCase() : '';
 
     let filtered = dbClients.filter(c => {
-      
+
       // FILTRO MULTICAMPO INTELIGENTE
       if (query) {
         // Se asegura de que el campo exista antes de pasarlo a minúsculas
@@ -106,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sortCol) {
       filtered.sort((a, b) => {
         let valA = a[sortCol]; let valB = b[sortCol];
-        if (sortCol === 'name') { valA = valA.toLowerCase(); valB = valB.toLowerCase(); } 
+        if (sortCol === 'name') { valA = valA.toLowerCase(); valB = valB.toLowerCase(); }
         else if (sortCol === 'dateAdded') { valA = valA ? new Date(valA).getTime() : 0; valB = valB ? new Date(valB).getTime() : 0; }
         if (valA < valB) return sortAsc ? -1 : 1;
         if (valA > valB) return sortAsc ? 1 : -1;
@@ -124,22 +130,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     filtered.forEach(c => {
       const tr = document.createElement('tr');
-      
+
       // Contacto en renglones (sin emojis; cada dato con su nombre para lectores de pantalla)
-      const phone = c.phone ? `<span class="contact-line"><span class="visually-hidden">Teléfono: </span>${c.phone}</span>` : '';
-      const email = c.email ? `<span class="contact-line"><span class="visually-hidden">Email: </span>${c.email}</span>` : '';
-      const address = c.address ? `<span class="contact-line"><span class="visually-hidden">Dirección: </span>${c.address}</span>` : '';
+      const phone = c.phone ? `<span class="contact-line"><span class="visually-hidden">Teléfono: </span>${escHtml(c.phone)}</span>` : '';
+      const email = c.email ? `<span class="contact-line"><span class="visually-hidden">Email: </span>${escHtml(c.email)}</span>` : '';
+      const address = c.address ? `<span class="contact-line"><span class="visually-hidden">Dirección: </span>${escHtml(c.address)}</span>` : '';
       const contactInfo = (phone || email || address) ? (phone + email + address) : '<span class="cell-soft">Sin datos</span>';
-      
-      const tagBadge = c.tag ? `<span class="tag-badge">${c.tag.name}</span>` : '';
+
+      const tagBadge = c.tag ? `<span class="tag-badge">${escHtml(c.tag.name)}</span>` : '';
+      // Insignia si el cliente aceptó recibir promociones por email
+      const consentBadge = c.marketingConsent ? '<span class="status-badge is-small status-sent">Recibe promociones</span>' : '';
       const birthStr = c.birthDate ? formatDateToLatam(c.birthDate) : '<span class="cell-soft">Sin fecha</span>';
       // Pedidos confirmados o entregados del cliente y lo que gastó (lo calcula el servidor)
       const totalP = c.ordersCount || 0;
-      const spent = c.totalSpent ? ` · $${Math.round(c.totalSpent).toLocaleString('es-AR')}` : '';
+      const spent = c.totalSpent ? ` · ${money(c.totalSpent)}` : '';
 
       tr.innerHTML = `
-        <td class="cell-title cell-strong">${c.name}</td>
-        <td data-label="Contacto"><span class="contact-lines">${contactInfo}</span></td>
+        <td class="cell-title cell-strong">${escHtml(c.name)}</td>
+        <td data-label="Contacto"><span class="contact-lines">${contactInfo}${consentBadge}</span></td>
         <td data-label="Etiqueta">${tagBadge || '<span class="cell-soft">—</span>'}</td>
         <td data-label="Cumpleaños">${birthStr}</td>
         <td data-label="Registro" class="cell-soft">${formatDateToLatam(c.dateAdded)}</td>
@@ -187,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const totalP = c.ordersCount || 0;
       summary.textContent = orders.length === 0
         ? 'Este cliente todavía no tiene pedidos.'
-        : `${totalP} ${totalP === 1 ? 'pedido confirmado o entregado' : 'pedidos confirmados o entregados'} · Total: $${Math.round(c.totalSpent || 0).toLocaleString('es-AR')}`;
+        : `${totalP} ${totalP === 1 ? 'pedido confirmado o entregado' : 'pedidos confirmados o entregados'} · Total: ${money(c.totalSpent || 0)}`;
       tbody.innerHTML = orders.length === 0 ? '<tr><td colspan="5" class="cell-empty">Sin pedidos.</td></tr>' : orders.map(o => {
         const [label, cls] = ORDER_STATUS[o.status] || [o.status, 'status-pending'];
         const items = (o.items || []).map(i => escHtml(i.productType)).join(', ') || '—';
@@ -195,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td class="cell-id" data-label="Pedido">#${o.id}</td>
           <td data-label="Entrega">${o.deliveryDate ? formatDateToLatam(o.deliveryDate) : 'Sin fecha'}</td>
           <td data-label="Productos">${items}</td>
-          <td class="cell-money" data-label="Total">$${Number(o.totalPrice || 0).toLocaleString('es-AR')}</td>
+          <td class="cell-money" data-label="Total">${money(o.totalPrice)}</td>
           <td data-label="Estado"><span class="status-badge is-small ${cls}">${label}</span></td>
         </tr>`;
       }).join('');
@@ -207,12 +215,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // Formulario de Cliente
   const clientForm = document.getElementById('client-form');
   const btnAddClient = document.getElementById('btn-add-client');
-  
+
   if(btnAddClient) {
     btnAddClient.addEventListener('click', () => {
       clientForm.reset();
       document.getElementById('client-id').value = '';
       document.getElementById('client-modal-title').innerText = "Nuevo cliente";
+      document.getElementById('client-emails-block').hidden = true;   // un cliente nuevo no tiene emails
       document.getElementById('modal-client-form').hidden = false;
     });
   }
@@ -226,9 +235,78 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('client-address').value = c.address || '';
     if (c.birthDate) document.getElementById('client-birthdate').value = c.birthDate;
     if(c.tag) document.getElementById('client-tag').value = c.tag.name;
-    
+
     document.getElementById('client-modal-title').innerText = "Editar cliente";
     document.getElementById('modal-client-form').hidden = false;
+    showClientEmails(c);
+  }
+
+  // ================= EMAILS DEL CLIENTE (ficha) =================
+  // Muestra si aceptó recibir promociones (y desde cuándo) y el historial de emails que se le mandaron.
+  const EMAIL_STATUS = { 'Enviado': 'status-sent', 'No se envió': 'status-cancelled' };
+
+  async function showClientEmails(c) {
+    const block = document.getElementById('client-emails-block');
+    const status = document.getElementById('client-consent-status');
+    const tbody = document.getElementById('client-emails-tbody');
+    block.hidden = false;
+
+    // Se reemplaza el botón para no acumular "clicks" de otros clientes abiertos antes
+    const oldBtn = document.getElementById('btn-client-unsubscribe');
+    const btnUnsub = oldBtn.cloneNode(true);
+    oldBtn.replaceWith(btnUnsub);
+    btnUnsub.addEventListener('click', () => unsubscribeClient(c));
+
+    if (c.marketingConsent) {
+      const since = c.consentDate ? ` desde el ${formatDateToLatam(c.consentDate.slice(0, 10))}` : '';
+      status.textContent = `Acepta recibir promociones${since}.`;
+      btnUnsub.hidden = false;
+    } else {
+      status.textContent = 'No acepta recibir promociones.';
+      btnUnsub.hidden = true;
+    }
+
+    tbody.innerHTML = '<tr><td colspan="4" class="cell-empty">Cargando…</td></tr>';
+    try {
+      const res = await fetch(`/api/customers/${c.id}/emails`);
+      if (!res.ok) throw new Error();
+      const emails = await res.json();
+      if (emails.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="cell-empty">Todavía no se le mandó ningún email.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = emails.map(e => {
+        const date = e.sentAt ? `${formatDateToLatam(e.sentAt.slice(0, 10))} ${e.sentAt.slice(11, 16)}` : '—';
+        const cls = EMAIL_STATUS[e.status] || 'status-cancelled';
+        const error = e.error ? `<span class="cell-soft">${escHtml(e.error)}</span>` : '';
+        return `<tr>
+          <td data-label="Fecha">${date}</td>
+          <td data-label="Tipo">${escHtml(e.type)}</td>
+          <td data-label="Asunto">${escHtml(e.subject)}</td>
+          <td data-label="Estado"><span class="status-stack"><span class="status-badge is-small ${cls}">${escHtml(e.status)}</span>${error}</span></td>
+        </tr>`;
+      }).join('');
+    } catch (err) {
+      tbody.innerHTML = '<tr><td colspan="4" class="cell-empty">No se pudo cargar el historial de emails.</td></tr>';
+    }
+  }
+
+  // Dar de baja de las promociones (el panel puede desactivar el permiso, nunca activarlo)
+  function unsubscribeClient(c) {
+    window.showConfirmModal('Dar de baja de promociones',
+      `${c.name} va a dejar de recibir promociones y el saludo de cumpleaños por email. Solo vuelve a recibirlos si lo acepta en un próximo pedido.`,
+      'Dar de baja', 'btn-red', async () => {
+        try {
+          const res = await fetch(`/api/customers/${c.id}/unsubscribe`, { method: 'POST' });
+          if (!res.ok) throw new Error();
+          const updated = await res.json();
+          c.marketingConsent = updated.marketingConsent;
+          showClientEmails(c);
+          loadClientsFromServer();
+        } catch (err) {
+          window.showErrorAlert('No se pudo dar de baja. Probá de nuevo.');
+        }
+      });
   }
 
   if(clientForm) {
@@ -247,22 +325,30 @@ document.addEventListener('DOMContentLoaded', () => {
       const url = id ? `/api/customers/${id}` : '/api/customers';
       const method = id ? 'PUT' : 'POST';
 
-      try {
-        const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-        if (res.ok) {
-          document.getElementById('modal-client-form').hidden = true;
-          loadClientsFromServer();
-        } else if (res.status === 400) {
-          window.showErrorAlert(await res.json());
-        }
-      } catch(e) { window.showErrorAlert("Error de conexión"); }
+      await window.DreamUI.busy(e.submitter || clientForm.querySelector('button[type="submit"]'), async () => {
+        try {
+          const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+          if (res.ok) {
+            document.getElementById('modal-client-form').hidden = true;
+            loadClientsFromServer();
+          } else if (res.status === 400 && (res.headers.get('content-type') || '').includes('json')) {
+            const body = await res.json();
+            window.showErrorAlert(body.message || body);
+          } else {
+            await window.DreamUI.fail(res, 'No se pudo guardar el cliente.');
+          }
+        } catch(err) { window.DreamUI.offline(); }
+      });
     });
   }
 
   function deleteClient(c) {
-    window.showConfirmModal('Eliminar Cliente', `¿Seguro que deseas eliminar a "${c.name}"?`, 'Eliminar', 'btn-red', async () => {
-      await fetch(`/api/customers/${c.id}`, { method: 'DELETE' });
-      loadClientsFromServer();
+    window.showConfirmModal('Eliminar cliente', `¿Seguro que querés eliminar a "${c.name}"?`, 'Eliminar', 'btn-red', async () => {
+      try {
+        const res = await fetch(`/api/customers/${c.id}`, { method: 'DELETE' });
+        if (res.ok) loadClientsFromServer();
+        else await window.DreamUI.fail(res, 'No se pudo eliminar el cliente.');
+      } catch (e) { window.DreamUI.offline(); }
     });
   }
 
@@ -270,7 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateTagUI() {
     if(clientSelectTag) {
       clientSelectTag.innerHTML = '';
-      dbTags.forEach(t => clientSelectTag.innerHTML += `<option value="${t.name}">${t.name}</option>`);
+      dbTags.forEach(t => clientSelectTag.innerHTML += `<option value="${escHtml(t.name)}">${escHtml(t.name)}</option>`);
     }
 
     const filterContainer = document.getElementById('client-filters');
@@ -288,7 +374,7 @@ document.addEventListener('DOMContentLoaded', () => {
       assignClientChipEvents();
     }
 
-    renderTagsListModal(); 
+    renderTagsListModal();
   }
 
   function assignClientChipEvents() {
@@ -310,21 +396,24 @@ document.addEventListener('DOMContentLoaded', () => {
     dbTags.forEach((t, index) => {
       const li = document.createElement('li');
       li.innerHTML = `
-        <span class="cat-name">${t.name}</span>
+        <span class="cat-name">${escHtml(t.name)}</span>
         <div class="cat-actions">
-            <button type="button" class="cat-action-btn btn-edit" title="Modificar" aria-label="Cambiar el nombre de ${t.name}">${iconEdit}</button>
+            <button type="button" class="cat-action-btn btn-edit" title="Modificar" aria-label="Cambiar el nombre de ${escHtml(t.name)}">${iconEdit}</button>
             <button type="button" class="cat-action-btn btn-up" title="Subir" ${index === 0 ? 'disabled' : ''}>${iconUp}</button>
             <button type="button" class="cat-action-btn btn-down" title="Bajar" ${index === dbTags.length - 1 ? 'disabled' : ''}>${iconDown}</button>
-            ${t.deletable ? `<button type="button" class="cat-action-btn btn-delete" title="Eliminar" aria-label="Eliminar ${t.name}">${iconDelete}</button>` : ''}
+            ${t.deletable ? `<button type="button" class="cat-action-btn btn-delete" title="Eliminar" aria-label="Eliminar ${escHtml(t.name)}">${iconDelete}</button>` : ''}
         </div>
       `;
 
       li.querySelector('.btn-edit').addEventListener('click', async () => {
         const newName = await window.showCustomPrompt("Escribí el nuevo nombre de la etiqueta:", t.name);
         if (newName && newName.trim() !== "" && newName !== t.name) {
-          await fetch(`/api/tags/${t.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newName.trim() }) });
+          try {
+            const res = await fetch(`/api/tags/${t.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newName.trim() }) });
+            if (!res.ok) await window.DreamUI.fail(res, 'No se pudo cambiar el nombre de la etiqueta.');
+          } catch (e) { window.DreamUI.offline(); }
           loadTagsFromServer();
-          loadClientsFromServer(); 
+          loadClientsFromServer();
         }
       });
 
@@ -334,9 +423,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (t.deletable) {
         li.querySelector('.btn-delete').addEventListener('click', () => {
           window.showConfirmModal('Eliminar Etiqueta', `¿Seguro que deseas eliminar la etiqueta "${t.name}"? Los clientes volverán a "Sin etiqueta".`, 'Eliminar', 'btn-red', async () => {
-            await fetch(`/api/tags/${t.id}`, { method: 'DELETE' });
+            const res = await fetch(`/api/tags/${t.id}`, { method: 'DELETE' });
+            // El servidor puede negarse (por ejemplo, si una campaña usa la etiqueta) y explica por qué
+            if (!res.ok) window.showErrorAlert((await res.text()) || 'No se pudo eliminar la etiqueta.');
             loadTagsFromServer();
-            loadClientsFromServer(); 
+            loadClientsFromServer();
           });
         });
       }
@@ -353,7 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const orderedIds = dbTags.map(t => t.id);
     try {
       await fetch('/api/tags/reorder', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderedIds) });
-      loadTagsFromServer(); 
+      loadTagsFromServer();
     } catch (e) { window.showErrorAlert("No se pudo guardar el nuevo orden."); }
   }
 
@@ -377,7 +468,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const btnAddTag = document.getElementById('btn-add-tag');
   if(btnAddTag) {
-    btnAddTag.addEventListener('click', async () => {
+    btnAddTag.addEventListener('click', () => window.DreamUI.busy(btnAddTag, async () => {
       const input = document.getElementById('new-tag-name');
       if (!input.value.trim()) return;
       try {
@@ -386,12 +477,12 @@ document.addEventListener('DOMContentLoaded', () => {
           input.value = '';
           document.getElementById('add-tag-container').style.display = 'none';
           document.getElementById('btn-show-add-tag').style.display = 'block';
-          loadTagsFromServer(); 
+          loadTagsFromServer();
         } else {
-          window.showErrorAlert(await res.text());
+          window.showErrorAlert((await res.text()) || 'No se pudo crear la etiqueta.');
         }
-      } catch(e) {}
-    });
+      } catch(e) { window.DreamUI.offline(); }
+    }));
   }
 
   // ================= 4. GESTIÓN DE CUPONES =================
@@ -420,20 +511,20 @@ document.addEventListener('DOMContentLoaded', () => {
     dbCoupons.forEach(c => {
       const li = document.createElement('li');
       if (!c.active) li.classList.add('is-inactive');   // cupón apagado: se ve atenuado y lo dice
-      
+
       const eyeIcon = c.active ? iconEyeOn : iconEyeOff;
-      
+
 
       li.innerHTML = `
         <div class="coupon-info">
-          <span class="cat-name">${c.code}</span>
+          <span class="cat-name">${escHtml(c.code)}</span>
           <span class="tag-badge">${COUPON_TYPES[c.type] || c.type}</span>
           ${c.active ? '' : '<span class="status-badge is-small status-cancelled">Pausado</span>'}
         </div>
         <div class="cat-actions">
-            <button type="button" class="cat-action-btn btn-edit-coupon" title="Editar" aria-label="Editar el cupón ${c.code}">${iconEdit}</button>
-            <button type="button" class="cat-action-btn btn-toggle" title="${c.active ? 'Pausar' : 'Activar'}" aria-label="${c.active ? 'Pausar' : 'Activar'} el cupón ${c.code}">${eyeIcon}</button>
-            <button type="button" class="cat-action-btn btn-delete" title="Eliminar" aria-label="Eliminar el cupón ${c.code}">${iconDelete}</button>
+            <button type="button" class="cat-action-btn btn-edit-coupon" title="Editar" aria-label="Editar el cupón ${escHtml(c.code)}">${iconEdit}</button>
+            <button type="button" class="cat-action-btn btn-toggle" title="${c.active ? 'Pausar' : 'Activar'}" aria-label="${c.active ? 'Pausar' : 'Activar'} el cupón ${escHtml(c.code)}">${eyeIcon}</button>
+            <button type="button" class="cat-action-btn btn-delete" title="Eliminar" aria-label="Eliminar el cupón ${escHtml(c.code)}">${iconDelete}</button>
         </div>
       `;
 
@@ -446,30 +537,36 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('new-coupon-custom').value = c.customText || '';
         document.getElementById('new-coupon-limit').value = c.usageLimit || '';
         document.getElementById('new-coupon-unlimited').checked = !!c.unlimited;
-        
+
         document.getElementById('new-coupon-type').dispatchEvent(new Event('change'));
         document.getElementById('new-coupon-unlimited').dispatchEvent(new Event('change'));
-        
+
         document.getElementById('btn-show-add-coupon').style.display = 'none';
         document.getElementById('add-coupon-container').style.display = 'flex';
         document.getElementById('new-coupon-code').focus();
       });
 
-      li.querySelector('.btn-toggle').addEventListener('click', async () => {
+      li.querySelector('.btn-toggle').addEventListener('click', (ev) => window.DreamUI.busy(ev.currentTarget, async () => {
         try {
           const updatedCoupon = { ...c, active: !c.active };
-          const res = await fetch(`/api/coupons/${c.id}`, { 
-            method: 'PUT', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify(updatedCoupon) 
+          const res = await fetch(`/api/coupons/${c.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedCoupon)
           });
           if (res.ok) loadCouponsFromServer();
-        } catch (e) {}
-      });
+          else await window.DreamUI.fail(res, 'No se pudo cambiar el cupón.');
+        } catch (e) { window.DreamUI.offline(); }
+      }));
 
       li.querySelector('.btn-delete').addEventListener('click', () => {
-        window.showConfirmModal('Eliminar Cupón', `¿Seguro que deseas eliminar el cupón "${c.code}"?`, 'Eliminar', 'btn-red', async () => {
-          await fetch(`/api/coupons/${c.id}`, { method: 'DELETE' });
+        window.showConfirmModal('Eliminar cupón', `¿Seguro que querés eliminar el cupón "${c.code}"?`, 'Eliminar', 'btn-red', async () => {
+          const res = await fetch(`/api/coupons/${c.id}`, { method: 'DELETE' });
+          // El servidor puede negarse (por ejemplo, si una campaña usa el cupón) y explica por qué
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            window.showErrorAlert(data.message || 'No se pudo eliminar el cupón.');
+          }
           loadCouponsFromServer();
         });
       });
@@ -537,10 +634,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const btnAddCoupon = document.getElementById('btn-add-coupon');
   if (btnAddCoupon) {
-    btnAddCoupon.addEventListener('click', async () => {
+    btnAddCoupon.addEventListener('click', () => window.DreamUI.busy(btnAddCoupon, async () => {
       const codeInput = document.getElementById('new-coupon-code');
-      if (!codeInput.value.trim()) return;
-      
+      if (!codeInput.value.trim()) {
+        window.showErrorAlert('Escribí el código del cupón.');
+        return;
+      }
+
       const id = document.getElementById('coupon-id').value;
       const url = id ? `/api/coupons/${id}` : '/api/coupons';
       const method = id ? 'PUT' : 'POST';
@@ -557,10 +657,10 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
       try {
-        const res = await fetch(url, { 
-          method: method, 
-          headers: { 'Content-Type': 'application/json' }, 
-          body: JSON.stringify(payload) 
+        const res = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
         });
         if (res.ok) {
           document.getElementById('coupon-id').value = '';
@@ -571,15 +671,18 @@ document.addEventListener('DOMContentLoaded', () => {
           newCouponLimit.value = '';
           newCouponUnlimited.checked = false;
           newCouponLimit.disabled = false;
-          
+
           document.getElementById('add-coupon-container').style.display = 'none';
           document.getElementById('btn-show-add-coupon').style.display = 'block';
-          loadCouponsFromServer(); 
+          loadCouponsFromServer();
         } else {
-          window.showErrorAlert(await res.text());
+          const text = await res.text();
+          let message = text;
+          try { message = JSON.parse(text).message || text; } catch (e) { /* era texto simple */ }
+          window.showErrorAlert(message || 'No se pudo guardar el cupón.');
         }
-      } catch(e) {}
-    });
+      } catch(e) { window.DreamUI.offline(); }
+    }));
   }
 
   // ================= 5. EVENTOS GLOBALES =================

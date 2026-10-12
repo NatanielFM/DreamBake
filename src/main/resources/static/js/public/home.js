@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const prices = sizes.map(s => Number(s.price)).filter(p => p > 0);
     if (prices.length === 0) return;
 
-    const min = Math.min(...prices).toLocaleString('es-AR');
+    const min = window.DreamFormat ? window.DreamFormat.money(Math.min(...prices)).replace(/^\$\u00a0/, '') : Math.min(...prices).toLocaleString('es-AR');   // el "$" está en el HTML
     document.querySelectorAll('[data-min-price]').forEach((el) => {
       const value = el.querySelector('[data-min-price-value]');
       if (value) value.textContent = min;

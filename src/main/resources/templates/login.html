@@ -1,18 +1,23 @@
 <!doctype html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<html lang="es-AR" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <!-- Color de la barra del navegador en el celular: el mismo fondo del header -->
   <meta name="theme-color" content="#fef9f9" />
-  <link rel="icon" type="image/svg+xml" th:href="@{/img/favicon.svg}" />
+  <!-- Íconos en todos los tamaños (fragments/seo.html, paso 6.3) -->
+  <th:block th:replace="~{fragments/seo :: icons}"></th:block>
   <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
   <script th:src="@{/js/csrf.js}"></script>
-  <title>Iniciar sesión — Dulce Sueños Posadas</title>
+  <title th:text="'Iniciar sesión — ' + ${negocio.name}">Iniciar sesión — Dulce Sueños Posadas</title>
+  <!-- Descripción y vista previa al compartir el link (fragments/seo.html, paso 6.3) -->
+  <th:block th:replace="~{fragments/seo :: share('Iniciar sesión — ' + ${negocio.name}, 'Entrá a tu cuenta de Dulce Sueños Posadas para pedir más rápido y ver tus pedidos.', '/login')}"></th:block>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Roboto 500 solo para los botones "Continuar con Google / Facebook" (guías de marca de Google y Meta) -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@500&display=swap" rel="stylesheet">
 
   <!-- Orden: base vieja compartida → tokens → componentes → header → CSS de la página → footer -->
   <link rel="stylesheet" th:href="@{/css/main.css}">
@@ -38,7 +43,7 @@
       <section class="auth-panel" aria-labelledby="login-title">
         <div class="auth-card">
           <h1 id="login-title" class="auth-title">Iniciar sesión</h1>
-          <p class="auth-lead">Con tu email y contraseña.</p>
+          <p class="auth-lead" th:text="${googleLoginEnabled and facebookLoginEnabled} ? 'Con tu email y contraseña, o con Google o Facebook.' : (${googleLoginEnabled} ? 'Con tu email y contraseña, o con Google.' : (${facebookLoginEnabled} ? 'Con tu email y contraseña, o con Facebook.' : 'Con tu email y contraseña.'))">Con tu email y contraseña.</p>
 
           <!-- Mensajes que llegan de Spring Security por la dirección (?error, ?blocked, ?logout) -->
           <div th:if="${param.error}" class="login-alert login-alert--error" role="alert">
@@ -55,9 +60,52 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
             <span>¡Listo, tu cuenta se creó! Ingresá con tu email y contraseña.</span>
           </div>
+          <!-- Errores del login con Google o Facebook (SecurityConfig.oauth2FailureHandler manda ?social=código&via=red).
+               "red" es el nombre de la red social para el mensaje (solo google o facebook, nunca lo que venga en la dirección). -->
+          <th:block th:if="${param.social}" th:with="red=${param.via != null and param.via[0] == 'facebook'} ? 'Facebook' : 'Google'" th:switch="${param.social[0]}">
+            <div th:case="'cancelled'" class="login-alert login-alert--error" role="alert">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+              <span>Cancelaste el ingreso con <th:block th:text="${red}">Google</th:block>. Podés intentarlo de nuevo o entrar con tu email y contraseña.</span>
+            </div>
+            <div th:case="'staff_password'" class="login-alert login-alert--error" role="alert">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+              <span>Esta cuenta debe ingresar con contraseña.</span>
+            </div>
+            <div th:case="'email_unverified'" class="login-alert login-alert--error" role="alert">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+              <span>Google todavía no confirmó tu email. Verificalo en tu cuenta de Google o entrá con email y contraseña.</span>
+            </div>
+            <div th:case="'disabled'" class="login-alert login-alert--error" role="alert">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+              <span>Tu cuenta está deshabilitada. Escribinos por WhatsApp si necesitás ayuda.</span>
+            </div>
+            <div th:case="'expired'" class="login-alert login-alert--error" role="alert">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+              <span>Pasó mucho tiempo y el registro con Facebook se cortó. Tocá "Continuar con Facebook" de nuevo.</span>
+            </div>
+            <div th:case="*" class="login-alert login-alert--error" role="alert">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+              <span>No pudimos conectar con <th:block th:text="${red}">Google</th:block>. Probá de nuevo en unos minutos o entrá con tu email y contraseña.</span>
+            </div>
+          </th:block>
+          <!-- Cuenta eliminada desde "Mi cuenta" (ProfileController.deleteAccount) -->
+          <div th:if="${param.deleted}" class="login-alert" role="status">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+            <span>Eliminamos tu cuenta y tus datos personales. ¡Gracias por haber sido parte!</span>
+          </div>
+          <!-- Contraseña nueva guardada con el link del email (PasswordResetController, paso 6.1) -->
+          <div th:if="${param.reset}" class="login-alert" role="status">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+            <span>¡Listo, cambiaste tu contraseña! Ingresá con la nueva.</span>
+          </div>
           <div th:if="${param.logout}" class="login-alert" role="status">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
             <span>Cerraste sesión. ¡Hasta pronto!</span>
+          </div>
+          <!-- Se restauró una copia de seguridad desde el panel (BackupRestController, paso 4.3) -->
+          <div th:if="${param.restored}" class="login-alert" role="status">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+            <span>Se restauró la copia de seguridad. Volvé a ingresar.</span>
           </div>
 
           <form th:action="@{/login}" method="post" class="auth-form" id="login-form" novalidate>
@@ -79,6 +127,8 @@
                   </button>
                 </div>
                 <p class="field__error" id="password-error" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span></span></p>
+                <!-- "Olvidé mi contraseña" (paso 6.1, PasswordResetController) -->
+                <a class="link auth-forgot" th:href="@{/recuperar}">¿Olvidaste tu contraseña?</a>
               </div>
 
               <!-- "remember-me": SecurityConfig vuelve a iniciar la sesión durante 14 días -->
@@ -90,6 +140,9 @@
               <button type="submit" class="button button--primary button--lg button--block auth-submit" id="login-submit">Entrar</button>
             </div>
           </form>
+
+          <!-- Login con Google y Facebook (fragments/social-login.html; cada botón solo si hay credenciales cargadas) -->
+          <th:block th:replace="~{fragments/social-login :: buttons('o entrá con')}"></th:block>
 
           <p class="auth-switch">¿No tenés cuenta? <a class="link" th:href="@{/register}">Creá una gratis</a></p>
         </div>

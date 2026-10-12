@@ -7,13 +7,19 @@ import com.dreambake.repository.CustomerTagRepository;
 import com.dreambake.repository.OrderRepository;
 import com.dreambake.repository.ProductRepository;
 import com.dreambake.repository.InventoryItemRepository;
+import com.dreambake.audit.AuditText;
+import com.dreambake.service.AuditService;
+import com.dreambake.service.OrderNoticeService;
 import com.dreambake.service.OrderPricingService;
+import com.dreambake.service.StockCalculator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Map;
@@ -23,6 +29,10 @@ import java.util.ArrayList;
 @RestController
 @RequestMapping("/api/orders")
 public class OrderRestController {
+
+    @Autowired
+    private com.dreambake.service.BusinessProfileService businessProfile;   // pausa y anticipación (paso 6.4)
+
 
     @Autowired
     private OrderRepository orderRepo;
@@ -41,6 +51,23 @@ public class OrderRestController {
 
     @Autowired
     private OrderPricingService pricingService;
+
+    @Autowired
+    private StockCalculator stockCalculator;
+
+    // Registro de auditoría (paso 3.3). En pedidos se llama directo (no con @Auditable) porque casi
+    // todo necesita el antes y el después, o saber qué pasó adentro (por ejemplo, si se forzó el stock).
+    @Autowired
+    private AuditService audit;
+
+    // Avisa (por evento) que un pedido se creó o cambió de estado: OrderNoticeService manda los emails
+    // DESPUÉS de que el cambio se guardó bien, en otro hilo.
+    @Autowired
+    private ApplicationEventPublisher events;
+
+    private void notifyChange(Order order, boolean created) {
+        events.publishEvent(new OrderNoticeService.OrderChanged(order.getId(), order.getStatus(), created));
+    }
 
     @GetMapping
     public List<Order> getAllOrders() {
@@ -94,6 +121,7 @@ public class OrderRestController {
 
         // Siempre es un pedido NUEVO: si viniera un id, save() pisaría un pedido existente
         order.setId(null);
+        order.setTrackingCode(null); // el código de seguimiento lo genera el servidor (Order.onCreate), nunca el navegador
         order.setCustomer(null); // el cliente se une al confirmar (ver linkCustomer)
         if (order.getItems() != null) {
             order.getItems().forEach(item -> item.setId(null));
@@ -118,6 +146,12 @@ public class OrderRestController {
             if (deliveryError != null) {
                 return ResponseEntity.badRequest().body(Map.of("message", deliveryError));
             }
+            // Pedidos pausados (vacaciones) y días de anticipación mínima (paso 6.4, Ajustes del panel).
+            // La tienda ya lo avisa, pero el servidor lo vuelve a revisar: no se puede saltear desde el navegador.
+            String storeRule = businessProfile.checkStoreOrder(order.getDeliveryDate());
+            if (storeRule != null) {
+                return ResponseEntity.badRequest().body(Map.of("message", storeRule));
+            }
 
             // Precios reales y cupón: los calcula el servidor (no se usa el total que manda el navegador)
             String priceError = pricingService.priceStoreOrder(order);
@@ -135,8 +169,28 @@ public class OrderRestController {
                 item.setProductType(InputSanitizer.clean(item.getProductType(), 200));
                 item.setDetails(InputSanitizer.clean(item.getDetails(), 3000));
             }
-        } else if (deliveryError != null) {
-            return ResponseEntity.badRequest().body(Map.of("message", deliveryError));
+
+            // Fidelización (opcional): cumpleaños y consentimiento para recibir promociones.
+            // El consentimiento necesita un email (es a donde se mandan) y se guarda con su fecha.
+            if (Boolean.TRUE.equals(order.getMarketingConsent())) {
+                if (order.getCustomerEmail() == null || order.getCustomerEmail().isBlank()) {
+                    return ResponseEntity.badRequest().body(Map.of("message",
+                            "Para recibir promociones necesitamos tu email."));
+                }
+                order.setMarketingConsentAt(LocalDateTime.now());
+            } else {
+                order.setMarketingConsent(false);
+                order.setMarketingConsentAt(null);
+            }
+            order.setCustomerBirthDate(validBirthDate(order.getCustomerBirthDate()));
+        } else {
+            if (deliveryError != null) {
+                return ResponseEntity.badRequest().body(Map.of("message", deliveryError));
+            }
+            // El personal no puede dar el consentimiento en nombre de un cliente: lo da el cliente en la tienda
+            order.setMarketingConsent(false);
+            order.setMarketingConsentAt(null);
+            order.setCustomerBirthDate(validBirthDate(order.getCustomerBirthDate()));
         }
 
         if (order.getItems() != null) {
@@ -153,13 +207,39 @@ public class OrderRestController {
         if (savedOrder.getStatus() == OrderStatus.CONFIRMED) {
             deductInventory(savedOrder);
         }
+        // Auditoría: desde la tienda el actor es el cliente (o "Cliente web" si no inició sesión)
+        if (!isStaff) {
+            audit.log(AuditAction.CREATE, AuditModule.PEDIDOS, "Pedido", savedOrder.getId(),
+                    "Pedido nuevo " + AuditText.order(savedOrder) + " desde la tienda web, por "
+                            + AuditText.money(savedOrder.getTotalPrice()),
+                    AuditText.snapshot(savedOrder));
+        } else {
+            audit.log(AuditAction.CREATE, AuditModule.PEDIDOS, "Pedido", savedOrder.getId(),
+                    "Cargó a mano el pedido " + AuditText.order(savedOrder) + " (estado "
+                            + AuditText.status(savedOrder.getStatus()) + ", " + AuditText.money(savedOrder.getTotalPrice()) + ")",
+                    AuditText.snapshot(savedOrder));
+        }
+        // Pedido nuevo de la tienda: "Recibimos tu pedido" al cliente y "Nuevo pedido" al negocio.
+        // Uno cargado a mano ya confirmado avisa "confirmado"; los otros estados no avisan.
+        if (!isStaff) {
+            notifyChange(savedOrder, true);
+        } else if (savedOrder.getStatus() == OrderStatus.CONFIRMED) {
+            notifyChange(savedOrder, false);
+        }
         return ResponseEntity.ok(savedOrder);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteOrder(@PathVariable Long id) {
-        if (orderRepo.existsById(id)) {
+        Optional<Order> found = orderRepo.findById(id);
+        if (found.isPresent()) {
+            // Se guarda la "foto" del pedido ANTES de borrarlo (después ya no existe)
+            Order order = found.get();
+            String label = AuditText.order(order);
+            Map<String, Object> before = AuditText.snapshot(order);
             orderRepo.deleteById(id);
+            audit.log(AuditAction.DELETE, AuditModule.PEDIDOS, "Pedido", id, "Eliminó el pedido " + label,
+                    AuditText.change(before, null));
             return ResponseEntity.ok().build();
         }
         return ResponseEntity.notFound().build();
@@ -176,7 +256,13 @@ public class OrderRestController {
         return orderRepo.findById(id).map(order -> {
             boolean force = req.force() != null ? req.force() : false;
             
-            if (order.getStatus() != OrderStatus.CONFIRMED) {
+            boolean wasConfirmed = order.getStatus() == OrderStatus.CONFIRMED;
+            OrderStatus statusBefore = order.getStatus();
+            Double depositBefore = order.getDeposit();
+            LocalDate dateBefore = order.getDeliveryDate();
+            // ¿Faltaba stock? (para dejar constancia si se confirmó igual, forzando)
+            boolean lackingStock = !wasConfirmed && checkStockForConfirmation(order, false) != null;
+            if (!wasConfirmed) {
                 ResponseEntity<?> errorResponse = checkStockForConfirmation(order, force);
                 if (errorResponse != null) {
                     return errorResponse;
@@ -193,7 +279,26 @@ public class OrderRestController {
 
             // Une el pedido con su cliente (lo crea si su teléfono no existe)
             linkCustomer(order);
-            return ResponseEntity.ok(orderRepo.save(order));
+            Order saved = orderRepo.save(order);
+            if (!wasConfirmed) notifyChange(saved, false);   // "Tu pedido está confirmado"
+
+            Map<String, Object> details = new HashMap<>();
+            details.put("antes", Map.of("estado", AuditText.status(statusBefore), "sena", String.valueOf(depositBefore),
+                    "entrega", String.valueOf(dateBefore)));
+            details.put("despues", Map.of("estado", AuditText.status(saved.getStatus()), "sena", String.valueOf(saved.getDeposit()),
+                    "entrega", String.valueOf(saved.getDeliveryDate())));
+            details.put("faltabaStock", lackingStock);
+            details.put("forzado", lackingStock && force);
+            if (wasConfirmed) {
+                audit.log(AuditAction.UPDATE, AuditModule.PEDIDOS, "Pedido", saved.getId(),
+                        "Actualizó la seña o la fecha del pedido ya agendado " + AuditText.order(saved), details);
+            } else {
+                audit.log(AuditAction.STATUS_CHANGE, AuditModule.PEDIDOS, "Pedido", saved.getId(),
+                        "Confirmó el pedido " + AuditText.order(saved) + " con una seña de " + AuditText.money(saved.getDeposit())
+                                + (lackingStock && force ? " — sin stock suficiente: se forzó la confirmación" : ""),
+                        details);
+            }
+            return ResponseEntity.ok(saved);
         }).orElse(ResponseEntity.notFound().build());
     }
 
@@ -202,6 +307,7 @@ public class OrderRestController {
     @Transactional
     public ResponseEntity<?> updateOrderFull(@PathVariable Long id, @RequestBody Order updatedOrder) {
         return orderRepo.findById(id).map(order -> {
+            Map<String, Object> before = AuditText.snapshot(order); // "foto" antes de editar
             order.setCustomerName(updatedOrder.getCustomerName());
             order.setCustomerPhone(updatedOrder.getCustomerPhone());
             order.setDeliveryDate(updatedOrder.getDeliveryDate());
@@ -210,7 +316,17 @@ public class OrderRestController {
 
             // Estos datos solo se cambian si vienen en la petición
             // (antes el email se borraba al editar porque el panel no lo mandaba)
-            if (updatedOrder.getCustomerEmail() != null) order.setCustomerEmail(updatedOrder.getCustomerEmail());
+            if (updatedOrder.getCustomerEmail() != null) {
+                // El consentimiento para promociones se dio para el email que escribió el cliente:
+                // si el panel lo cambia por otro, ese consentimiento ya no vale para el email nuevo
+                boolean changed = !updatedOrder.getCustomerEmail().trim()
+                        .equalsIgnoreCase(order.getCustomerEmail() == null ? "" : order.getCustomerEmail().trim());
+                if (changed) {
+                    order.setMarketingConsent(false);
+                    order.setMarketingConsentAt(null);
+                }
+                order.setCustomerEmail(updatedOrder.getCustomerEmail());
+            }
             if (updatedOrder.getDeliveryShift() != null) order.setDeliveryShift(updatedOrder.getDeliveryShift());
             if (updatedOrder.getDeliveryMethod() != null) {
                 order.setDeliveryMethod(updatedOrder.getDeliveryMethod());
@@ -222,11 +338,13 @@ public class OrderRestController {
             }
 
             // Si el estado viene en la petición, lo actualizamos
+            boolean statusChanged = false;
             if (updatedOrder.getStatus() != null) {
                 if (updatedOrder.getStatus() == OrderStatus.CONFIRMED && order.getStatus() == OrderStatus.PENDING) {
                     deductInventory(order);
                     linkCustomer(order);
                 }
+                statusChanged = updatedOrder.getStatus() != order.getStatus();
                 order.setStatus(updatedOrder.getStatus());
             }
 
@@ -240,7 +358,12 @@ public class OrderRestController {
                 }
             }
             calculateStockStatus(order);
-            return ResponseEntity.ok(orderRepo.save(order));
+            Order saved = orderRepo.save(order);
+            if (statusChanged) notifyChange(saved, false);
+            Map<String, Object> diff = AuditText.diff(before, AuditText.snapshot(saved));
+            audit.log(AuditAction.UPDATE, AuditModule.PEDIDOS, "Pedido", saved.getId(),
+                    "Editó el pedido " + AuditText.order(saved) + AuditText.changedFields(diff), diff);
+            return ResponseEntity.ok(saved);
         }).orElse(ResponseEntity.notFound().build());
     }
 
@@ -252,6 +375,9 @@ public class OrderRestController {
     public ResponseEntity<?> updateStatus(@PathVariable Long id, @RequestBody StatusRequest req) {
         return orderRepo.findById(id).map(order -> {
             boolean force = req.force() != null ? req.force() : false;
+            OrderStatus statusBefore = order.getStatus();
+            boolean confirming = req.status() == OrderStatus.CONFIRMED && order.getStatus() == OrderStatus.PENDING;
+            boolean lackingStock = confirming && checkStockForConfirmation(order, false) != null;
             if (req.status() == OrderStatus.CONFIRMED && order.getStatus() == OrderStatus.PENDING) {
                 ResponseEntity<?> errorResponse = checkStockForConfirmation(order, force);
                 if (errorResponse != null) {
@@ -262,32 +388,27 @@ public class OrderRestController {
             if (req.status() == OrderStatus.CONFIRMED || req.status() == OrderStatus.COMPLETED) {
                 linkCustomer(order);
             }
+            boolean changed = req.status() != order.getStatus();
             order.setStatus(req.status());
-            return ResponseEntity.ok(orderRepo.save(order));
+            Order saved = orderRepo.save(order);
+            if (changed) {
+                notifyChange(saved, false);
+                audit.log(AuditAction.STATUS_CHANGE, AuditModule.PEDIDOS, "Pedido", saved.getId(),
+                        "Cambió el pedido " + AuditText.order(saved) + " de «" + AuditText.status(statusBefore)
+                                + "» a «" + AuditText.status(saved.getStatus()) + "»"
+                                + (lackingStock && force ? " — sin stock suficiente: se forzó la confirmación" : ""),
+                        Map.of("antes", Map.of("estado", AuditText.status(statusBefore)),
+                                "despues", Map.of("estado", AuditText.status(saved.getStatus())),
+                                "forzado", lackingStock && force));
+            }
+            return ResponseEntity.ok(saved);
         }).orElse(ResponseEntity.notFound().build());
     }
 
+    // Insumos que necesita el pedido según las recetas. El cálculo se pasó a StockCalculator (paso 5.3)
+    // para que también lo use Bakey; acá se sigue usando igual que antes.
     private Map<Long, Double> getRequiredStock(Order order) {
-        Map<Long, Double> requiredStock = new HashMap<>();
-        if (order.getItems() != null) {
-            for (OrderItem item : order.getItems()) {
-                Product product = item.getProduct();
-                if (product == null && item.getProductType() != null) {
-                    product = productRepo.findByNameIgnoreCase(item.getProductType()).orElse(null);
-                }
-                
-                if (product != null && product.getRecipe() != null && product.getRecipe().getItems() != null) {
-                    for (RecipeItem recipeItem : product.getRecipe().getItems()) {
-                        if (recipeItem.getInventoryItem() != null && recipeItem.getInventoryItem().getId() != null) {
-                            Long invId = recipeItem.getInventoryItem().getId();
-                            Double qty = recipeItem.getQuantityRequired();
-                            requiredStock.put(invId, requiredStock.getOrDefault(invId, 0.0) + qty);
-                        }
-                    }
-                }
-            }
-        }
-        return requiredStock;
+        return stockCalculator.requiredFor(order);
     }
 
     private ResponseEntity<?> checkStockForConfirmation(Order order, boolean force) {
@@ -365,6 +486,7 @@ public class OrderRestController {
 
         Map<Long, Double> requiredStock = getRequiredStock(order);
         List<InventoryItem> itemsToUpdate = new ArrayList<>();
+        List<Map<String, Object>> changes = new ArrayList<>(); // para la auditoría: cada insumo, antes y después
 
         for (Map.Entry<Long, Double> entry : requiredStock.entrySet()) {
             inventoryItemRepo.findById(entry.getKey()).ifPresent(invItem -> {
@@ -378,10 +500,22 @@ public class OrderRestController {
                 
                 invItem.setCurrentStock(newStock);
                 itemsToUpdate.add(invItem);
+                Map<String, Object> change = new java.util.LinkedHashMap<>();
+                change.put("insumo", invItem.getName());
+                change.put("unidad", invItem.getUnit());
+                change.put("antes", current);
+                change.put("despues", newStock);
+                changes.add(change);
             });
         }
         
         inventoryItemRepo.saveAll(itemsToUpdate);
+        if (!changes.isEmpty()) {
+            audit.log(AuditAction.UPDATE, AuditModule.INVENTARIO, "Pedido", order.getId(),
+                    "Descuento automático de insumos al confirmar el pedido #" + order.getId()
+                            + " (" + changes.size() + (changes.size() == 1 ? " insumo)" : " insumos)"),
+                    Map.of("insumos", changes));
+        }
     }
 
     // ================= CLIENTE Y ENTREGA =================
@@ -401,12 +535,33 @@ public class OrderRestController {
             newCustomer.setTag(tagRepo.findByName("Sin etiqueta").orElse(null));
             return newCustomer;
         });
+        // Fidelización: el cumpleaños que dejó en el checkout pasa a su ficha
+        if (order.getCustomerBirthDate() != null) {
+            customer.setBirthDate(order.getCustomerBirthDate());
+        }
+        // Si en este pedido aceptó recibir promociones, queda registrado con la fecha en que lo aceptó
+        // y con el email que dio (a ese email se le mandan). Si NO tildó la casilla no se cambia nada:
+        // no tildarla no es pedir la baja (para eso está el link de baja de cada email).
+        if (Boolean.TRUE.equals(order.getMarketingConsent())
+                && order.getCustomerEmail() != null && !order.getCustomerEmail().isBlank()) {
+            customer.setEmail(order.getCustomerEmail().trim());
+            customer.setMarketingConsent(true);
+            customer.setConsentDate(order.getMarketingConsentAt() != null
+                    ? order.getMarketingConsentAt() : LocalDateTime.now());
+        }
         // Si pidió envío y el cliente todavía no tenía dirección, se guarda la del pedido
         if ((customer.getAddress() == null || customer.getAddress().isBlank())
                 && "Envío".equals(order.getDeliveryMethod()) && order.getDeliveryAddress() != null) {
             customer.setAddress(order.getDeliveryAddress());
         }
         order.setCustomer(customerRepo.save(customer));
+    }
+
+    // Fecha de cumpleaños razonable (entre 1900 y hoy); si no lo es, se descarta (es un dato opcional)
+    private LocalDate validBirthDate(LocalDate date) {
+        if (date == null) return null;
+        if (date.isAfter(LocalDate.now()) || date.isBefore(LocalDate.of(1900, 1, 1))) return null;
+        return date;
     }
 
     // Deja el método de entrega en uno de los dos valores válidos ("Retiro" o "Envío").

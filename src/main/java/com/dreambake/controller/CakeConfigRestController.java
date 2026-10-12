@@ -1,5 +1,10 @@
 package com.dreambake.controller;
 
+import com.dreambake.audit.Auditable;
+import com.dreambake.audit.AuditText;
+import com.dreambake.entity.AuditAction;
+import com.dreambake.entity.AuditModule;
+import com.dreambake.service.AuditService;
 import com.dreambake.entity.CakeOption;
 import com.dreambake.entity.CakeSize;
 import com.dreambake.repository.CakeOptionRepository;
@@ -22,6 +27,10 @@ public class CakeConfigRestController {
 
     @Autowired
     private CakeOptionRepository cakeOptionRepository;
+
+    // Registro de auditoría (paso 3.3): se usa directo donde hace falta el antes y el después
+    @Autowired
+    private AuditService audit;
 
     @PostConstruct
     public void initDefaultData() {
@@ -72,7 +81,20 @@ public class CakeConfigRestController {
         return response;
     }
 
+    // Los datos de un tamaño de torta que se comparan en la auditoría
+    private Map<String, Object> sizeSnapshot(CakeSize s) {
+        Map<String, Object> m = new java.util.LinkedHashMap<>();
+        m.put("nombre", s.getName());
+        m.put("precio", s.getPrice());
+        m.put("rellenos", s.getMaxRellenos());
+        m.put("mezclaBizcochuelos", s.getMixSponge());
+        m.put("visible", s.getEnabled());
+        return m;
+    }
+
     @PostMapping("/sizes")
+    @Auditable(action = AuditAction.CREATE, module = AuditModule.ARMADOR, entityType = "Tamaño de torta", entityId = "#body.id",
+            description = "Agregó el tamaño de torta «#{#body.name}» a #{T(com.dreambake.audit.AuditText).money(#body.price)}")
     public ResponseEntity<CakeSize> createSize(@RequestBody CakeSize size) {
         size.setId(null);
         if (size.getEnabled() == null)
@@ -83,22 +105,34 @@ public class CakeConfigRestController {
     @PutMapping("/sizes/{id}")
     public ResponseEntity<CakeSize> updateSize(@PathVariable Long id, @RequestBody CakeSize updated) {
         return cakeSizeRepository.findById(id).map(size -> {
+            // Antes y después (cambio de precio): llamada directa a la auditoría
+            Map<String, Object> before = sizeSnapshot(size);
             size.setName(updated.getName());
             size.setPrice(updated.getPrice());
             size.setMaxRellenos(updated.getMaxRellenos());
             size.setMixSponge(updated.getMixSponge());
             size.setEnabled(updated.getEnabled());
-            return ResponseEntity.ok(cakeSizeRepository.save(size));
+            CakeSize saved = cakeSizeRepository.save(size);
+            Map<String, Object> diff = AuditText.diff(before, sizeSnapshot(saved));
+            audit.log(AuditAction.UPDATE, AuditModule.ARMADOR, "Tamaño de torta", saved.getId(),
+                    "Editó el tamaño de torta «" + saved.getName() + "»" + AuditText.changedFields(diff), diff);
+            return ResponseEntity.ok(saved);
         }).orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/sizes/{id}")
     public ResponseEntity<Void> deleteSize(@PathVariable Long id) {
+        String name = cakeSizeRepository.findById(id).map(CakeSize::getName).orElse(null);
         cakeSizeRepository.deleteById(id);
+        if (name != null) {
+            audit.log(AuditAction.DELETE, AuditModule.ARMADOR, "Tamaño de torta", id, "Eliminó el tamaño de torta «" + name + "»", null);
+        }
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/options")
+    @Auditable(action = AuditAction.CREATE, module = AuditModule.ARMADOR, entityType = "Opción de torta", entityId = "#body.id",
+            description = "Agregó la opción «#{#body.name}» (#{#body.category}) al armador de tortas")
     public ResponseEntity<CakeOption> createOption(@RequestBody CakeOption option) {
         option.setId(null);
         if (option.getEnabled() == null)
@@ -107,6 +141,8 @@ public class CakeConfigRestController {
     }
 
     @PutMapping("/options/{id}")
+    @Auditable(action = AuditAction.UPDATE, module = AuditModule.ARMADOR, entityType = "Opción de torta", entityId = "#id",
+            description = "Editó la opción «#{#body.name}» del armador de tortas#{#body.enabled ? '' : ' (quedó oculta)'}")
     public ResponseEntity<CakeOption> updateOption(@PathVariable Long id, @RequestBody CakeOption updated) {
         return cakeOptionRepository.findById(id).map(opt -> {
             opt.setName(updated.getName());
@@ -118,7 +154,11 @@ public class CakeConfigRestController {
 
     @DeleteMapping("/options/{id}")
     public ResponseEntity<Void> deleteOption(@PathVariable Long id) {
+        String name = cakeOptionRepository.findById(id).map(CakeOption::getName).orElse(null);
         cakeOptionRepository.deleteById(id);
+        if (name != null) {
+            audit.log(AuditAction.DELETE, AuditModule.ARMADOR, "Opción de torta", id, "Eliminó la opción «" + name + "» del armador de tortas", null);
+        }
         return ResponseEntity.ok().build();
     }
 }

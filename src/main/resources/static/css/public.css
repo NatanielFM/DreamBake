@@ -393,3 +393,25 @@
   bottom: var(--space-3);
   white-space: nowrap;
 }
+
+/* ---------- Avisos de la tienda (paso 6.4, fragments/store-notice.html) ----------
+   Franja al principio del contenido: mensaje de la dueña (rosa suave) o pedidos pausados (más fuerte). */
+.store-notice {
+  background: var(--rose-100);
+  color: var(--ink);
+}
+.store-notice--paused {
+  background: var(--ink);
+  color: var(--white);
+}
+.store-notice__inner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding-block: var(--space-3);
+  font-size: var(--fs-small);
+  line-height: 1.5;
+}
+.store-notice__inner svg { flex: none; width: 20px; height: 20px; margin-top: 1px; }
+.store-notice__inner p { margin: 0; }
+.store-notice a { color: inherit; text-decoration: underline; text-underline-offset: 3px; font-weight: var(--fw-semibold); }

@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       if (isPicker) {
         div.addEventListener('click', () => {
-          document.getElementById('prod-image-preview').innerHTML = `<img src="${img.url}" alt="">`;
+          document.getElementById('prod-image-preview').innerHTML = `<img src="${img.url}" alt="Foto elegida para el producto">`;
           document.getElementById('modal-gallery-picker').hidden = true;
         });
       } else {
@@ -90,8 +90,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const MAX_SIDE = 1600;
   const KEEP_AS_IS_BYTES = 1.5 * 1024 * 1024;
 
+  // El servidor (FileStorageService, paso 6.7) acepta JPG, PNG y WebP de hasta 5 MB y vuelve a achicar y
+  // comprimir. Un GIF (u otro formato) se pasa a JPG acá: si era animado, queda la primera imagen.
   async function prepareImage(file) {
-    if (file.type === 'image/gif') return file;   // un GIF puede ser animado: se sube como está
     try {
       const url = URL.createObjectURL(file);
       const img = new Image();
@@ -135,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (res.ok) {
             const newImage = await res.json();
             const preview = document.getElementById('prod-image-preview');
-            if(preview) preview.innerHTML = `<img src="${newImage.url}">`;
+            if(preview) preview.innerHTML = `<img src="${newImage.url}" alt="Foto elegida para el producto">`;
             window.loadGalleryFromServer();
           } else {
             // El servidor explica el motivo (formato no permitido, foto demasiado pesada…)

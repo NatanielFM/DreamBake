@@ -1,5 +1,5 @@
 /* =========================================================
-   login.css — Páginas de acceso: /login y /register (Fase 4)
+   login.css — Páginas de acceso: /login, /register y /recuperar (Fase 4, paso 6.1)
    ---------------------------------------------------------
    Requiere tokens.css y components.css (inputs, botones).
    Escritorio: dos columnas (panel de marca con foto + formulario).
@@ -18,6 +18,7 @@
 
 .auth {
   display: grid;
+  align-content: start;   /* en el celular, si el formulario es corto (ej: /recuperar) la franja de marca no se estira */
   min-height: calc(100svh - var(--header-height));
 }
 
@@ -107,6 +108,15 @@
 }
 
 .auth-submit { margin-top: var(--space-2); }
+/* "¿Olvidaste tu contraseña?" debajo del campo (paso 6.1). Alto mínimo de 44 px para tocarlo bien en el celular. */
+.auth-forgot {
+  justify-self: end;   /* .field es una grilla: lo manda a la derecha */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: calc(var(--space-2) * -1) 0 calc(var(--space-3) * -1);
+  font-size: var(--fs-small);
+}
 /* "Mantener la sesión iniciada": casilla con área táctil de 44 px (.check, components.css) */
 .auth-remember { margin-top: calc(var(--space-2) * -1); color: var(--text-strong); }
 
@@ -178,3 +188,103 @@
   .login-alert:not([hidden]) { animation-name: fade-in; }
   .toggle-password:active { transform: none; }
 }
+
+/* ---------- Login con Google (fragments/social-login.html) ----------
+   Colores y letra del botón según la guía de marca de Google ("Sign in with Google").
+   Son de Google, no de la paleta del sitio: por eso van fijos acá y no en tokens.css. */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-5) 0;
+  color: var(--rose-800);
+  font-size: var(--fs-small);
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.google-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1px solid #747775;
+  border-radius: var(--radius-pill, 999px);
+  background: #ffffff;
+  color: #1f1f1f;
+  font-family: "Roboto", Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: 0.25px;
+  text-decoration: none;
+  transition: background-color var(--dur-fast, 150ms) var(--ease-out, ease), box-shadow var(--dur-fast, 150ms) var(--ease-out, ease);
+}
+.google-button__logo { flex: none; width: 20px; height: 20px; }
+.google-button:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.google-button:active { background: #f2f2f2; }
+@media (hover: hover) and (pointer: fine) {
+  .google-button:hover {
+    background: #f8f8f8;
+    box-shadow: 0 1px 2px rgb(60 64 67 / 0.3), 0 1px 3px 1px rgb(60 64 67 / 0.15);
+  }
+}
+
+/* ---------- Login con Facebook (fragments/social-login.html) ----------
+   Según la guía de marca de Meta: logo "f" oficial en blanco sobre el azul de Facebook
+   (#0866FF, el azul actual de la marca; con letra blanca tiene buen contraste).
+   Mismo tamaño y letra que el botón de Google, para que se vean como un par.
+   Van uno debajo del otro: con el texto oficial completo no entran lado a lado en la tarjeta. */
+.social-buttons {
+  display: grid;
+  gap: var(--space-3);
+}
+.facebook-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1px solid #0866ff;
+  border-radius: var(--radius-pill);
+  background: #0866ff;
+  color: #ffffff;
+  font-family: "Roboto", Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: 0.25px;
+  text-decoration: none;
+  transition: background-color var(--dur-fast) var(--ease-out, ease);
+}
+.facebook-button__logo { flex: none; width: 20px; height: 20px; }
+.facebook-button:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.facebook-button:active { background: #0659d6; }
+@media (hover: hover) and (pointer: fine) {
+  .facebook-button:hover { background: #0760e8; }
+}
+
+/* ---------- Completá tu email (registro con Facebook sin email) ---------- */
+.input--code {
+  font-size: 1.5rem;
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.4em;
+  text-align: center;
+}
+.auth-secondary-action { margin-top: var(--space-3); }

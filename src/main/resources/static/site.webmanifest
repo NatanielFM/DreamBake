@@ -1,0 +1,14 @@
+{
+  "name": "Dulce Sueños Posadas",
+  "short_name": "Dulce Sueños",
+  "description": "Tortas personalizadas y mesas dulces en Posadas, Misiones.",
+  "lang": "es-AR",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#fef9f9",
+  "theme_color": "#fef9f9",
+  "icons": [
+    { "src": "/img/icons/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/img/icons/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

@@ -3,7 +3,10 @@ package com.dreambake.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "customers")
@@ -27,6 +30,20 @@ public class Customer {
     @Column(name = "date_added")
     private LocalDate dateAdded;
 
+    // ===== Consentimiento para emails promocionales (Ley 25.326) =====
+    // true solo si el propio cliente lo aceptó en el checkout. El administrador puede
+    // desactivarlo, pero nunca activarlo por el cliente.
+    private Boolean marketingConsent = false;
+
+    // Cuándo lo aceptó (queda como constancia)
+    private LocalDateTime consentDate;
+
+    // Código secreto del link "darse de baja" de los emails (/baja?token=...).
+    // Se genera solo y nunca se manda en las respuestas JSON (@JsonIgnore).
+    @JsonIgnore
+    @Column(unique = true, length = 36)
+    private String unsubscribeToken;
+
     @ManyToOne
     @JoinColumn(name = "tag_id")
     private CustomerTag tag;
@@ -42,6 +59,12 @@ public class Customer {
     protected void onCreate() {
         if (dateAdded == null) {
             dateAdded = LocalDate.now();
+        }
+        if (unsubscribeToken == null) {
+            unsubscribeToken = UUID.randomUUID().toString();
+        }
+        if (marketingConsent == null) {
+            marketingConsent = false;
         }
     }
 }

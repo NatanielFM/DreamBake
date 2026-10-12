@@ -1,5 +1,8 @@
 // /js/admin/products.js - Módulo de Productos y Categorías
 document.addEventListener('DOMContentLoaded', () => {
+  // Paso 6.8: precios con formato argentino y nombres escapados
+  const money = (n) => window.DreamFormat ? window.DreamFormat.money(n) : '$ ' + Number(n || 0).toLocaleString('es-AR');
+  const esc = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
   // ================= CATEGORÍAS (TIPOS) =================
   let dbCategories = [];
@@ -36,12 +39,12 @@ document.addEventListener('DOMContentLoaded', () => {
         filterContainer.appendChild(chip);
       }
       if(prodSelectCategory) {
-        prodSelectCategory.innerHTML += `<option value="${c.name}">${c.name}</option>`;
+        prodSelectCategory.innerHTML += `<option value="${esc(c.name)}">${esc(c.name)}</option>`;
       }
     });
 
     assignChipEvents();
-    renderCategoryListModal(); 
+    renderCategoryListModal();
   }
 
   function renderCategoryListModal() {
@@ -52,25 +55,28 @@ document.addEventListener('DOMContentLoaded', () => {
     dbCategories.forEach((c, index) => {
       const li = document.createElement('li');
       li.innerHTML = `
-        <span class="cat-name">${c.name}</span>
+        <span class="cat-name">${esc(c.name)}</span>
         <div class="cat-actions">
-            <button type="button" class="cat-action-btn btn-edit" title="Modificar" aria-label="Cambiar el nombre de ${c.name}">${iconEdit}</button>
+            <button type="button" class="cat-action-btn btn-edit" title="Modificar" aria-label="Cambiar el nombre de ${esc(c.name)}">${iconEdit}</button>
             <button type="button" class="cat-action-btn btn-up" title="Subir" ${index === 0 ? 'disabled' : ''}>${iconUp}</button>
             <button type="button" class="cat-action-btn btn-down" title="Bajar" ${index === dbCategories.length - 1 ? 'disabled' : ''}>${iconDown}</button>
-            ${c.deletable ? `<button type="button" class="cat-action-btn btn-delete" title="Eliminar" aria-label="Eliminar ${c.name}">${iconDelete}</button>` : ''}
+            ${c.deletable ? `<button type="button" class="cat-action-btn btn-delete" title="Eliminar" aria-label="Eliminar ${esc(c.name)}">${iconDelete}</button>` : ''}
         </div>
       `;
 
       li.querySelector('.btn-edit').addEventListener('click', async () => {
         const newName = await window.showCustomPrompt("Escribí el nuevo nombre de la categoría:", c.name);
         if (newName && newName.trim() !== "" && newName !== c.name) {
-          await fetch(`/api/categories/${c.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: newName.trim() })
-          });
+          try {
+            const res = await fetch(`/api/categories/${c.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name: newName.trim() })
+            });
+            if (!res.ok) await window.DreamUI.fail(res, 'No se pudo cambiar el nombre del tipo.');
+          } catch (e) { window.DreamUI.offline(); }
           loadCategoriesFromServer();
-          loadProductsFromServer(); 
+          loadProductsFromServer();
         }
       });
 
@@ -84,10 +90,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (c.deletable) {
         li.querySelector('.btn-delete').addEventListener('click', () => {
-          window.showConfirmModal('Eliminar Tipo', `¿Seguro que deseas eliminar "${c.name}"? Sus productos pasarán a "Sin tipo".`, 'Eliminar', 'btn-red', async () => {
-            await fetch(`/api/categories/${c.id}`, { method: 'DELETE' });
+          window.showConfirmModal('Eliminar tipo', `¿Seguro que querés eliminar "${c.name}"? Sus productos pasan a "Sin tipo".`, 'Eliminar', 'btn-red', async () => {
+            try {
+              const res = await fetch(`/api/categories/${c.id}`, { method: 'DELETE' });
+              if (!res.ok) await window.DreamUI.fail(res, 'No se pudo eliminar el tipo.');
+            } catch (e) { window.DreamUI.offline(); }
             loadCategoriesFromServer();
-            loadProductsFromServer(); 
+            loadProductsFromServer();
           });
         });
       }
@@ -108,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderedIds)
       });
-      loadCategoriesFromServer(); 
+      loadCategoriesFromServer();
     } catch (e) { window.showErrorAlert("No se pudo guardar el nuevo orden."); }
   }
 
@@ -132,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const btnAddCat = document.getElementById('btn-add-cat');
   if(btnAddCat) {
-    btnAddCat.addEventListener('click', async () => {
+    btnAddCat.addEventListener('click', () => window.DreamUI.busy(btnAddCat, async () => {
       const input = document.getElementById('new-cat-name');
       if (!input.value.trim()) return;
       try {
@@ -145,12 +154,12 @@ document.addEventListener('DOMContentLoaded', () => {
           input.value = '';
           document.getElementById('add-cat-container').style.display = 'none';
           document.getElementById('btn-show-add-cat').style.display = 'block';
-          loadCategoriesFromServer(); 
+          loadCategoriesFromServer();
         } else {
-          window.showErrorAlert("Ese tipo de producto ya existe.");
+          await window.DreamUI.fail(res, 'Ese tipo de producto ya existe.');
         }
-      } catch(e) {}
-    });
+      } catch(e) { window.DreamUI.offline(); }
+    }));
   }
 
   // ================= PRODUCTOS =================
@@ -167,15 +176,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const emptyViewer = document.getElementById('empty-viewer');
   const activeViewer = document.getElementById('active-viewer');
   const productForm = document.getElementById('product-form');
-  
+
+  let productsLoaded = false;
   async function loadProductsFromServer() {
+    const grid = document.getElementById('product-grid');
+    if (!productsLoaded) window.DreamUI?.boxLoading(grid, 'Cargando productos…');
     try {
       const res = await fetch('/api/products');
-      if (res.ok) {
-        dbProducts = await res.json();
-        renderCatalog(); 
-      }
-    } catch (e) {}
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      dbProducts = await res.json();
+      productsLoaded = true;
+      renderCatalog();
+    } catch (e) {
+      if (!productsLoaded) window.DreamUI?.boxMessage(grid, 'No se pudieron cargar los productos.', 'Revisá la conexión y recargá la página.', true);
+    }
   }
 
   const btnAddNew = document.getElementById('btn-add-new-product');
@@ -184,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
       productForm.reset();
       document.getElementById('prod-id').value = '';
       document.getElementById('prod-image-preview').innerHTML = '<span>Sin foto</span>';
-      document.getElementById('btn-delete').disabled = true; 
+      document.getElementById('btn-delete').disabled = true;
       updateMarginHint();
       emptyViewer.style.display = 'none';
       activeViewer.style.display = 'block';
@@ -195,11 +209,11 @@ document.addEventListener('DOMContentLoaded', () => {
     productForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const id = document.getElementById('prod-id').value;
-      
+
       let imageUrl = '';
       const previewImg = document.querySelector('#prod-image-preview img');
       if (previewImg && !previewImg.src.startsWith('data:')) {
-          imageUrl = new URL(previewImg.src).pathname; 
+          imageUrl = new URL(previewImg.src).pathname;
       }
 
       const recipeId = document.getElementById('prod-recipe').value;
@@ -222,26 +236,28 @@ document.addEventListener('DOMContentLoaded', () => {
       const url = id ? `/api/products/${id}` : '/api/products';
       const method = id ? 'PUT' : 'POST';
 
-      try {
-        const res = await fetch(url, {
-          method: method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(productData)
-        });
-        
-        if (res.ok) {
-          activeViewer.style.display = 'none';
-          emptyViewer.style.display = 'flex';
-          loadProductsFromServer();
-        } else if (res.status === 400) {
-          const errors = await res.json();
-          window.showErrorAlert(errors);
-        } else {
-          window.showErrorAlert("Ocurrió un error inesperado al guardar.");
+      // Botón bloqueado mientras se guarda (un doble clic creaba el producto dos veces)
+      await window.DreamUI.busy(e.submitter || productForm.querySelector('button[type="submit"]'), async () => {
+        try {
+          const res = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(productData)
+          });
+          if (res.ok) {
+            activeViewer.style.display = 'none';
+            emptyViewer.style.display = 'flex';
+            loadProductsFromServer();
+          } else if (res.status === 400 && (res.headers.get('content-type') || '').includes('json')) {
+            const errors = await res.json();
+            window.showErrorAlert(errors.message || errors);
+          } else {
+            await window.DreamUI.fail(res, 'No se pudo guardar el producto.');
+          }
+        } catch (err) {
+          window.DreamUI.offline();
         }
-      } catch (e) {
-        window.showErrorAlert("Error de conexión al servidor.");
-      }
+      });
     });
   }
 
@@ -257,8 +273,10 @@ document.addEventListener('DOMContentLoaded', () => {
             activeViewer.style.display = 'none';
             emptyViewer.style.display = 'flex';
             loadProductsFromServer();
+          } else {
+            await window.DreamUI.fail(res, 'No se pudo eliminar el producto.');
           }
-        } catch (e) {}
+        } catch (e) { window.DreamUI.offline(); }
       });
     });
   }
@@ -281,22 +299,22 @@ document.addEventListener('DOMContentLoaded', () => {
     let gridWidth = grid.clientWidth;
     if (gridWidth <= 0) {
       const sidebarW = (window.innerWidth > 880 && !document.body.classList.contains('sidebar-toggled')) ? 220 : 0;
-      gridWidth = window.innerWidth - sidebarW - 48; 
+      gridWidth = window.innerWidth - sidebarW - 48;
     }
     if (gridWidth <= 0) gridWidth = 400;
 
-    const minColWidth = 220; 
-    const gap = 24; 
-    
+    const minColWidth = 220;
+    const gap = 24;
+
     let cols = Math.floor((gridWidth + gap) / (minColWidth + gap));
     if (cols < 1) cols = 1;
 
     let newItemsPerPage = cols * 3;
-    if (newItemsPerPage < 6) newItemsPerPage = 6; 
+    if (newItemsPerPage < 6) newItemsPerPage = 6;
 
     if (newItemsPerPage !== itemsPerPage) {
       itemsPerPage = newItemsPerPage;
-      currentPage = 1; 
+      currentPage = 1;
       renderCatalog();
     }
   }
@@ -309,7 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('#filter-container .chip').forEach(c => c.classList.remove('active'));
         e.currentTarget.classList.add('active');
         currentCategoryFilter = e.currentTarget.dataset.filter;
-        currentPage = 1; 
+        currentPage = 1;
         renderCatalog();
       });
     });
@@ -319,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if(searchProd) {
     searchProd.addEventListener('input', (e) => {
       currentSearchQuery = e.target.value.toLowerCase();
-      currentPage = 1; 
+      currentPage = 1;
       renderCatalog();
     });
   }
@@ -342,7 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const grid = document.getElementById('product-grid');
     if(!grid) return;
     grid.innerHTML = '';
-    
+
     if (paginatedItems.length === 0) {
       grid.innerHTML = (currentSearchQuery || currentCategoryFilter !== 'all')
         ? '<p class="empty-state grid-span"><strong>Ningún producto coincide</strong>Probá con otra palabra o elegí "Todos".</p>'
@@ -355,14 +373,14 @@ document.addEventListener('DOMContentLoaded', () => {
         div.setAttribute('role', 'button');
         div.tabIndex = 0;
         div.setAttribute('aria-label', `Editar ${p.name}${!p.enabled ? ' (oculto en la tienda)' : ''}`);
-        
+
         const imgSrc = p.imageUrl && p.imageUrl.trim() !== '' ? p.imageUrl : NO_PHOTO;
 
         div.innerHTML = `
           <img src="${imgSrc}" alt="" loading="lazy">
           <div class="card-overlay">
-            <div class="card-name">${p.name}</div>
-            <div class="card-price">$${Number(p.price).toLocaleString('es-AR')}</div>
+            <div class="card-name">${esc(p.name)}</div>
+            <div class="card-price">${money(p.price)}</div>
           </div>
         `;
         div.addEventListener('click', () => loadProductIntoViewer(p, imgSrc));
@@ -415,8 +433,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('prod-price').value = p.price;
     document.getElementById('prod-desc').value = p.description || '';
     document.getElementById('prod-enabled').checked = p.enabled;
-    document.getElementById('prod-image-preview').innerHTML = `<img src="${imgSrc}">`;
-    document.getElementById('btn-delete').disabled = false; 
+    document.getElementById('prod-image-preview').innerHTML = `<img src="${imgSrc}" alt="Foto actual del producto">`;
+    document.getElementById('btn-delete').disabled = false;
 
     if (p.category) {
         document.getElementById('prod-category').value = p.category.name;
@@ -431,7 +449,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     emptyViewer.style.display = 'none';
     activeViewer.style.display = 'block';
-    
+
     document.querySelector('.dashboard').scrollTo({ top: 0, behavior: 'smooth' });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -471,7 +489,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!recipe) { hint.textContent = ''; return; }
     if (!recipe.estimatedCost) { hint.textContent = 'Los insumos de esta receta todavía no tienen costo. Cargalo en Inventario para ver la ganancia.'; return; }
     const cost = recipe.estimatedCost;
-    const fmt = (n) => '$' + Math.round(n).toLocaleString('es-AR');
+    const fmt = (n) => money(Math.round(n));
     let text = `Costo de los insumos: ${fmt(cost)}${recipe.costComplete ? '' : ' (faltan costos de algunos insumos)'}`;
     if (!isNaN(price) && price > 0) {
       const profit = price - cost;
@@ -487,15 +505,15 @@ document.addEventListener('DOMContentLoaded', () => {
     recipesForMargin = e.detail;
     const prodRecipeSelect = document.getElementById('prod-recipe');
     if (!prodRecipeSelect) return;
-    
+
     const currentVal = prodRecipeSelect.value;
-    
+
     let html = '<option value="">Sin receta asignada</option>';
     e.detail.forEach(r => {
       html += `<option value="${r.id}">${r.name}</option>`;
     });
     prodRecipeSelect.innerHTML = html;
-    
+
     if (currentVal) prodRecipeSelect.value = currentVal;
     updateMarginHint();
   });

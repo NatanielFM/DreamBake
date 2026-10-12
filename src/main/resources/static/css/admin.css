@@ -957,6 +957,92 @@ select.form-input {
   background: var(--st-cancel-bg); color: var(--st-cancel-text); border-color: var(--st-cancel-line);
   --st-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6 6 18'/%3E%3C/svg%3E");
 }
+/* Emails de un cliente: enviado (rosa, sobre). El que no salió usa .status-cancelled */
+.status-sent {
+  background: var(--st-sched-bg); color: var(--st-sched-text); border-color: var(--st-sched-line);
+  --st-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='2'/%3E%3Cpath d='m3 7 9 6 9-6'/%3E%3C/svg%3E");
+}
+/* Clientes → Fidelización (saludos de cumpleaños) */
+.loyalty-block { padding-bottom: var(--space-4); }
+.loyalty-intro { margin: 0 0 var(--space-4); }
+.loyalty-config { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-4); }
+.loyalty-config .toggle-switch { align-self: center; }
+.loyalty-percent { width: 11rem; }
+.loyalty-percent .form-input { text-align: right; }
+.loyalty-subtitle { margin-top: var(--space-7); }
+.loyalty-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+@media (max-width: 640px) {
+  .loyalty-percent { width: 100%; }
+  .loyalty-config .btn { flex: 1 1 100%; }
+}
+
+/* Ajustes → Correo de envío */
+.mail-status { margin: 0 0 var(--space-4); font-weight: var(--fw-semibold); color: var(--admin-heading); }
+.mail-status:empty { display: none; }
+.mail-form { margin: 0; }
+/* Cada campo arriba de todo (si no, el que no tiene texto de ayuda queda más abajo que su vecino) */
+.mail-form .form-group { align-content: start; }
+.mail-details { padding: var(--space-3) var(--space-4); border: 1px solid var(--admin-line); border-radius: var(--radius-md); }
+.mail-details summary { min-height: 44px;   /* área táctil de 44 px (paso 6.8) */ display: flex; align-items: center; cursor: pointer; font-weight: var(--fw-semibold); color: var(--admin-heading); }
+.mail-details[open] summary { margin-bottom: var(--space-3); }
+.mail-steps { margin: 0; padding-left: 1.25rem; display: grid; gap: var(--space-2); color: var(--admin-text); }
+.mail-steps a { color: var(--admin-primary); font-weight: var(--fw-semibold); }
+.mail-advanced-fields { margin-bottom: var(--space-3); }
+.mail-test { margin-top: var(--space-5); padding-top: var(--space-5); border-top: 1px solid var(--admin-line); display: grid; gap: var(--space-3); justify-items: start; }
+.mail-test .form-hint { margin: 0; }
+
+/* Clientes → Fidelización → Campañas */
+.campaigns { margin-top: var(--space-7); padding-top: var(--space-6); border-top: 1px solid var(--admin-line); }
+.campaigns-head { margin-bottom: var(--space-2); }
+.campaigns-intro { margin: 0 0 var(--space-4); }
+.campaigns-limit { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); }
+.campaigns-limit .form-group { width: 13rem; margin: 0; }
+.campaigns-table { margin-top: var(--space-5); }
+.campaign-lines { display: grid; gap: 2px; }
+.campaign-progress { display: grid; gap: 4px; }
+.campaign-bar { width: 100%; max-width: 160px; height: 8px; overflow: hidden; border-radius: var(--radius-pill); background: var(--admin-surface-2); }
+.campaign-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--admin-primary); }
+.campaign-actions-cell { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+/* Editor: formulario + vista previa lado a lado (en el celular, uno debajo del otro) */
+.campaign-modal { max-width: 1180px; }
+.campaign-note { margin: 0 0 var(--space-4); }
+.campaign-editor { display: grid; gap: var(--space-6); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+.campaign-form { margin: 0; }
+.campaign-image { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.campaign-image-preview {
+  display: grid; place-items: center; width: 120px; height: 80px; overflow: hidden;
+  border: 1.5px dashed var(--admin-input-line); border-radius: var(--radius-md); background: var(--admin-surface-2);
+}
+.campaign-image-preview img { width: 100%; height: 100%; object-fit: cover; }
+.campaign-image-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.campaign-gallery { margin-top: var(--space-3); max-height: 260px; overflow-y: auto; }
+.campaign-count { margin: calc(var(--space-2) * -1) 0 0; color: var(--admin-heading); font-weight: var(--fw-semibold); }
+.campaign-schedule { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); padding: var(--space-4); border-radius: var(--radius-md); background: var(--admin-surface-2); }
+.campaign-schedule .form-group { margin: 0; }
+.campaign-actions { flex-wrap: wrap; justify-content: flex-start; }
+.campaign-preview { position: sticky; top: 0; }
+.campaign-preview-frame {
+  display: block; width: 100%; height: 640px; border: 1px solid var(--admin-line);
+  border-radius: var(--radius-md); background: var(--rose-50);
+}
+@media (max-width: 900px) {
+  .campaign-editor { grid-template-columns: 1fr; }
+  .campaign-preview { position: static; }
+  .campaign-preview-frame { height: 520px; }
+}
+@media (max-width: 640px) {
+  .campaigns-limit .form-group { width: 100%; }
+  .campaigns-limit .btn, .campaign-actions .btn, .campaign-schedule .btn { flex: 1 1 100%; }
+}
+
+/* Ficha del cliente: permiso de emails + botón para dar de baja */
+.client-consent-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.client-consent-row .modal-message { margin: 0; }
+.client-emails { margin-top: var(--space-6); padding-top: var(--space-5); border-top: 1px solid var(--admin-line); }
+.client-emails .table-responsive { margin-top: var(--space-4); }
+.contact-lines .status-badge { margin-top: var(--space-1); align-self: flex-start; }
+
 /* Estado de stock de un pedido, debajo del estado principal */
 .status-stack { display: flex; flex-wrap: wrap; gap: var(--space-1); }
 .status-badge.is-small { min-height: 24px; padding: 2px 10px 2px 8px; font-size: 0.8125rem; }
@@ -1544,8 +1630,13 @@ button.gallery-item:not(.upload-item) { border: 0; }
   animation: admin-modal-in var(--dur-base) var(--ease-out);
 }
 .notification-dropdown[hidden] { display: none !important; }
-.notif-title { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--admin-line); color: var(--admin-heading); font-weight: var(--fw-bold); }
-#notif-list { max-height: 320px; overflow-y: auto; }
+/* Encabezado: "Avisos" + "Marcar todas como leídas" (paso 6.6) */
+.notif-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4); border-bottom: 1px solid var(--admin-line); }
+.notif-title { color: var(--admin-heading); font-weight: var(--fw-bold); }
+.notif-link { min-height: 40px; padding: 0 var(--space-2); border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--accent); font: inherit; font-size: var(--fs-small); font-weight: var(--fw-semibold); cursor: pointer; }
+.notif-link[hidden] { display: none; }
+@media (hover: hover) and (pointer: fine) { .notif-link:hover { background: var(--admin-hover); } }
+#notif-list { max-height: min(420px, 60vh); overflow-y: auto; }
 .notif-item {
   display: grid;
   gap: 2px;
@@ -1563,8 +1654,20 @@ button.gallery-item:not(.upload-item) { border: 0; }
 @media (hover: hover) and (pointer: fine) {
   .notif-item:hover { background: var(--admin-hover); }
 }
-.notif-item strong { color: var(--admin-heading); font-size: var(--fs-label); }
-.notif-item span { color: var(--admin-text-soft); font-size: var(--fs-small); }
+.notif-item { grid-template-columns: 22px 1fr; align-items: start; column-gap: var(--space-3); }
+.notif-icon { width: 20px; height: 20px; margin-top: 2px; fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.notif-item--backup .notif-icon, .notif-item--expiring .notif-icon { stroke: var(--st-cancel-text); }
+.notif-body { display: grid; gap: 2px; min-width: 0; }
+.notif-item strong { color: var(--admin-heading); font-size: var(--fs-label); overflow-wrap: anywhere; }
+.notif-body > span { color: var(--admin-text-soft); font-size: var(--fs-small); overflow-wrap: anywhere; }
+/* No leído: fondo suave y puntito; leído: más apagado */
+.notif-item:not(.is-read) { background: var(--st-sched-bg); }
+.notif-item:not(.is-read) strong::after { content: ""; display: inline-block; width: 8px; height: 8px; margin-left: 6px; border-radius: 50%; background: var(--accent); vertical-align: middle; }
+.notif-item.is-read strong { font-weight: var(--fw-semibold); }
+.notif-item.is-read .notif-icon { stroke: var(--admin-text-soft); }
+/* Sonido opcional */
+.notif-sound { display: flex; align-items: center; gap: var(--space-2); min-height: 48px; padding: 0 var(--space-4); border-top: 1px solid var(--admin-line); color: var(--admin-text-soft); font-size: var(--fs-small); cursor: pointer; }
+.notif-sound input { width: 18px; height: 18px; accent-color: var(--accent); }
 .notif-empty { padding: var(--space-5) var(--space-4); color: var(--admin-text-soft); font-size: var(--fs-small); text-align: center; }
 
 
@@ -1788,4 +1891,392 @@ select.form-input.readonly-mode:disabled { opacity: 1; background-image: none; p
   .sidebar { transition: none; }
   .modal-card, .modal-large, .notification-dropdown { animation-name: admin-fade-in; }
   .btn:active:not(:disabled), .chip:active, .header-icon-btn:active, .product-card-admin:active { transform: none; }
+}
+
+/* ---------- Aviso de seguridad de la auditoría (paso 3.2) ----------
+   Usa los colores del estado "Cancelado" (rojo de la marca), que ya tienen versión de modo oscuro. */
+.audit-alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-3) var(--space-4);
+  margin: 0 0 var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--st-cancel-line);
+  border-radius: var(--radius-md);
+  background: var(--st-cancel-bg);
+  color: var(--st-cancel-text);
+}
+.audit-alert > svg { flex: none; width: 24px; height: 24px; margin-top: 2px; }
+.audit-alert__text { display: grid; flex: 1 1 16rem; gap: var(--space-1); line-height: 1.45; }
+.audit-alert form { margin: 0; align-self: center; }
+/* Mismo aviso rojo para las copias de seguridad (paso 4.2), dentro del Resumen: separado de los KPI */
+.backup-alert { margin: 0 0 var(--space-5); }
+
+/* ---------- Pestaña Backups (paso 4.3) — admin/backups.js ----------
+   Tarjetas de estado con el mismo aspecto que las del Resumen (.kpi-card), más chicas. */
+.backup-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: var(--space-4);
+  margin: 0 0 var(--space-5);
+}
+.backup-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--admin-surface);
+  box-shadow: 0 0 0 1px var(--admin-line), var(--shadow-1);
+}
+.backup-stat__label { color: var(--admin-text-soft); font-size: var(--fs-small); font-weight: var(--fw-semibold); }
+.backup-stat__value {
+  color: var(--admin-heading);
+  font-size: clamp(1.15rem, 1.05rem + 0.4vw, 1.35rem);
+  font-weight: var(--fw-bold);
+  line-height: 1.2;
+}
+.backup-stat__sub { color: var(--admin-text-soft); font-size: var(--fs-small); }
+.backup-table .cell-actions .action-buttons-container { flex-wrap: wrap; }
+
+/* Ventana "Restaurar copia de seguridad" */
+.restore-form { display: grid; gap: var(--space-4); }
+.restore-warning { margin: 0; }
+.restore-facts { margin: 0; padding-left: 1.25rem; color: var(--admin-text); line-height: 1.5; }
+.restore-facts li + li { margin-top: var(--space-1); }
+.restore-check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--admin-text);
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+}
+.restore-check input { width: 1.15rem; height: 1.15rem; margin-top: 0.15rem; flex: none; accent-color: var(--accent); }
+.restore-form .form-group { margin: 0; }
+.restore-form .form-error { margin: 0; }
+.restore-progress { margin: 0; color: var(--admin-heading); font-weight: var(--fw-semibold); }
+.restore-form .form-actions { margin-top: 0; }
+
+/* =========================================================
+   REGISTRO DE ACTIVIDAD (auditoría, paso 3.4) — admin/audit.js
+   ========================================================= */
+.audit-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--space-3) var(--space-4);
+  align-items: end;
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--admin-line);
+  border-radius: var(--radius-md);
+  background: var(--admin-surface);
+}
+.audit-filters__search { grid-column: span 2; }
+.audit-filters__actions { display: flex; flex-wrap: nowrap; gap: var(--space-2); }
+.audit-summary { min-height: 1.5em; margin: 0 0 var(--space-3); color: var(--admin-text-soft); font-size: var(--fs-small); }
+
+/* Filas: se tocan para ver el detalle */
+.audit-table tr.audit-row { cursor: pointer; }
+.audit-table tr.audit-row:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+@media (hover: hover) and (pointer: fine) {
+  .audit-table tr.audit-row:hover { background: var(--admin-hover); }
+}
+.audit-table td { vertical-align: top; }
+.audit-user { display: grid; }
+.audit-sub { display: block; color: var(--admin-text-soft); font-size: var(--fs-small); overflow-wrap: anywhere; }
+/* Anchos fijos por columna: la descripción (lo más importante) se lleva la mayor parte
+   y la tabla nunca se sale del panel. Solo en pantallas anchas: en las medianas (notebook chica,
+   tableta acostada) seis columnas no entran sin cortar palabras, y se usan tarjetas (más abajo). */
+@media (min-width: 84rem) {
+  .audit-table { table-layout: fixed; width: 100%; }
+  /* Cada ancho alcanza para la palabra más larga de su columna ("Administrador", "Configuración") */
+  .audit-table th:nth-child(1) { width: 11%; }
+  .audit-table th:nth-child(2) { width: 17%; }
+  .audit-table th:nth-child(3) { width: 14%; }
+  .audit-table th:nth-child(4) { width: 13%; }
+  .audit-table th:nth-child(5) { width: 16%; }
+  .audit-table th,
+  .audit-table td { padding-left: 10px; padding-right: 10px; overflow-wrap: break-word; }
+  .audit-table .audit-badge { white-space: normal; }
+}
+.audit-empty { padding: var(--space-6) var(--space-4) !important; color: var(--admin-text-soft); text-align: center !important; }
+
+.audit-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--admin-hover);
+  color: var(--admin-heading);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+}
+.audit-badge--alert { background: var(--st-cancel-bg); color: var(--st-cancel-text); }
+
+.audit-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  color: var(--admin-text-soft);
+}
+.audit-pagination[hidden] { display: none; }
+
+/* Detalle de un registro */
+.audit-detail__desc { margin: 0 0 var(--space-4); color: var(--admin-heading); font-size: 1.0625rem; font-weight: var(--fw-semibold); line-height: 1.4; }
+.audit-detail__title { margin: var(--space-5) 0 var(--space-2); color: var(--admin-heading); font-size: 1rem; }
+.audit-meta {
+  display: grid;
+  grid-template-columns: minmax(8rem, max-content) 1fr;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+}
+.audit-meta dt { color: var(--admin-text-soft); font-size: var(--fs-small); font-weight: var(--fw-semibold); }
+.audit-meta dd { margin: 0; overflow-wrap: anywhere; }
+.audit-changes { width: 100%; border-collapse: collapse; font-size: 0.9375rem; }
+.audit-changes th,
+.audit-changes td { padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--admin-line); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.audit-changes thead th { color: var(--admin-text-soft); font-size: var(--fs-small); }
+.audit-changes tbody th { color: var(--admin-heading); font-weight: var(--fw-semibold); }
+.audit-changes tr.is-changed td:last-child { font-weight: var(--fw-semibold); color: var(--admin-heading); }
+.audit-list { margin: 0; padding-left: 1.1rem; }
+.audit-muted { color: var(--admin-text-soft); }
+.audit-hash { margin: var(--space-5) 0 0; color: var(--admin-text-soft); font-size: var(--fs-small); overflow-wrap: anywhere; }
+.audit-hash code { font-size: 0.8125rem; }
+
+/* Resultado de "Verificar integridad" (sin verde: el verde del panel es solo para Completado/Hay insumos) */
+.audit-verify { display: flex; gap: var(--space-3); align-items: flex-start; }
+.audit-verify svg { flex: none; width: 36px; height: 36px; color: var(--admin-heading); }
+.audit-verify strong { display: block; margin-bottom: var(--space-1); color: var(--admin-heading); font-size: 1.0625rem; }
+.audit-verify p { margin: 0 0 var(--space-2); }
+.audit-verify--broken svg,
+.audit-verify--broken strong { color: var(--st-cancel-text); }
+
+@media (max-width: 47.99rem) {
+  .audit-filters__search { grid-column: auto; }
+  .audit-filters__actions .btn { flex: 1 1 auto; }
+  /* La tabla de antes/después también pasa a tarjetas */
+  .audit-changes thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .audit-changes, .audit-changes tbody, .audit-changes tr { display: block; width: 100%; }
+  .audit-changes tr { padding: var(--space-2) 0; border-bottom: 1px solid var(--admin-line); }
+  .audit-changes th, .audit-changes td { display: grid; grid-template-columns: 5.5rem 1fr; gap: var(--space-2); padding: 2px 0; border: 0; }
+  .audit-changes tbody th { display: block; }
+  .audit-changes td::before { content: attr(data-label); color: var(--admin-text-soft); font-size: var(--fs-small); }
+  .audit-meta { grid-template-columns: 1fr; gap: 0; }
+  .audit-meta dd { margin-bottom: var(--space-2); }
+}
+
+/* Pantallas medianas (48rem a 84rem): el registro de actividad también se ve en tarjetas,
+   igual que todas las tablas en el celular (sección 7, @media max-width 47.99rem) */
+@media (min-width: 48rem) and (max-width: 83.99rem) {
+  .audit-table, .audit-table tbody, .audit-table tr, .audit-table td { display: block; width: 100%; }
+  .audit-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .audit-table tbody { display: grid; gap: var(--space-3); }
+  .audit-table tr {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    border: 1px solid var(--admin-line);
+    border-radius: var(--radius-md);
+    background: var(--admin-surface);
+  }
+  .audit-table td {
+    display: grid;
+    grid-template-columns: 9rem minmax(0, 1fr);
+    align-items: baseline;
+    gap: var(--space-3);
+    padding: 0;
+    border: 0;
+    overflow-wrap: anywhere;
+  }
+  .audit-table td::before {
+    content: attr(data-label);
+    color: var(--admin-text-soft);
+    font-size: var(--fs-small);
+    font-weight: var(--fw-semibold);
+  }
+  .audit-table td.audit-empty { display: block; }
+}
+
+/* ---------- Recordatorios (paso 5.2) — admin/reminders.js ----------
+   Caja en el Resumen (admin) y arriba de Pedidos (pastelero), y el aviso que aparece cuando llega
+   la hora. Vencido = colores de "Cancelado"; sin verde (el verde es solo para Completado). */
+.reminders-box { margin: 0 0 var(--space-5); }
+.reminders-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.reminders-head h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: 1.0625rem;
+}
+.reminders-head h3 svg { color: var(--rose-600); flex: none; }
+.reminders-sub { margin: var(--space-1) 0 var(--space-4); color: var(--admin-text-soft); font-size: var(--fs-small); }
+.reminders-empty { margin: 0; padding: var(--space-4); border-radius: var(--radius-md); background: var(--admin-surface-2); color: var(--admin-text-soft); text-align: center; }
+.reminders-form-hint { margin: 0; color: var(--admin-text-soft); font-size: var(--fs-small); }
+.reminders-status {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--st-sched-bg);
+  color: var(--st-sched-text);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-semibold);
+}
+
+.reminders-list { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.reminder-item {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--admin-line);
+  border-left: 4px solid var(--st-sched-line);
+  border-radius: var(--radius-md);
+  background: var(--admin-surface);
+}
+.reminder-item.is-overdue { border-left-color: var(--st-cancel-text); background: var(--st-cancel-bg); }
+.reminder-item.is-done { border-left-color: var(--admin-line-strong); }
+.reminder-item.is-done .reminder-title { text-decoration: line-through; color: var(--admin-text-soft); }
+.reminder-time { font-weight: var(--fw-semibold); font-variant-numeric: tabular-nums; color: var(--admin-heading); }
+.reminder-item.is-overdue .reminder-time { color: var(--st-cancel-text); }
+.reminder-main { display: grid; gap: var(--space-1); min-width: 0; }
+.reminder-title { overflow-wrap: anywhere; color: var(--admin-text); }
+.reminder-notes { margin: 0; color: var(--admin-text-soft); font-size: var(--fs-small); white-space: pre-line; overflow-wrap: anywhere; }
+.reminder-meta { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-2); }
+.reminder-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--admin-surface-2);
+  color: var(--admin-text-soft);
+  font-size: 0.8125rem;
+  font-weight: var(--fw-semibold);
+  overflow-wrap: anywhere;
+}
+.reminder-badge.is-danger { background: var(--st-cancel-bg); color: var(--st-cancel-text); box-shadow: inset 0 0 0 1px var(--st-cancel-line); }
+.reminder-actions { display: flex; align-items: center; gap: var(--space-2); }
+.reminder-done { gap: var(--space-1); white-space: nowrap; }
+.reminder-delete {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--admin-text-soft);
+  cursor: pointer;
+}
+.reminder-delete:hover { background: var(--st-cancel-bg); color: var(--st-cancel-text); border-color: var(--st-cancel-line); }
+.reminder-delete:focus-visible { outline: 2px solid var(--admin-primary); outline-offset: 2px; }
+
+/* Aviso "llegó la hora": arriba a la derecha, debajo del encabezado (no tapa la campana ni "Salir")
+   y debajo de las ventanas (z-index menor que .modal-overlay) */
+.reminder-alerts {
+  position: fixed;
+  top: calc(var(--header-height) + env(safe-area-inset-top) + var(--space-3));
+  right: var(--space-4);
+  z-index: 1500;
+  display: grid;
+  gap: var(--space-3);
+  width: min(26rem, calc(100vw - 2 * var(--space-4)));
+  pointer-events: none;
+}
+.reminder-alert {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--st-pending-line);
+  border-left: 5px solid var(--admin-primary);
+  border-radius: var(--radius-md);
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  box-shadow: var(--shadow-2, 0 12px 32px rgb(72 23 41 / 0.18));
+  pointer-events: auto;
+  animation: reminder-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.reminder-alert > svg { color: var(--admin-primary); margin-top: 2px; }
+.reminder-alert__text { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.reminder-alert__label { color: var(--admin-text-soft); font-size: var(--fs-small); font-weight: var(--fw-semibold); }
+.reminder-alert__notes { color: var(--admin-text-soft); font-size: var(--fs-small); white-space: pre-line; }
+.reminder-alert__actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
+@keyframes reminder-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reminder-alert { animation: none; }
+}
+
+/* Celular: la hora arriba con los botones, el texto abajo a lo ancho */
+@media (max-width: 47.99rem) {
+  .reminder-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "time actions" "main main";
+    padding: var(--space-3);
+  }
+  .reminder-time { grid-area: time; }
+  .reminder-actions { grid-area: actions; }
+  .reminder-main { grid-area: main; }
+  .reminders-head .btn { width: 100%; justify-content: center; }
+  .reminder-alerts { top: auto; right: var(--space-4); bottom: var(--space-4); left: var(--space-4); width: auto; }
+  .reminder-alert__actions .btn { flex: 1 1 0; justify-content: center; }
+}
+
+/* ---------- Configuración del negocio (Ajustes, paso 6.4) ---------- */
+.settings-form .biz-grid { margin-top: var(--space-3); }
+.biz-pause { align-items: flex-start; margin: var(--space-2) 0; padding: var(--space-3) var(--space-4); border: 1px solid var(--admin-line); border-radius: var(--radius-sm); }
+.biz-pause input { margin-top: 3px; flex: none; }
+.biz-pause small { display: block; font-weight: var(--fw-regular, 400); }
+.biz-pause:has(input:checked) { border-color: var(--accent); background: var(--st-sched-bg); }
+.phone-input { display: flex; align-items: stretch; }
+.phone-prefix { display: inline-flex; align-items: center; padding: 0 var(--space-3); border: 1px solid var(--admin-input-line); border-right: 0; border-radius: var(--radius-sm) 0 0 var(--radius-sm); background: var(--admin-hover); color: var(--admin-heading); font-weight: var(--fw-semibold); white-space: nowrap; }
+.phone-input .form-input { border-top-left-radius: 0; border-bottom-left-radius: 0; min-width: 0; }
+#biz-whatsapp-test { margin-top: var(--space-2); align-self: flex-start; }
+
+/* =========================================================
+   17. ESTADOS DE CARGA, VACÍO Y ERROR (paso 6.8, admin/ui.js)
+   ========================================================= */
+.state-row td { padding: 0 !important; border: 0 !important; }
+.state-row td::before { content: none !important; }   /* en el celular las celdas muestran su etiqueta: acá no */
+.state-msg {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  padding: var(--space-6) var(--space-4);
+  color: var(--admin-text-soft);
+  text-align: center;
+  grid-column: 1 / -1;   /* en las grillas de tarjetas ocupa todo el ancho */
+}
+.state-msg strong { color: var(--admin-heading); font-weight: var(--fw-semibold); }
+.state-msg span { max-width: 48ch; font-size: var(--fs-small); }
+.state-msg--error strong { color: var(--st-cancel-text); }
+.state-spinner {
+  width: 26px;
+  height: 26px;
+  border: 3px solid var(--admin-line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: state-spin 0.8s linear infinite;
+}
+@keyframes state-spin { to { transform: rotate(360deg); } }
+/* Botón mientras se envía (DreamUI.busy): no se puede tocar de nuevo */
+.btn.is-busy, button.is-busy { opacity: 0.65; cursor: progress; }
+@media (prefers-reduced-motion: reduce) {
+  .state-spinner { animation-duration: 2.4s; }
 }

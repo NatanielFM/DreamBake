@@ -1,18 +1,23 @@
 <!doctype html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security6">
+<html lang="es-AR" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security6">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <!-- Color de la barra del navegador en el celular: el mismo fondo del header -->
   <meta name="theme-color" content="#fef9f9" />
-  <link rel="icon" type="image/svg+xml" th:href="@{/img/favicon.svg}" />
+  <!-- Íconos en todos los tamaños (fragments/seo.html, paso 6.3) -->
+  <th:block th:replace="~{fragments/seo :: icons}"></th:block>
   <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
   <script th:src="@{/js/csrf.js}"></script>
-  <title>Mi cuenta — Dulce Sueños Posadas</title>
+  <title th:text="'Mi cuenta — ' + ${negocio.name}">Mi cuenta — Dulce Sueños Posadas</title>
+  <meta name="description" content="Tus datos, tus pedidos y la configuración de tu cuenta en Dulce Sueños Posadas.">
+  <meta name="robots" content="noindex" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Roboto 500 solo para el botón de Google (guía de marca de Google) -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@500&display=swap" rel="stylesheet">
 
   <!-- Orden: base vieja compartida → tokens → componentes → header → CSS de la página → footer -->
   <link rel="stylesheet" th:href="@{/css/main.css}">
@@ -31,8 +36,15 @@
   <main id="main" class="shop-main">
     <section class="shop-hero">
       <div class="site-container site-container--narrow">
-        <h1 class="text-h1">Mi cuenta</h1>
-        <p class="text-lead" th:if="${currentUser != null}">Hola, <strong th:text="${currentUser.name.split(' ')[0]}">Usuario</strong>. Acá podés actualizar tus datos y tu contraseña.</p>
+        <div class="profile-hero-title">
+          <!-- Foto de perfil de Google o Facebook (no-referrer: Google a veces no la muestra si recibe de qué sitio viene) -->
+          <img th:if="${currentUser != null and currentUser.avatarUrl != null}" class="profile-avatar"
+               th:src="${currentUser.avatarUrl}" alt="" width="56" height="56" referrerpolicy="no-referrer">
+          <h1 class="text-h1">Mi cuenta</h1>
+        </div>
+        <p class="text-lead" th:if="${currentUser != null}">Hola, <strong th:text="${currentUser.name.split(' ')[0]}">Usuario</strong>.
+          <th:block th:if="${isClient}">Acá están tus datos y tus pedidos.</th:block>
+          <th:block th:unless="${isClient}">Acá podés actualizar tus datos y tu contraseña.</th:block></p>
       </div>
     </section>
 
@@ -56,11 +68,77 @@
         <span>Las contraseñas nuevas no coinciden o tienen menos de 6 caracteres.</span>
       </div>
 
+      <div th:if="${param.verified}" class="login-alert" role="status">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+        <span>¡Listo! Confirmaste tu email. Ya podés ver tus pedidos y guardar tu cumpleaños.</span>
+      </div>
+      <div th:if="${param.error != null and param.error[0] == 'name'}" class="login-alert login-alert--error" role="alert">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+        <span>Escribí tu nombre y apellido (al menos 3 letras). No se hizo ningún cambio.</span>
+      </div>
+
+      <!-- Área del cliente (paso 2.4): "Confirmá tu email" para cuentas creadas con email y contraseña.
+           Hasta confirmar no se muestran pedidos ni se guarda el cumpleaños: así nadie puede ver datos
+           ajenos registrándose con el email de otra persona. -->
+      <section class="profile-card profile-card--highlight" id="email-verify" aria-labelledby="verify-title" th:if="${isClient and !customerArea}">
+        <div class="profile-card-head">
+          <h2 id="verify-title" class="profile-card-title">Confirmá tu email</h2>
+          <p class="profile-card-text">Así podés ver tus pedidos y recibir tu regalo de cumpleaños.</p>
+        </div>
+        <div class="field-stack">
+          <div th:if="${verifyError}" class="login-alert login-alert--error" role="alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+            <span th:text="${verifyError}">Mensaje</span>
+          </div>
+          <th:block th:unless="${verifyCodeSent}">
+            <p class="profile-verify-text">Te mandamos un código de 6 números a <strong th:text="${currentUser.email}">nombre@gmail.com</strong>.</p>
+            <form th:action="@{/profile/email/code}" method="post" class="profile-actions">
+              <button type="submit" class="button button--primary button--lg">Mandarme el código</button>
+            </form>
+          </th:block>
+          <th:block th:if="${verifyCodeSent}">
+            <p class="profile-verify-text">Escribí el código que te mandamos a <strong th:text="${currentUser.email}">nombre@gmail.com</strong>. Si no lo ves, revisá la carpeta de spam.</p>
+            <form th:action="@{/profile/email/verify}" method="post" id="verify-form" class="field-stack" novalidate>
+              <div class="field">
+                <label for="verify-code" class="field__label">Código de 6 números</label>
+                <input id="verify-code" name="code" type="text" class="input input--code" autocomplete="one-time-code" inputmode="numeric"
+                       pattern="[0-9]{6}" maxlength="6" required aria-describedby="verify-code-error">
+                <p class="field__error" id="verify-code-error" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span></span></p>
+              </div>
+              <div class="profile-actions">
+                <button type="submit" class="button button--primary button--lg" id="verify-submit">Confirmar</button>
+              </div>
+            </form>
+            <form th:action="@{/profile/email/code}" method="post">
+              <button type="submit" class="button button--ghost">Mandarme otro código</button>
+            </form>
+          </th:block>
+        </div>
+      </section>
+
+      <!-- Cuenta de Google (ProfileController y SecurityConfig.oauth2FailureHandler) -->
+      <div th:if="${param.linked}" class="login-alert" role="status">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+        <span>Listo, tu cuenta de Google quedó vinculada. Desde ahora también podés entrar con "Continuar con Google".</span>
+      </div>
+      <div th:if="${param.unlinked}" class="login-alert" role="status">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+        <span>Desvinculaste tu cuenta de Google. Ahora entrás solo con email y contraseña.</span>
+      </div>
+      <th:block th:if="${param.linkError}" th:switch="${param.linkError[0]}">
+        <div th:case="'password'" class="login-alert login-alert--error" role="alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span>Para vincular o desvincular Google tenés que haber entrado con tu email y contraseña (no con "Mantener la sesión iniciada"). Cerrá sesión y volvé a entrar.</span></div>
+        <div th:case="'already_linked'" class="login-alert login-alert--error" role="alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span>Esa cuenta de Google ya está vinculada a otro usuario. Elegí otra cuenta de Google.</span></div>
+        <div th:case="'cancelled'" class="login-alert login-alert--error" role="alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span>Cancelaste la vinculación con Google. No se hizo ningún cambio.</span></div>
+        <div th:case="*" class="login-alert login-alert--error" role="alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span>No pudimos conectar con Google. Probá de nuevo en unos minutos.</span></div>
+      </th:block>
+
       <!-- Datos personales -->
       <section class="profile-card" aria-labelledby="data-title">
         <div class="profile-card-head">
           <h2 id="data-title" class="profile-card-title">Datos personales</h2>
           <p class="profile-card-text">Los usamos para completar tus pedidos más rápido.</p>
+          <p class="profile-card-text profile-google-note" th:if="${googleLinked and !isStaff}"><svg class="google-button__logo" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>Tu cuenta está vinculada con Google.</span></p>
+          <p class="profile-card-text profile-google-note" th:if="${facebookLinked and !isStaff}"><svg class="facebook-note__logo" viewBox="0 0 24 24" aria-hidden="true"><path fill="#0866ff" d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.971H15.83c-1.491 0-1.956.93-1.956 1.886v2.267h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg><span>Tu cuenta está vinculada con Facebook.</span></p>
         </div>
 
         <form th:action="@{/profile/update}" method="post" th:if="${currentUser != null}" id="profile-form" class="field-stack" novalidate>
@@ -82,10 +160,45 @@
             <p class="field__error" id="phone-error" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span></span></p>
           </div>
 
+          <!-- Se guardan en su ficha de cliente (CustomerAccountService.saveProfile) -->
+          <th:block th:if="${customerArea}">
+            <div class="field">
+              <label class="field__label" for="birthDate">Fecha de cumpleaños <span class="field__optional">(opcional)</span></label>
+              <input id="birthDate" name="birthDate" type="date" class="input" autocomplete="bday"
+                     th:value="${birthDate}" th:max="${#temporals.format(#temporals.createToday(), 'yyyy-MM-dd')}"
+                     aria-describedby="birthDate-hint birthDate-error">
+              <p class="field__hint" id="birthDate-hint">Para mandarte un regalo en tu cumpleaños.</p>
+              <p class="field__error" id="birthDate-error" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span></span></p>
+            </div>
+
+            <div class="field">
+              <label class="check">
+                <input type="checkbox" id="marketingConsent" name="marketingConsent" th:checked="${marketingConsent}" aria-describedby="marketingConsent-hint">
+                <span>Quiero recibir promociones y un regalo en mi cumpleaños</span>
+              </label>
+              <p class="field__hint" id="marketingConsent-hint">Te escribimos a tu email. Podés sacar la marca cuando quieras, o darte de baja desde cualquier email.</p>
+            </div>
+          </th:block>
+
           <div class="profile-actions">
             <button type="submit" class="button button--primary button--lg" id="profile-submit">Guardar datos</button>
           </div>
         </form>
+      </section>
+
+      <!-- Mis pedidos (solo lectura). Los dibuja profile.js con GET /api/account/orders,
+           que devuelve únicamente los pedidos del usuario logueado. -->
+      <section class="profile-card" id="my-orders" aria-labelledby="orders-title" th:if="${isClient}">
+        <div class="profile-card-head">
+          <h2 id="orders-title" class="profile-card-title">Mis pedidos</h2>
+          <p class="profile-card-text">Cómo va cada pedido. Para cambiar algo, escribinos por WhatsApp.</p>
+        </div>
+        <div>
+          <div th:if="${customerArea}" class="my-orders" id="my-orders-list" aria-live="polite" data-loading="true">
+            <p class="my-orders-empty">Cargando tus pedidos…</p>
+          </div>
+          <p th:unless="${customerArea}" class="my-orders-empty">Confirmá tu email (arriba) para ver tus pedidos.</p>
+        </div>
       </section>
 
       <!-- Cambiar contraseña -->
@@ -140,6 +253,69 @@
           </div>
         </form>
       </section>
+
+      <!-- Cuenta de Google: solo para el personal. El personal no puede entrar con Google
+           salvo que lo vincule acá, después de entrar con su contraseña. -->
+      <section class="profile-card" aria-labelledby="google-title" th:if="${isStaff and googleLoginEnabled}">
+        <div class="profile-card-head">
+          <h2 id="google-title" class="profile-card-title">Cuenta de Google</h2>
+          <p class="profile-card-text">Opcional: para entrar al panel con "Continuar con Google".</p>
+        </div>
+
+        <div class="field-stack">
+          <p class="profile-google-status" th:if="${googleLinked}"><svg class="google-button__logo" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>Tu cuenta de Google está vinculada.</span></p>
+          <p class="profile-google-status" th:unless="${googleLinked}">Todavía no vinculaste ninguna cuenta de Google.</p>
+
+          <th:block th:if="${passwordSession}">
+            <form th:unless="${googleLinked}" th:action="@{/profile/google/link}" method="post" class="profile-actions">
+              <button type="submit" class="google-button profile-google-button"><svg class="google-button__logo" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span class="google-button__text">Vincular cuenta de Google</span></button>
+            </form>
+            <form th:if="${googleLinked}" th:action="@{/profile/google/unlink}" method="post" class="profile-actions">
+              <button type="submit" class="button button--secondary button--lg">Desvincular</button>
+            </form>
+          </th:block>
+          <p class="field__hint" th:unless="${passwordSession}">Para vincular o desvincular, cerrá sesión y entrá con tu email y contraseña.</p>
+        </div>
+      </section>
+
+      <!-- Eliminar mi cuenta (derecho de supresión, Ley 25.326). Borra el usuario y saca los datos
+           personales de la ficha y de los pedidos (CustomerAccountService.deleteAccount). -->
+      <section class="profile-card" id="delete-account" aria-labelledby="delete-title" th:if="${isClient}">
+        <div class="profile-card-head">
+          <h2 id="delete-title" class="profile-card-title">Eliminar mi cuenta</h2>
+          <p class="profile-card-text">Se borran tu cuenta y tus datos personales.</p>
+        </div>
+        <div class="field-stack">
+          <div th:if="${param.deleteError}" class="login-alert login-alert--error" role="alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+            <span>No pudimos eliminar tu cuenta porque tenés un pedido en curso.</span>
+          </div>
+          <th:block th:if="${#lists.isEmpty(activeOrders)}">
+            <p class="profile-verify-text">Tus pedidos quedan guardados sin tu nombre ni tus datos de contacto, solo para las cuentas del negocio. Esto no se puede deshacer.</p>
+            <div class="profile-actions">
+              <button type="button" class="button button--danger button--lg" id="delete-open">Eliminar mi cuenta</button>
+            </div>
+          </th:block>
+          <p th:unless="${#lists.isEmpty(activeOrders)}" class="profile-verify-text">
+            Tenés un pedido en curso (entrega el <strong th:text="${#temporals.format(activeOrders[0].deliveryDate, 'dd/MM/yyyy')}">12/10/2026</strong>).
+            Vas a poder eliminar tu cuenta cuando lo recibas. Si querés cancelarlo, escribinos por
+            <a class="link" th:href="|https://wa.me/${whatsappNumber}|" target="_blank" rel="noopener">WhatsApp</a>.
+          </p>
+        </div>
+      </section>
+
+      <!-- Ventana de confirmación (<dialog> del navegador; la abre profile.js) -->
+      <dialog class="confirm-dialog" id="delete-dialog" aria-labelledby="delete-dialog-title" th:if="${isClient and #lists.isEmpty(activeOrders)}">
+        <form th:action="@{/profile/delete}" method="post" class="confirm-dialog__body">
+          <h2 id="delete-dialog-title" class="confirm-dialog__title">¿Eliminar tu cuenta?</h2>
+          <p>Vamos a borrar tu cuenta, tu nombre, email, celular, dirección y cumpleaños. Tus pedidos quedan sin tus datos. <strong>No se puede deshacer.</strong></p>
+          <input type="hidden" name="confirm" value="si">
+          <div class="confirm-dialog__actions">
+            <button type="button" class="button button--secondary button--lg" id="delete-cancel">Cancelar</button>
+            <button type="submit" class="button button--danger button--lg" id="delete-confirm">Sí, eliminar mi cuenta</button>
+          </div>
+        </form>
+      </dialog>
     </div>
   </main>
 

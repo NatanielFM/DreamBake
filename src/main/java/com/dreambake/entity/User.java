@@ -1,5 +1,7 @@
 package com.dreambake.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -24,6 +26,9 @@ public class User {
     @NotBlank(message = "El email no puede estar vacío")
     private String email;
 
+    // WRITE_ONLY: la contraseña se puede RECIBIR en JSON (al crear o editar un pastelero),
+    // pero nunca se ENVÍA en las respuestas de la API (ni siquiera cifrada).
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(nullable = false)
     @NotBlank(message = "La contraseña no puede estar vacía")
     @Size(min = 6, message = "La contraseña debe tener al menos 6 caracteres")
@@ -36,6 +41,34 @@ public class User {
     private String roles; // Ejemplo: "ROLE_USER,ROLE_ADMIN"
     private Boolean enabled = true;
 
+    // Por dónde entra el usuario. Los que ya existían quedan como LOCAL (el default de la columna
+    // se encarga de rellenar las filas viejas cuando Hibernate agrega la columna).
+    @Enumerated(EnumType.STRING)
+    @Column(name = "auth_provider", nullable = false, length = 20,
+            columnDefinition = "varchar(20) not null default 'LOCAL'")
+    private AuthProvider authProvider = AuthProvider.LOCAL;
+
+    // Id del usuario en Google o Facebook (null para los usuarios LOCAL)
+    @JsonIgnore
+    @Column(name = "provider_id")
+    private String providerId;
+
+    // Foto de perfil que informa la red social (opcional)
+    @Column(name = "avatar_url", length = 500)
+    private String avatarUrl;
+
+    // ¿Comprobamos que el email es de esta persona? (paso 2.4)
+    // true si entró con Google o Facebook con ese mismo email, o si escribió el código que le mandamos
+    // ("Confirmá tu email" en el perfil). Mientras sea false, el perfil no muestra pedidos ni toca la
+    // ficha de cliente: así nadie puede ver datos ajenos registrándose con el email de otra persona.
+    // Los usuarios que ya existían quedan sin confirmar (el default de la columna es 0).
+    @Column(name = "email_verified", nullable = false, columnDefinition = "bit not null default 0")
+    private Boolean emailVerified = false;
+
+    // Último ingreso exitoso (lo actualiza LoginTimestampListener)
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -43,6 +76,11 @@ public class User {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         enabled = true; // Por defecto el usuario está habilitado
+        // Valores por defecto si llegaron vacíos. Pasa al crear un pastelero desde el panel: Jackson arma
+        // el User con el constructor de todos los campos (@AllArgsConstructor) y los que el panel no manda
+        // quedan en null (no toma los "= LOCAL" / "= false" de arriba). Sin esto, la base lo rechaza.
+        if (authProvider == null) authProvider = AuthProvider.LOCAL;
+        if (emailVerified == null) emailVerified = false;
     }
 
 }
