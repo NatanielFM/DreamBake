@@ -178,8 +178,9 @@
 }
 .site-footer-legal { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-5); }
 .site-footer-legal a {
-  display: inline-block;
-  padding-block: var(--space-2);   /* área táctil más cómoda en el celular */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;                /* área táctil de 44 px en el celular (paso 6.8) */
   color: inherit;
   text-decoration: underline;
   text-underline-offset: 3px;

@@ -61,8 +61,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Utilidades ------------------------------------------------------------
-  // Formato de precio argentino: 82000 -> "82.000"
-  const money = (n) => Number(n || 0).toLocaleString('es-AR');
+  // Formato de precio argentino (paso 6.8, DreamFormat de format.js):
+  //   price(82000) -> "$ 82.000"   |   price(82000.5) -> "$ 82.000,50"
+  //   money(82000) -> "82.000"     (solo el número: para los lugares donde el "$" ya está en el HTML)
+  const price = (n) => window.DreamFormat ? window.DreamFormat.money(n) : '$\u00a0' + Number(n || 0).toLocaleString('es-AR');
+  const money = (n) => price(n).replace(/^\$\u00a0/, '');
 
   // Escapa texto antes de meterlo en HTML (evita que un nombre con "<" rompa la página)
   function esc(text) {
@@ -401,7 +404,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="line-main">
               <p class="cart-item-title">${esc(g.item.productType)}${g.indexes.length > 1 ? ` <span class="line-qty-inline">× ${g.indexes.length}</span>` : ''}</p>
             </div>
-            <p class="line-price">$${money(g.item.price * g.indexes.length)}</p>
+            <p class="line-price">${price(g.item.price * g.indexes.length)}</p>
             <button type="button" class="line-remove" data-cart-action="remove" data-key="${esc(g.key)}" aria-label="Quitar ${esc(g.item.productType)}">${ICON_TRASH}</button>
           </div>`).join('');
       }
@@ -428,10 +431,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="line-main">
               <h3 class="cart-item-title">${name}</h3>
               ${detailsToHtml(g.item.details)}
-              <p class="line-unit">$${money(g.item.price)} c/u</p>
+              <p class="line-unit">${price(g.item.price)} c/u</p>
             </div>
             <div class="line-side">
-              <p class="line-price">$${money(g.item.price * qty)}</p>
+              <p class="line-price">${price(g.item.price * qty)}</p>
               <div class="qty" role="group" aria-label="Cantidad de ${name}">
                 <button type="button" class="qty-btn" data-cart-action="dec" data-key="${esc(g.key)}" aria-label="${qty === 1 ? 'Quitar' : 'Restar uno de'} ${name}">${qty === 1 ? ICON_TRASH : ICON_MINUS}</button>
                 <span class="qty-value" aria-live="polite">${qty}</span>
@@ -505,7 +508,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <span class="option-check" aria-hidden="true">${ICON_CHECK}</span>
           ${portions ? `<span class="size-portions">${esc(portions)}</span><span class="size-unit">porciones</span>` : ''}
           <span class="size-name">${esc(portions ? rest : size.name)}</span>
-          <span class="price">$${money(size.price)}</span>
+          <span class="price">${price(size.price)}</span>
         </button>`;
     }).join('');
   }
@@ -749,7 +752,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     set('[data-sum="fillings"]', d.fillings.length ? d.fillings.join(', ') : 'Sin elegir');
     set('[data-sum="details"]', details || 'Sin detalles');
 
-    const priceText = d.size ? `$${money(d.size.price)}` : '—';
+    const priceText = d.size ? `${price(d.size.price)}` : '—';
     document.querySelectorAll('[data-sum="price"]').forEach(el => {
       if (el.textContent !== priceText && d.size && !reduceMotion.matches) {
         el.classList.remove('is-bumped'); void el.offsetWidth; el.classList.add('is-bumped');
@@ -869,9 +872,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (hint) hint.textContent = `Pedidos con ${days} días de anticipación: elegí una fecha desde el ${minDate.split('-').reverse().join('/')}.`;
   }
   if (dateInput) {
-    const fallback = new Date();
-    fallback.setDate(fallback.getDate() + 3);
-    applyMinDate(fallback.toISOString().split('T')[0], 3);
+    applyMinDate(window.DreamFormat ? window.DreamFormat.todayISO(3) : new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 10), 3);
     loadBusiness().then(b => {
       if (!b) return;
       applyMinDate(b.firstDeliveryDate, b.minLeadDays);
@@ -918,7 +919,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Cumpleaños (opcional): no puede ser una fecha futura
     'chk-birthdate': (v) => {
       if (!v) return '';
-      const today = new Date().toISOString().slice(0, 10);
+      const today = window.DreamFormat ? window.DreamFormat.todayISO() : new Date().toISOString().slice(0, 10);   // fecha de acá
       return v > today || v < '1900-01-01' ? 'Revisá la fecha de tu cumpleaños.' : '';
     },
     'chk-date': (v) => !v ? 'Elegí la fecha de entrega.' : (minDate && v < minDate ? `La fecha tiene que ser desde el ${minDate.split('-').reverse().join('/')} (${leadDays} días de anticipación).` : '')
@@ -1094,7 +1095,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         waMsg += cDelivery === 'Envío' ? `> *Envío a:* ${cAddress}\n` : `> *Retira en el local*\n`;
         waMsg += `> *Pago:* ${cPay}\n`;
         if (cDetails.trim() !== '') waMsg += `> *Aclaraciones:* ${cDetails}\n\n`;
-        waMsg += `El total es de $${total.toLocaleString('es-AR')}.`;
+        waMsg += `El total es de ${price(total)}.`;
 
         const waUrl = `https://wa.me/${BUSINESS_PHONE}?text=${encodeURIComponent(waMsg)}`;
 
@@ -1124,7 +1125,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             row('Productos', (savedOrder.items || []).map(i => i.productType).join(', '));
             row('Entrega', `${cDate.split('-').reverse().join('/')} · ${cShift}`);
             row('Cómo', cDelivery === 'Envío' ? `Envío a ${cAddress}` : 'Retiro en el local');
-            row('Total', `$${Number(total).toLocaleString('es-AR')}`);
+            row('Total', price(total));
           }
           const waLink = document.getElementById('success-whatsapp');
           waLink.href = waUrl;
