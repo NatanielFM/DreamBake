@@ -53,11 +53,14 @@ public class BakeyActionService {
     private final AuditService auditService;
     private final BakeyProperties properties;
     private final TransactionTemplate transaction;
+    private final com.dreambake.service.BakeyUsageStats usage;
 
     public BakeyActionService(AuditService auditService, BakeyProperties properties,
-                              PlatformTransactionManager transactionManager) {
+                              PlatformTransactionManager transactionManager,
+                              com.dreambake.service.BakeyUsageStats usage) {
         this.auditService = auditService;
         this.properties = properties;
+        this.usage = usage;
         this.transaction = new TransactionTemplate(transactionManager);
     }
 
@@ -104,6 +107,7 @@ public class BakeyActionService {
         try {
             String message = transaction.execute(status -> auditService.runAsAssistant(action.auditNote(), action.executor()));
             log.info("Bakey: {} confirmó la acción {} ({})", user.getEmail(), action.tool(), id);
+            usage.confirmed();   // tarjeta "Uso de Bakey" del Resumen (paso 5.6)
             return new Result(Status.OK, message);
         } catch (ActionProposal.ActionFailedException e) {
             return new Result(Status.FAILED, e.getMessage());

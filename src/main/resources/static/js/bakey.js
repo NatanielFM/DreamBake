@@ -342,6 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
       typing.hidden = true;
       setStatus('Disponible');
       input.focus();
+      document.dispatchEvent(new CustomEvent('bakey:message-done'));
     }
   }
 
@@ -407,6 +408,33 @@ document.addEventListener('DOMContentLoaded', () => {
     input.style.height = Math.min(input.scrollHeight, 140) + 'px';
   }
   input.addEventListener('input', autosize);
+
+  // ---------- Tarjeta "Uso de Bakey hoy" (paso 5.6, solo existe en el Resumen del admin) ----------
+  const usageCard = document.getElementById('bakey-usage');
+  async function loadUsage() {
+    if (!usageCard) return;
+    try {
+      const res = await fetch('/api/bakey/usage');
+      const u = await readJson(res);
+      if (!res.ok || !u) return;
+      const set = (id, value) => { document.getElementById(id).textContent = value; };
+      set('bk-usage-messages', u.mensajes);
+      set('bk-usage-proposed', u.accionesPropuestas);
+      set('bk-usage-confirmed', u.accionesConfirmadas);
+      set('bk-usage-errors', u.errores);
+      document.getElementById('bk-usage-sub').textContent = !u.configured
+        ? 'Bakey no está configurado: falta la clave de Gemini.'
+        : (u.erroresPorCupo > 0
+            ? `Hoy Gemini no respondió ${u.erroresPorCupo} ${u.erroresPorCupo === 1 ? 'vez' : 'veces'} por falta de cupo o mucha demanda (plan gratis): se resuelve esperando un minuto.`
+            : 'Cuántas veces se usó el asistente hoy (se reinicia cada día).');
+      usageCard.hidden = false;
+    } catch (e) { /* sin datos: la tarjeta queda oculta */ }
+  }
+  loadUsage();
+  // Se actualiza al volver al Resumen y después de cada mensaje o acción
+  document.querySelector('.tab-btn[data-tab="resumen"]')?.addEventListener('click', loadUsage);
+  document.addEventListener('bakey:action-done', loadUsage);
+  document.addEventListener('bakey:message-done', loadUsage);
 
   // Escape cierra el chat, salvo que haya una ventana del panel abierta encima (esa se cierra primero)
   document.addEventListener('keydown', (e) => {

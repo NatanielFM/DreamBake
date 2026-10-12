@@ -321,3 +321,29 @@
   /* El aviso de recordatorios (abajo en el celular) se sube por encima del botón de Bakey */
   .reminder-alerts { bottom: calc(var(--space-4) + 58px + var(--space-3) + env(safe-area-inset-bottom)); }
 }
+
+/* ---------- Tarjeta "Uso de Bakey hoy" del Resumen (paso 5.6) ---------- */
+.bk-usage { margin: 0 0 var(--space-5); }
+.bk-usage[hidden] { display: none; }
+.bk-usage__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+.bk-usage__grid > div {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--admin-surface-2);
+}
+.bk-usage__grid dt { color: var(--admin-text-soft); font-size: var(--fs-small); }
+.bk-usage__grid dd {
+  margin: var(--space-1) 0 0;
+  color: var(--admin-heading);
+  font-size: 1.75rem;
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 47.99rem) {
+  .bk-usage__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

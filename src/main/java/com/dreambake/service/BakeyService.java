@@ -84,16 +84,18 @@ public class BakeyService {
     private final BakeyToolRegistry toolRegistry;
     private final UserRepository userRepository;
     private final BakeyConversationStore conversations;
+    private final BakeyUsageStats usage;
 
     public BakeyService(AiProvider provider, BakeyRateLimiter rateLimiter, AppProperties appProperties,
                         BakeyToolRegistry toolRegistry, UserRepository userRepository,
-                        BakeyConversationStore conversations) {
+                        BakeyConversationStore conversations, BakeyUsageStats usage) {
         this.provider = provider;
         this.rateLimiter = rateLimiter;
         this.appProperties = appProperties;
         this.toolRegistry = toolRegistry;
         this.userRepository = userRepository;
         this.conversations = conversations;
+        this.usage = usage;
     }
 
     /** true si Bakey puede funcionar (hay clave de Gemini cargada). */
@@ -117,6 +119,7 @@ public class BakeyService {
         User user = userRepository.findByEmail(email).orElse(null);
         if (user == null) return new BakeyAnswer(Status.ERROR, MSG_ERROR);
         boolean admin = user.getRoles() != null && user.getRoles().contains("ADMIN");
+        usage.message();   // para la tarjeta "Uso de Bakey" del Resumen (paso 5.6)
         ToolContext ctx = new ToolContext(user, admin, text, LocalDate.now(ZONE));
         List<AiTool> tools = toolRegistry.toolsFor(ctx);   // solo las que este rol puede usar
 
@@ -167,17 +170,23 @@ public class BakeyService {
                 case FAILED -> new BakeyAnswer(Status.ERROR, MSG_ERROR, usedTools, cards);
             };
             conversations.addExchange(user.getId(), text, failed.reply(), cards);
+            usage.error(e.getKind() == AiException.Kind.QUOTA);
+            usage.proposed(cards.size());
             return failed;
         } catch (RuntimeException e) {
             // Cualquier otra cosa inesperada: se anota en el log y la persona ve el mensaje amable
             log.error("Bakey: error inesperado al responder", e);
             conversations.addExchange(user.getId(), text, MSG_ERROR, cards);
+            usage.error(false);
+            usage.proposed(cards.size());
             return new BakeyAnswer(Status.ERROR, MSG_ERROR, usedTools, cards);
         }
 
         if (finalText == null || finalText.isBlank()) {
             log.warn("Bakey: el modelo no dio una respuesta de texto (herramientas usadas: {})", usedTools);
             conversations.addExchange(user.getId(), text, MSG_ERROR, cards);
+            usage.error(false);
+            usage.proposed(cards.size());
             return new BakeyAnswer(Status.ERROR, MSG_ERROR, usedTools, cards);
         }
 
@@ -190,6 +199,7 @@ public class BakeyService {
         history.add(new AiMessage(AiMessage.Role.MODEL, finalText, List.of(), null));
         conversations.saveModelHistory(user.getId(), trim(history));
         conversations.addExchange(user.getId(), text, finalText, cards);   // para la ventana del chat
+        usage.proposed(cards.size());
         return new BakeyAnswer(Status.OK, finalText, usedTools, cards);
     }
 
@@ -210,6 +220,28 @@ public class BakeyService {
      * Se le pasan la fecha y la hora de Argentina y los próximos 7 días con su nombre, para que entienda
      * "el viernes", "mañana" o "el finde" sin equivocarse de fecha.
      */
+    /*
+     * Rangos de fechas YA CALCULADOS por el servidor (paso 5.6). En las pruebas, el modelo calculó
+     * "la semana pasada" con el año equivocado (2025): ahora no tiene que hacer cuentas con fechas,
+     * solo copiar el rango que corresponde.
+     */
+    static String rangesText(LocalDate today) {
+        LocalDate monday = today.with(java.time.DayOfWeek.MONDAY);
+        LocalDate saturday = today.getDayOfWeek() == java.time.DayOfWeek.SUNDAY
+                ? today.minusDays(1) : today.with(java.time.temporal.TemporalAdjusters.nextOrSame(java.time.DayOfWeek.SATURDAY));
+        LocalDate firstOfMonth = today.withDayOfMonth(1);
+        LocalDate fifteen = today.getDayOfMonth() <= 15 ? today.withDayOfMonth(15) : today.plusMonths(1).withDayOfMonth(15);
+        return "El año actual es " + today.getYear() + ". Rangos ya calculados (copialos tal cual): "
+                + "esta semana = " + monday + " a " + monday.plusDays(6)
+                + "; la semana pasada = " + monday.minusWeeks(1) + " a " + monday.minusDays(1)
+                + "; la semana que viene = " + monday.plusWeeks(1) + " a " + monday.plusDays(13)
+                + "; el finde = " + saturday + " a " + saturday.plusDays(1)
+                + "; este mes = " + firstOfMonth + " a " + today.withDayOfMonth(today.lengthOfMonth())
+                + "; el mes pasado = " + firstOfMonth.minusMonths(1) + " a " + firstOfMonth.minusDays(1)
+                + "; ayer = " + today.minusDays(1)
+                + "; \"el 15\" (sin mes) = " + fifteen;
+    }
+
     private String systemPrompt(ToolContext ctx) {
         LocalDateTime now = LocalDateTime.now(ZONE);
         StringBuilder week = new StringBuilder();
@@ -217,6 +249,7 @@ public class BakeyService {
             LocalDate d = ctx.today().plusDays(i);
             week.append(i == 0 ? "hoy " : "").append(d.format(DAY_LIST)).append(" = ").append(d).append(i < 7 ? "; " : "");
         }
+        week.append(". ").append(rangesText(ctx.today()));
         String role = ctx.admin()
                 ? "la administradora (dueña) del negocio"
                 : "un/a pastelero/a del equipo. No ve los montos de los pedidos, cobros, señas ni ganancias: no hables de eso. "
@@ -235,7 +268,21 @@ public class BakeyService {
                   decí que no lo sabés. Nunca inventes pedidos, nombres, cantidades, fechas ni precios.
                 - Si una herramienta devuelve "error", explicalo con palabras simples.
                 - Fechas: hoy es %s (hora de Argentina %s). Próximos días: %s.
-                  A las herramientas pasales las fechas como AAAA-MM-DD. "El finde" = sábado y domingo próximos.
+                  A las herramientas pasales las fechas como AAAA-MM-DD. "El finde" = sábado y domingo próximos
+                  (si hoy es sábado o domingo, el de esta semana). "El 15" sin mes = el próximo día 15 (si ya pasó
+                  este mes, el del mes que viene). "Mañana a la mañana" = mañana 9:00; "a la tarde" = 16:00.
+                  Cuando interpretes una fecha relativa, decí en la respuesta qué fecha usaste (ej: "el viernes 16/10").
+                  A la PERSONA nunca le pidas formatos técnicos (nada de "AAAA-MM-DD"): aceptá "el viernes", "el 20/10"
+                  o "mañana a las 5", y convertilo vos.
+                - AMBIGÜEDAD: para CONSULTAS, si algo se puede entender de dos maneras ("lo de mañana", "lo de
+                  María"), elegí la lectura más probable para la pastelería (entregas de pedidos), respondé y aclarí
+                  en una línea qué entendiste. Para ACCIONES nunca adivines: si falta o es dudoso un dato (qué
+                  pedido, qué fecha, qué cliente, qué cantidad), preguntá antes de proponer la tarjeta. Si una
+                  búsqueda da varios resultados (dos clientas con el mismo nombre), preguntá cuál.
+                - La gente escribe rápido y con errores de tipeo ("pedidso", "mananaa", "insumo bajos"): entendé
+                  la intención sin corregir a nadie.
+                - Si te preguntan CÓMO se usa el sistema (dónde se hace algo, qué significa un estado, cómo se
+                  confirma un pedido…), usá la herramienta ayuda_sistema y explicalo en pasos cortos.
                 - Datos de contacto (teléfono, email, dirección): no los pidas ni los muestres salvo que la persona los
                   pida explícitamente; solo en ese caso usá incluir_contacto = true.
                 - Si te preguntan algo que no tiene que ver con la pastelería o el sistema, decí amablemente que solo

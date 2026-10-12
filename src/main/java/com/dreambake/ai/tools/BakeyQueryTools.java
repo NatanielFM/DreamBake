@@ -85,6 +85,11 @@ public class BakeyQueryTools {
                                 + "(nuevos, agendados y en preparación).",
                         params(optional("dias", "integer", "Cuántos días hacia adelante (1 a 60). Por defecto 7.")),
                         ALL_STAFF, this::upcomingOrders),
+                new BakeyTool("buscar_pedidos",
+                        "Busca pedidos por el nombre del cliente (de los últimos 60 días y los próximos 90). Sirve para "
+                                + "'el pedido de Carla' o 'lo de Lucía' cuando no sabés el número.",
+                        params(param("cliente", "string", "Nombre del cliente o una parte")),
+                        ALL_STAFF, this::searchOrders),
                 new BakeyTool("detalle_pedido",
                         "Todos los datos de un pedido por su número: productos con sus detalles (sabores, "
                                 + "dedicatoria…), entrega, turno, si es retiro o envío y estado.",
@@ -127,6 +132,12 @@ public class BakeyQueryTools {
                                 + "personalizada con su precio.",
                         params(),
                         ALL_STAFF, this::productsAndPrices),
+                new BakeyTool("ayuda_sistema",
+                        "Guía corta de cómo usar el sistema DreamBake: dónde se hace cada cosa y paso a paso. "
+                                + "Temas: pedidos, inventario, recetas, productos, clientes, fidelizacion, recordatorios, "
+                                + "armador, galeria, equipo, registro, backups, ajustes, bakey.",
+                        params(param("tema", "string", "Tema o módulo (ej: pedidos, confirmar un pedido, stock, cupones)")),
+                        ALL_STAFF, this::systemHelp),
                 new BakeyTool("mis_recordatorios",
                         "Los recordatorios pendientes de la persona que está hablando con vos (incluye los vencidos).",
                         params(),
@@ -161,6 +172,21 @@ public class BakeyQueryTools {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("desde", ctx.today().format(DATE));
         result.put("hasta", to.format(DATE));
+        putOrderList(result, orders, ctx);
+        return result;
+    }
+
+    // Pedidos por nombre del cliente (paso 5.6: el pastelero no tiene buscar_cliente, que es del admin)
+    private Map<String, Object> searchOrders(ToolContext ctx, ToolArgs args) {
+        String text = args.text("cliente", 60);
+        if (text.length() < 2) return Map.of("error", "Escribí al menos 2 letras del nombre del cliente.");
+        String needle = normalize(text);
+        List<Order> orders = sortedByDelivery(orderRepository.findByDeliveryDateBetweenAndStatusIn(
+                ctx.today().minusDays(60), ctx.today().plusDays(90), ALL_VISIBLE).stream()
+                .filter(o -> o.getCustomerName() != null && normalize(o.getCustomerName()).contains(needle))
+                .toList());
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("busqueda", text);
         putOrderList(result, orders, ctx);
         return result;
     }
@@ -553,6 +579,88 @@ public class BakeyQueryTools {
         result.put("cantidad", reminders.size());
         result.put("recordatorios", list);
         if (reminders.size() > MAX_ITEMS) result.put("hayMas", reminders.size() - MAX_ITEMS);
+        return result;
+    }
+
+    // ---------------------------------------------------------------------
+    // Ayuda del sistema (paso 5.6)
+    // ---------------------------------------------------------------------
+
+    /** Una guía: palabras que la identifican, si es solo del admin y el texto. */
+    private record Guide(String topic, List<String> keywords, boolean adminOnly, String text) {}
+
+    // Guías cortas escritas a mano (el modelo NO las inventa): cómo se usa cada parte del panel
+    private static final List<Guide> GUIDES = List.of(
+            new Guide("pedidos", List.of("pedido", "confirm", "entreg", "agend", "calendario", "seña", "sena", "rechaz", "cancel", "recibo"), false,
+                    "Pestaña Pedidos. Arriba están los Nuevos (llegan de la tienda o se cargan con «Nuevo pedido»). "
+                            + "Para aceptar uno: «Confirmar», se carga la seña (solo administración) y el sistema descuenta los insumos "
+                            + "de las recetas; si faltan insumos avisa y se puede «Forzar». El calendario muestra las entregas de cada día: "
+                            + "al tocar un día se ven sus pedidos. Cuando se entrega: «Entregado» (se puede «Volver a agendado»). "
+                            + "«Ver» abre el detalle y permite imprimir el recibo. Rechazar, cancelar y eliminar son solo de administración. "
+                            + "Estados: Nuevo → Agendado → (En preparación) → Entregado, o Cancelado."),
+            new Guide("inventario", List.of("inventario", "stock", "insumo", "venc", "compra", "minimo", "mínimo"), false,
+                    "Pestaña Inventario: cada insumo con su stock, unidad, mínimo y vencimiento. Los filtros «Stock bajo» "
+                            + "(en el mínimo o menos) y «Vencen en 7 días» ayudan a ver qué falta. Al confirmar un pedido se descuentan "
+                            + "solos los insumos de sus recetas. Agregar, editar o corregir stock lo hace la administración "
+                            + "(o pedíselo a Bakey: «llegó la compra de 10 kg de harina»), y el «Pedido de compra» imprime la lista de lo que falta."),
+            new Guide("recetas", List.of("receta", "ingrediente", "costo"), false,
+                    "Pestaña Recetas: cada receta tiene los insumos y la cantidad que lleva UNA unidad del producto. "
+                            + "Un producto con receta descuenta esos insumos al confirmar el pedido. Si los insumos tienen costo cargado, "
+                            + "la administración ve el costo estimado de la receta. Las tortas del creador no tienen receta."),
+            new Guide("productos", List.of("producto", "precio", "categoria", "categoría", "catalogo", "catálogo", "tienda"), true,
+                    "Pestaña Productos (administración): crear o editar productos de la tienda con nombre, precio, categoría, "
+                            + "foto de la galería y receta. «Se muestra en la tienda» los oculta o muestra sin borrarlos."),
+            new Guide("clientes", List.of("cliente", "etiqueta", "contacto", "ficha"), true,
+                    "Pestaña Clientes (administración): las fichas se crean solas al confirmar el primer pedido de un teléfono. "
+                            + "Cada ficha muestra pedidos, total gastado, cumpleaños, etiqueta y si acepta promociones por email."),
+            new Guide("fidelizacion", List.of("fideliz", "cupon", "cupón", "cumple", "campaña", "campana", "promo", "descuento"), true,
+                    "Clientes → Fidelización (administración): cupones de descuento, saludo automático de cumpleaños con cupón "
+                            + "(se puede mandar por email o WhatsApp) y campañas de emails solo a clientes que aceptaron promociones."),
+            new Guide("recordatorios", List.of("recordatorio", "recordar", "aviso", "tarea"), false,
+                    "Caja «Recordatorios de hoy» (en el Resumen del admin y arriba de Pedidos del pastelero): «Nuevo recordatorio» "
+                            + "con qué hacer, día y hora. Cuando llega la hora aparece un aviso en el panel, y si tenés email te llega "
+                            + "uno una hora antes. «Hecho» lo tacha; también se lo podés pedir a Bakey (siempre con confirmación)."),
+            new Guide("armador", List.of("armador", "creador", "tamaño", "tamano", "relleno", "bizcochuelo", "fondant", "torta personalizada"), true,
+                    "Pestaña Armador de tortas (administración): tamaños con su precio y cantidad de rellenos, y las opciones de "
+                            + "bizcochuelo, crema y fondant que ven los clientes en el creador de tortas de la tienda."),
+            new Guide("galeria", List.of("galeria", "galería", "foto", "imagen"), true,
+                    "Pestaña Galería (administración): subir fotos (se achican solas) para usarlas en productos y campañas. "
+                            + "Una foto que usa un producto no se puede borrar."),
+            new Guide("equipo", List.of("equipo", "pastelero", "usuario", "empleado", "contraseña", "contrasena"), true,
+                    "Pestaña Equipo (administración): dar de alta pasteleros con email y contraseña, editarlos o darlos de baja."),
+            new Guide("registro", List.of("registro", "auditoria", "auditoría", "actividad", "quien", "quién"), true,
+                    "Pestaña Registro de actividad (administración): quién hizo qué y cuándo, con el antes y el después. "
+                            + "No se puede borrar ni modificar. Se puede filtrar, descargar en CSV o PDF y «Verificar integridad». "
+                            + "Lo que se hace con Bakey aparece como «Acción de Bakey … (vía Bakey)»."),
+            new Guide("backups", List.of("backup", "copia", "respaldo", "restaur"), true,
+                    "Pestaña Backups (administración): el sistema hace una copia de seguridad todos los días a las 3:00. "
+                            + "Ahí se ve la última, se puede descargar o «Hacer backup ahora». Restaurar pide contraseña y la palabra RESTAURAR."),
+            new Guide("ajustes", List.of("ajuste", "configur", "correo", "email", "whatsapp", "mail"), true,
+                    "Pestaña Ajustes (administración): número de WhatsApp del negocio y la cuenta de correo desde la que se mandan "
+                            + "los emails (avisos de pedidos, cumpleaños, campañas)."),
+            new Guide("bakey", List.of("bakey", "asistente", "chat", "confirmar tarjeta", "ia"), false,
+                    "Bakey (el botón del cupcake abajo a la derecha): preguntale en palabras simples por pedidos, stock, recetas o "
+                            + "recordatorios. Si le pedís un cambio, NO lo hace solo: te muestra una tarjeta y recién se hace cuando tocás "
+                            + "«Confirmar» (vence a los 10 minutos). «Nueva conversación» borra la charla.")
+    );
+
+    private Map<String, Object> systemHelp(ToolContext ctx, ToolArgs args) {
+        String wanted = normalize(args.text("tema", 80));
+        Guide found = GUIDES.stream().filter(g -> normalize(g.topic()).equals(wanted)).findFirst()
+                .orElseGet(() -> GUIDES.stream()
+                        .filter(g -> g.keywords().stream().anyMatch(k -> wanted.contains(normalize(k))))
+                        .findFirst().orElse(null));
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (found == null) {
+            result.put("error", "No tengo una guía para eso.");
+            result.put("temasDisponibles", GUIDES.stream().map(Guide::topic).toList());
+            return result;
+        }
+        result.put("tema", found.topic());
+        result.put("guia", found.text());
+        if (found.adminOnly() && !ctx.admin()) {
+            result.put("aviso", "Esta parte del panel es solo de la administración: el pastelero no la tiene.");
+        }
         return result;
     }
 

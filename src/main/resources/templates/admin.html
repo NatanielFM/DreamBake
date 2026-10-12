@@ -154,6 +154,23 @@
           <p id="reminders-status" class="reminders-status" role="status" hidden></p>
         </div>
 
+        <!-- Uso de Bakey hoy (paso 5.6, bakey.js lo completa con GET /api/bakey/usage). Solo en el admin. -->
+        <div id="bakey-usage" class="chart-box bk-usage" hidden>
+          <div class="reminders-head">
+            <h3>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Uso de Bakey hoy
+            </h3>
+          </div>
+          <p class="reminders-sub" id="bk-usage-sub">Cuántas veces se usó el asistente hoy (se reinicia cada día).</p>
+          <dl class="bk-usage__grid">
+            <div><dt>Mensajes</dt><dd id="bk-usage-messages">0</dd></div>
+            <div><dt>Acciones propuestas</dt><dd id="bk-usage-proposed">0</dd></div>
+            <div><dt>Acciones confirmadas</dt><dd id="bk-usage-confirmed">0</dd></div>
+            <div><dt>Errores</dt><dd id="bk-usage-errors">0</dd></div>
+          </dl>
+        </div>
+
         <!-- FILA 1: TARJETAS KPI -->
         <div class="kpi-grid">
           <div class="kpi-card kpi-accent">

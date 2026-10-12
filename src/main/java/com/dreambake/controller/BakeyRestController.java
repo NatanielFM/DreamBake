@@ -44,6 +44,9 @@ public class BakeyRestController {
     @Autowired
     private BakeyConversationStore conversations;
 
+    @Autowired
+    private com.dreambake.service.BakeyUsageStats usageStats;
+
     @GetMapping("/status")
     public ResponseEntity<Map<String, Object>> status() {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -76,6 +79,15 @@ public class BakeyRestController {
         body.put("configured", bakeyService.isConfigured());
         body.put("role", isAdmin(authentication) ? "ADMIN" : "PASTELERO");
         body.put("messages", bakeyService.history(user));
+        return ResponseEntity.ok(body);
+    }
+
+    // Uso de Bakey en el día (paso 5.6): tarjeta del Resumen, solo para la administradora
+    @GetMapping("/usage")
+    public ResponseEntity<Map<String, Object>> usage(Authentication authentication) {
+        if (!isAdmin(authentication)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        Map<String, Object> body = new LinkedHashMap<>(usageStats.today());
+        body.put("configured", bakeyService.isConfigured());
         return ResponseEntity.ok(body);
     }
 
