@@ -9,7 +9,7 @@
   <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
   <script th:src="@{/js/csrf.js}"></script>
   <title>Eliminar mis datos — Dulce Sueños Posadas</title>
-  <meta name="description" content="Cómo pedirle a Dulce Sueños Posadas que borre tu cuenta y tus datos personales.">
+  <meta name="description" content="Cómo eliminar tu cuenta y tus datos personales de Dulce Sueños Posadas.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -37,30 +37,44 @@
     </section>
 
     <div class="site-container site-container--narrow legal-page">
-
-      <!-- Facebook pide esta página ("instrucciones para eliminar datos") para publicar el login con Facebook.
-           Se completa en el paso 6.2. -->
-      <section class="legal-section" aria-labelledby="how">
-        <h2 id="how">Cómo pedirlo</h2>
+      <!--/* Cómo eliminar la cuenta y los datos (paso 6.2). Facebook pide esta página para el login con Facebook.
+             Describe el proceso real: CustomerAccountService.deleteAccount ("Eliminar mi cuenta" del perfil). */-->
+      <section class="legal-section" aria-labelledby="self">
+        <h2 id="self">Si tenés una cuenta: hacelo vos en un minuto</h2>
         <ol class="legal-steps">
-          <li>Escribinos <th:block th:if="${contactEmail != null}">por email a <a class="link" th:href="|mailto:${contactEmail}|" th:text="${contactEmail}">hola@ejemplo.com</a> o </th:block>por <a class="link" th:href="|https://wa.me/${whatsappNumber}|" target="_blank" rel="noopener">WhatsApp</a>.</li>
-          <li>Mandalo desde el email o el celular de tu cuenta y decinos: <strong>"Quiero eliminar mi cuenta y mis datos"</strong>. Así sabemos que sos vos.</li>
-          <li>Borramos tu cuenta y tus datos y te avisamos por el mismo medio dentro de los 5 días hábiles.</li>
+          <li><a class="link" th:href="@{/login}">Iniciá sesión</a> y entrá a <a class="link" th:href="@{/profile}">Mi cuenta</a>.</li>
+          <li>Si todavía no lo hiciste, confirmá tu email con el código que te mandamos (así sabemos que los pedidos son tuyos).</li>
+          <li>Abajo de todo tocá <strong>"Eliminar mi cuenta"</strong> y confirmá.</li>
+        </ol>
+        <p>Se hace en el momento. Si tenés un pedido en curso (nuevo, confirmado o en preparación), vas a poder eliminarla cuando lo recibas o si nos pedís cancelarlo.</p>
+      </section>
+
+      <section class="legal-section" aria-labelledby="how">
+        <h2 id="how">Si no tenés cuenta (o no podés entrar)</h2>
+        <ol class="legal-steps">
+          <li>Escribinos a <mark class="legal-todo">[COMPLETAR: email de contacto]</mark> o por <a class="link" th:href="|https://wa.me/${whatsappNumber}|" target="_blank" rel="noopener">WhatsApp</a>.</li>
+          <li>Mandalo desde el email o el celular que usaste en tus pedidos y decinos: <strong>"Quiero eliminar mis datos"</strong>. Así sabemos que sos vos.</li>
+          <li>Borramos tus datos y te avisamos por el mismo medio dentro de los 5 días hábiles (Ley 25.326).</li>
         </ol>
         <div class="legal-actions">
-          <a class="button button--primary button--lg" th:href="|https://wa.me/${whatsappNumber}?text=Hola%2C%20quiero%20eliminar%20mi%20cuenta%20y%20mis%20datos.|" target="_blank" rel="noopener">Pedirlo por WhatsApp</a>
-          <a class="button button--secondary button--lg" th:if="${contactEmail != null}" th:href="|mailto:${contactEmail}?subject=Eliminar%20mi%20cuenta|">Pedirlo por email</a>
+          <a class="button button--primary button--lg" th:href="|https://wa.me/${whatsappNumber}?text=Hola%2C%20quiero%20eliminar%20mis%20datos.|" target="_blank" rel="noopener">Pedirlo por WhatsApp</a>
+          <a class="button button--secondary button--lg" th:if="${contactEmail != null}" th:href="|mailto:${contactEmail}?subject=Eliminar%20mis%20datos|">Pedirlo por email</a>
         </div>
       </section>
 
       <section class="legal-section" aria-labelledby="what-deleted">
-        <h2 id="what-deleted">Qué se borra</h2>
-        <p>Tu cuenta, tu nombre, email, celular, dirección, fecha de cumpleaños y tus preferencias de emails. Si tenés un pedido en curso, te avisamos antes para que no se pierda.</p>
+        <h2 id="what-deleted">Qué se borra y qué queda</h2>
+        <ul>
+          <li><strong>Se borra:</strong> tu cuenta (email, contraseña y foto). De tu ficha de cliente y de tus pedidos se quitan tu nombre, celular, email, dirección, cumpleaños y el permiso para promociones, y tu dirección se quita del historial de emails.</li>
+          <li><strong>Queda, sin datos tuyos:</strong> los pedidos (qué se vendió, cuándo y por cuánto), porque el negocio los necesita para sus cuentas. Aparecen como cliente eliminado.</li>
+          <li><strong>Queda, con tus datos tapados:</strong> el registro de seguridad del sistema, que no se puede borrar porque sirve para comprobar qué pasó. Ahí tu teléfono y tu email figuran incompletos (por ejemplo, 3764•••222).</li>
+          <li><strong>Copias de seguridad:</strong> tus datos pueden seguir en copias viejas hasta que se borren solas (como máximo, 12 meses). Solo se usan para recuperar el sistema si falla.</li>
+        </ul>
       </section>
 
       <section class="legal-section" aria-labelledby="social">
         <h2 id="social">Si entraste con Google o Facebook</h2>
-        <p>Además de pedirnos que borremos tus datos, podés quitarle el acceso a nuestro sitio desde tu cuenta:</p>
+        <p>Además de eliminar tu cuenta, podés quitarle el acceso a nuestro sitio desde tu cuenta:</p>
         <ul>
           <li><strong>Facebook:</strong> Configuración y privacidad → Configuración → Apps y sitios web → Dulce Sueños Posadas → Eliminar.</li>
           <li><strong>Google:</strong> en myaccount.google.com → Seguridad → Tus conexiones con apps y servicios de terceros → Dulce Sueños Posadas → Borrar todas las conexiones.</li>
@@ -69,7 +83,7 @@
 
       <section class="legal-section" aria-labelledby="promos">
         <h2 id="promos">¿Solo querés dejar de recibir promociones?</h2>
-        <p>No hace falta borrar la cuenta: tocá el link para darte de baja que viene al final de cada email de promociones.</p>
+        <p>No hace falta borrar nada: tocá el link para darte de baja que viene al final de cada email de promociones, o destildá las promociones en "Mi cuenta".</p>
       </section>
 
       <p class="legal-note">Más información en nuestra <a class="link" th:href="@{/privacidad}">política de privacidad</a>.</p>

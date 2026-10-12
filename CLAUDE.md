@@ -121,7 +121,7 @@ Definido en `config/SecurityConfig.java`:
 
 | Ruta | Acceso |
 |---|---|
-| `/`, `/builder`, `/products`, `/cart`, `/register`, `/login`, `/recuperar/**`, `/baja`, `/privacidad`, `/eliminar-datos`, `/login/completar-email/**`, `/css/**`, `/js/**`, `/img/**`, `/uploads/**` | Público |
+| `/`, `/builder`, `/products`, `/cart`, `/register`, `/login`, `/recuperar/**`, `/baja`, `/privacidad`, `/terminos`, `/eliminar-datos`, `/login/completar-email/**`, `/css/**`, `/js/**`, `/img/**`, `/uploads/**` | Público |
 | `/oauth2/**`, `/login/oauth2/**` (Google/Facebook, solo si hay credenciales) | Público |
 | `POST /api/orders`, `GET /api/cake-config/public`, `GET /api/coupons/validate/**` | Público (lo usa la tienda) |
 | `/admin/**` | `ADMIN` |
@@ -144,6 +144,7 @@ Definido en `config/SecurityConfig.java`:
 - Registro: solo se aceptan `name`, `email`, `phone`, `password` (`@InitBinder`) y el email debe ser único.
 - Galería: solo imágenes JPG/PNG/WEBP/GIF, guardadas con nombre UUID, de hasta 10 MB (límite en `MvcConfig`, no en application.properties). Antes de subir, `gallery.js` achica la foto a 1600 px y la pasa a JPG (así entran las fotos HEIC del iPhone). Al borrar una foto se borra también el archivo (solo dentro de `uploads/`); si la usa un producto, no se borra.
 - Producción: `application-prod.properties` (perfil `prod`) toma la base y las claves de variables de entorno, activa cookies `Secure` y oculta los detalles de los errores.
+- **Páginas legales (paso 6.2):** `/privacidad`, `/terminos`, `/eliminar-datos` (WebController, `legal.css`), enlazadas en el pie (`fragments/footer.html`). Los datos que faltan van en `<mark class="legal-todo">[COMPLETAR: …]</mark>` (buscar "COMPLETAR" antes de publicar). Registro y carrito muestran "Al continuar aceptás los Términos y la Política de privacidad". Aviso de cookies en el footer (`js/cookie-notice.js`, se recuerda en localStorage `dreamBakeCookieNotice`). Si cambia qué datos se guardan o un servicio externo, actualizar `privacidad.html`.
 - Al agregar una ruta o endpoint nuevo, **actualizá SecurityConfig** si hace falta.
 
 ## Auditoría (fase 3)

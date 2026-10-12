@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <!-- Color de la barra del navegador en el celular: el mismo fondo del header -->
+  <meta name="theme-color" content="#fef9f9" />
+  <link rel="icon" type="image/svg+xml" th:href="@{/img/favicon.svg}" />
+  <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
+  <script th:src="@{/js/csrf.js}"></script>
+  <title>Términos y condiciones — Dulce Sueños Posadas</title>
+  <meta name="description" content="Cómo funcionan los pedidos, las señas, las cancelaciones y los recibos de Dulce Sueños Posadas.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Orden: base vieja compartida → tokens → componentes → header → CSS de la página → footer -->
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+  <link rel="stylesheet" th:href="@{/css/tokens.css}">
+  <link rel="stylesheet" th:href="@{/css/components.css}">
+  <link rel="stylesheet" th:href="@{/css/header.css}">
+  <link rel="stylesheet" th:href="@{/css/public.css}">
+  <link rel="stylesheet" th:href="@{/css/legal.css}">
+  <link rel="stylesheet" th:href="@{/css/footer.css}">
+</head>
+<body class="page-shop page-legal">
+
+  <div th:replace="~{fragments/header :: header}"></div>
+
+  <main id="main" class="shop-main">
+    <section class="shop-hero">
+      <div class="site-container site-container--narrow">
+        <h1 class="text-h1">Términos y condiciones</h1>
+        <p class="text-lead">Cómo funcionan los pedidos, las señas y las cancelaciones.</p>
+      </div>
+    </section>
+
+    <div class="site-container site-container--narrow legal-page">
+      <!--/* Términos y condiciones (paso 6.2, WebController.termsPage).
+             Los datos marcados [COMPLETAR] los carga el dueño del negocio.
+             Estos textos son una base: no reemplazan el asesoramiento de un abogado. */-->
+      <p class="legal-updated">Última actualización: octubre de 2026.</p>
+
+      <div class="legal-callout" role="note">
+        <strong>Sitio en etapa de prueba.</strong> Este sistema se está poniendo en marcha y puede tener errores o cambios. Ante cualquier diferencia, vale lo que acordemos por WhatsApp.
+      </div>
+
+      <section class="legal-section" aria-labelledby="who">
+        <h2 id="who">Quiénes somos</h2>
+        <p>Este sitio es de <strong>Dulce Sueños Posadas</strong> (<mark class="legal-todo">[COMPLETAR: razón social o nombre del titular]</mark>, CUIT <mark class="legal-todo">[COMPLETAR: CUIT, si corresponde]</mark>, <mark class="legal-todo">[COMPLETAR: dirección]</mark>, Posadas, Misiones). Contacto: <mark class="legal-todo">[COMPLETAR: email de contacto]</mark> o por <a class="link" th:href="|https://wa.me/${whatsappNumber}|" target="_blank" rel="noopener">WhatsApp</a>. Al usar el sitio y hacer pedidos aceptás estos términos.</p>
+      </section>
+
+      <section class="legal-section" aria-labelledby="orders">
+        <h2 id="orders">Cómo funcionan los pedidos</h2>
+        <ol class="legal-steps">
+          <li>Armás tu pedido en el sitio y tocás "Confirmar pedido por WhatsApp". El pedido queda guardado como <strong>nuevo</strong> y se abre WhatsApp con el mensaje listo.</li>
+          <li>Por WhatsApp revisamos con vos el diseño, la fecha y el precio final. Son tortas hechas a mano: el resultado puede tener pequeñas diferencias con las fotos de referencia.</li>
+          <li>El pedido queda <strong>confirmado</strong> recién cuando pagás la seña y te lo confirmamos. Hasta entonces la fecha no está reservada.</li>
+          <li>Te avisamos cuando está listo para retirar o en camino.</li>
+        </ol>
+        <p>Los pedidos se hacen con al menos <strong>3 días de anticipación</strong>. Los precios del sitio están en pesos argentinos y pueden cambiar; para tu pedido vale el precio que te confirmamos por WhatsApp. Los cupones de descuento tienen usos limitados y se aplican al total.</p>
+      </section>
+
+      <section class="legal-section" aria-labelledby="deposit">
+        <h2 id="deposit">Señas y pagos</h2>
+        <ul>
+          <li>Para confirmar el pedido pedimos una seña de <mark class="legal-todo">[COMPLETAR: porcentaje o monto de la seña]</mark>. Con la seña compramos los insumos de tu pedido.</li>
+          <li>El resto se paga <mark class="legal-todo">[COMPLETAR: al retirar / antes del envío]</mark>.</li>
+          <li>Medios de pago: <mark class="legal-todo">[COMPLETAR: efectivo, transferencia…]</mark>. El sitio no cobra en línea: nunca te vamos a pedir datos de tu tarjeta.</li>
+        </ul>
+      </section>
+
+      <section class="legal-section" aria-labelledby="cancel">
+        <h2 id="cancel">Cancelaciones y cambios</h2>
+        <ul>
+          <li>Podés pedir cambios de diseño o de fecha por WhatsApp hasta <mark class="legal-todo">[COMPLETAR: cuántos días antes]</mark> de la entrega, si tenemos lugar.</li>
+          <li>Si cancelás con <mark class="legal-todo">[COMPLETAR: cuántos días]</mark> o más de anticipación, <mark class="legal-todo">[COMPLETAR: la seña se devuelve / queda a favor para otro pedido]</mark>. Si cancelás después, la seña no se devuelve porque los insumos ya se compraron y la producción empezó.</li>
+          <li>Si nosotros no podemos hacer tu pedido, te avisamos lo antes posible y te devolvemos la seña completa.</li>
+          <li>Por ser alimentos hechos a pedido, no se aceptan devoluciones una vez entregados. Si hubo un problema, escribinos el mismo día con fotos y lo resolvemos.</li>
+        </ul>
+        <p class="legal-note">Nada de esto limita los derechos que te da la Ley 24.240 de Defensa del Consumidor.</p>
+      </section>
+
+      <section class="legal-section" aria-labelledby="delivery">
+        <h2 id="delivery">Retiro y envío</h2>
+        <p>Podés retirar tu pedido en <mark class="legal-todo">[COMPLETAR: dirección o zona de retiro]</mark> o pedir envío dentro de <mark class="legal-todo">[COMPLETAR: zona de envío]</mark>, con el costo que te informemos. Revisá que la dirección y el horario sean correctos: si no hay nadie para recibirlo, coordinamos otra entrega.</p>
+      </section>
+
+      <section class="legal-section" aria-labelledby="receipts">
+        <h2 id="receipts">Recibos</h2>
+        <p>Los recibos y comprobantes que genera este sitio son <strong>solo informativos y no tienen valor fiscal</strong> (no son facturas). <mark class="legal-todo">[COMPLETAR: si emitís factura, cómo pedirla]</mark></p>
+      </section>
+
+      <section class="legal-section" aria-labelledby="account">
+        <h2 id="account">Tu cuenta</h2>
+        <p>Cuidá tu contraseña: sos responsable de lo que se haga con tu cuenta. Podemos deshabilitar cuentas que se usen para hacer pedidos falsos o dañar el sitio. Podés eliminar tu cuenta cuando quieras desde "Mi cuenta".</p>
+      </section>
+
+      <section class="legal-section" aria-labelledby="privacy">
+        <h2 id="privacy">Tus datos</h2>
+        <p>Cómo usamos y cuidamos tus datos está en la <a class="link" th:href="@{/privacidad}">Política de privacidad</a>.</p>
+      </section>
+
+      <section class="legal-section" aria-labelledby="changes">
+        <h2 id="changes">Cambios</h2>
+        <p>Podemos actualizar estos términos; vale la versión publicada en esta página. Para los pedidos ya confirmados vale lo que acordamos en ese momento.</p>
+      </section>
+    </div>
+  </main>
+
+  <div th:replace="~{fragments/footer :: footer}"></div>
+
+  <script th:src="@{/js/header.js}" defer></script>
+  <script th:src="@{/js/public/store.js}" defer></script>
+</body>
+</html>

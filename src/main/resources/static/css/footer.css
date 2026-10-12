@@ -197,3 +197,36 @@
     padding-top: var(--space-9);
   }
 }
+
+/* ---------- Aviso de cookies (paso 6.2, cookie-notice.js) ----------
+   Tarjeta fija abajo; en el celular ocupa el ancho, en escritorio queda chica a la izquierda
+   para no tapar el botón del carrito ni el contenido. */
+.cookie-notice {
+  position: fixed;
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  z-index: 900;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  color: var(--text-strong);
+  box-shadow: 0 10px 30px rgb(72 23 41 / 0.18);
+  font-size: var(--fs-small);
+  line-height: 1.5;
+}
+.cookie-notice[hidden] { display: none; }
+.cookie-notice__text { flex: 1 1 14rem; margin: 0; }
+.cookie-notice__text a { color: var(--rose-800); text-decoration: underline; text-underline-offset: 3px; }
+.cookie-notice__ok { flex: none; min-height: 44px; }
+@media (max-width: 29.99rem) {
+  .cookie-notice__ok { width: 100%; }
+}
+@media (min-width: 48rem) {
+  .cookie-notice { right: auto; max-width: 30rem; }
+}

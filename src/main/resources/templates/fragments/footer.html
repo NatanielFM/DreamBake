@@ -83,13 +83,25 @@
     <div class="site-footer-bottom">
       <p>
         <span>© <span th:text="${#dates.year(#dates.createNow())}">2026</span> Dulce Sueños Posadas</span>
-        <!-- Páginas legales (WebController): privacidad y cómo pedir que borremos tus datos -->
+        <!-- Páginas legales (WebController, paso 6.2): términos, privacidad y cómo pedir que borremos tus datos -->
         <span class="site-footer-legal">
+          <a th:href="@{/terminos}">Términos</a>
           <a th:href="@{/privacidad}">Privacidad</a>
           <a th:href="@{/eliminar-datos}">Eliminar mis datos</a>
         </span>
       </p>
     </div>
+
+    <!-- Aviso de cookies (paso 6.2). Arranca oculto: cookie-notice.js lo muestra solo si la persona todavía no lo cerró
+         (lo recuerda en el navegador). Va dentro del footer para que esté en todas las páginas públicas. -->
+    <div class="cookie-notice" id="cookie-notice" role="region" aria-label="Aviso de cookies" hidden>
+      <p class="cookie-notice__text">
+        Solo usamos cookies necesarias para tu sesión y el carrito. Nada de publicidad.
+        <a th:href="@{/privacidad#cookies}">Más info</a>
+      </p>
+      <button type="button" class="button button--ink cookie-notice__ok" id="cookie-notice-ok">Entendido</button>
+    </div>
+    <script th:src="@{/js/cookie-notice.js}" defer></script>
   </footer>
 </body>
 </html>

@@ -97,12 +97,18 @@ public class WebController {
         return "products";
     }
 
-    // Política de privacidad (pública). Facebook la exige para publicar el login con Facebook.
-    // Versión básica: se completa en el paso 6.2.
+    // Política de privacidad (pública, paso 6.2). Facebook la exige para publicar el login con Facebook.
     @GetMapping("/privacidad")
     public String privacyPage(Model model) {
         model.addAttribute("contactEmail", contactEmail());
         return "privacidad";
+    }
+
+    // Términos y condiciones (pública, paso 6.2): pedidos, señas, cancelaciones y recibos.
+    @GetMapping("/terminos")
+    public String termsPage(Model model) {
+        model.addAttribute("contactEmail", contactEmail());
+        return "terminos";
     }
 
     // Cómo pedir que borremos la cuenta y los datos (pública). También la pide Facebook.
