@@ -63,6 +63,7 @@ public class BirthdayService {
     @Autowired private EmailService emailService;
     @Autowired private BusinessSettingService settingService;
     @Autowired private AppProperties app;
+    @Autowired private BusinessProfileService businessProfile;   // nombre del negocio (paso 6.4)
 
     // Evita que la tarea de las 9:00 y el "revisar ahora" corran a la vez y manden el saludo dos veces
     private final ReentrantLock runLock = new ReentrantLock();
@@ -181,7 +182,7 @@ public class BirthdayService {
         Coupon coupon = findOrCreateCoupon(customer);
         String firstName = firstName(customer.getName());
         String subject = "¡Feliz cumpleaños" + (firstName == null ? "" : ", " + firstName) + "! Un regalo de "
-                + app.getBusiness().getName();
+                + businessProfile.get().getName();
         Map<String, Object> vars = new java.util.HashMap<>();
         vars.put("nombre", firstName);
         vars.put("codigo", coupon.getCode());
@@ -280,7 +281,7 @@ public class BirthdayService {
         Coupon coupon = findOrCreateCoupon(customer);
         String firstName = firstName(customer.getName());
         String message = "¡Feliz cumpleaños" + (firstName == null ? "" : ", " + firstName) + "! 🎂 "
-                + "Desde " + app.getBusiness().getName() + " queremos regalarte un "
+                + "Desde " + businessProfile.get().getName() + " queremos regalarte un "
                 + coupon.getDiscountPercentage() + "% de descuento en tu próximo pedido. "
                 + "Usá el código " + coupon.getCode() + " en nuestra tienda "
                 + "(válido hasta el " + coupon.getExpirationDate().format(DATE_AR) + "): " + app.getPublicUrl();

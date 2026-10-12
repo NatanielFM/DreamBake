@@ -123,6 +123,7 @@ public class SecurityConfig {
                         // API que usa la tienda sin iniciar sesión
                         .requestMatchers(HttpMethod.POST, "/api/orders").permitAll()          // crear pedido (checkout)
                         .requestMatchers(HttpMethod.GET, "/api/cake-config/public").permitAll() // opciones del creador
+                        .requestMatchers(HttpMethod.GET, "/api/public/settings").permitAll()   // datos públicos del negocio (paso 6.4)
                         .requestMatchers(HttpMethod.GET, "/api/coupons/validate/**").permitAll() // ver si un cupón sirve
 
                         // Chequeo de salud (¿está viva la app?): solo responde UP o DOWN. Es el único endpoint

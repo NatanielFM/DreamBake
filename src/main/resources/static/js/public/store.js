@@ -40,9 +40,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (img.complete && img.naturalWidth === 0 && img.getAttribute('src')) replaceBrokenImage(img);
   });
 
-  // Número de WhatsApp del negocio. Se cambia desde Panel → Ajustes y llega en el footer
-  // (data-whatsapp); el número de respaldo es el de siempre, por si la página no tiene footer.
-  const BUSINESS_PHONE = document.querySelector('[data-whatsapp]')?.dataset.whatsapp || '5493764159312';
+  // Número de WhatsApp del negocio. Se cambia desde Panel → Ajustes → Configuración del negocio y llega
+  // en el footer (data-whatsapp). Ya no hay un número escrito acá (paso 6.4): si la página no tuviera
+  // footer, lo completa loadBusiness() con /api/public/settings.
+  let BUSINESS_PHONE = document.querySelector('[data-whatsapp]')?.dataset.whatsapp || '';
+
+  // Datos públicos del negocio (paso 6.4): anticipación mínima, pedidos pausados… Los da el servidor
+  // en /api/public/settings, que es el mismo dato que después revisa al recibir el pedido.
+  let business = null;
+  async function loadBusiness() {
+    try {
+      const res = await fetch('/api/public/settings', { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) return null;
+      business = await res.json();
+      if (!BUSINESS_PHONE && business.whatsapp) BUSINESS_PHONE = business.whatsapp;
+      return business;
+    } catch (err) {
+      return null;   // sin conexión: el servidor igual valida al recibir el pedido
+    }
+  }
 
   // Utilidades ------------------------------------------------------------
   // Formato de precio argentino: 82000 -> "82.000"
@@ -839,16 +855,35 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
   // ================= 7. CHECKOUT (/cart) =================
-  // Fecha mínima: 3 días de anticipación
+  // Fecha mínima: hoy + los días de anticipación configurados en el panel (paso 6.4).
+  // Mientras llega el dato se usan 3 días; la fecha exacta la calcula el servidor (firstDeliveryDate).
   const dateInput = document.getElementById('chk-date');
   let minDate = '';
-  if (dateInput) {
-    const today = new Date();
-    today.setDate(today.getDate() + 3);
-    minDate = today.toISOString().split('T')[0];
+  let leadDays = 3;
+  function applyMinDate(firstDate, days) {
+    if (!dateInput) return;
+    minDate = firstDate;
+    leadDays = days;
     dateInput.setAttribute('min', minDate);
     const hint = document.getElementById('chk-date-hint');
-    if (hint) hint.textContent = `Pedidos con 3 días de anticipación: elegí una fecha desde el ${minDate.split('-').reverse().join('/')}.`;
+    if (hint) hint.textContent = `Pedidos con ${days} días de anticipación: elegí una fecha desde el ${minDate.split('-').reverse().join('/')}.`;
+  }
+  if (dateInput) {
+    const fallback = new Date();
+    fallback.setDate(fallback.getDate() + 3);
+    applyMinDate(fallback.toISOString().split('T')[0], 3);
+    loadBusiness().then(b => {
+      if (!b) return;
+      applyMinDate(b.firstDeliveryDate, b.minLeadDays);
+      // Pedidos pausados: el botón de confirmar queda deshabilitado con el aviso (el servidor también lo rechaza)
+      if (b.ordersPaused) setOrdersPaused();
+    });
+  }
+  function setOrdersPaused() {
+    const btn = document.querySelector('button[type="submit"][form="final-checkout-form"]');
+    if (btn) btn.disabled = true;
+    const note = document.getElementById('checkout-paused');
+    if (note) note.hidden = false;
   }
 
   document.querySelector('[data-close-alert]')?.addEventListener('click', () => {
@@ -886,7 +921,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const today = new Date().toISOString().slice(0, 10);
       return v > today || v < '1900-01-01' ? 'Revisá la fecha de tu cumpleaños.' : '';
     },
-    'chk-date': (v) => !v ? 'Elegí la fecha de entrega.' : (minDate && v < minDate ? `La fecha tiene que ser desde el ${minDate.split('-').reverse().join('/')} (3 días de anticipación).` : '')
+    'chk-date': (v) => !v ? 'Elegí la fecha de entrega.' : (minDate && v < minDate ? `La fecha tiene que ser desde el ${minDate.split('-').reverse().join('/')} (${leadDays} días de anticipación).` : '')
   };
 
   function showFieldError(id, message) {
@@ -954,6 +989,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     finalForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (cart.length === 0) return;
+      // Pedidos pausados desde el panel (paso 6.4)
+      if (business && business.ordersPaused) {
+        setOrdersPaused();
+        showPublicAlert('Por ahora no estamos tomando pedidos por la web. Escribinos por WhatsApp y te contamos cuándo volvemos.');
+        return;
+      }
 
       // 1. Validar todo y llevar el foco al primer error
       const okFields = Object.keys(validators).map(validateField);

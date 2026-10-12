@@ -10,7 +10,7 @@
   <th:block th:replace="~{fragments/seo :: icons}"></th:block>
   <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
   <script th:src="@{/js/csrf.js}"></script>
-  <title>Emails promocionales — Dulce Sueños Posadas</title>
+  <title th:text="'Emails promocionales — ' + ${negocio.name}">Emails promocionales — Dulce Sueños Posadas</title>
   <meta name="description" content="Elegí si querés seguir recibiendo emails con promociones de Dulce Sueños Posadas.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">

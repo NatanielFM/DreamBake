@@ -953,37 +953,86 @@
         <div class="panel-head">
           <div class="panel-head-text">
             <h2 class="panel-title">Ajustes</h2>
-            <p class="panel-sub">Datos del negocio que usa la tienda.</p>
+            <p class="panel-sub">Datos del negocio, correo de envío y pausa de pedidos.</p>
           </div>
         </div>
+        <!-- Configuración del negocio (paso 6.4, settings.js → /api/settings, BusinessProfileService).
+             Estos datos salen en toda la tienda, en los emails y en los mensajes de WhatsApp. -->
         <form id="settings-form" class="config-block settings-form" novalidate>
-          <h3 class="section-label">WhatsApp del negocio</h3>
-          <p class="form-hint settings-intro">A este número llegan los pedidos de la tienda y los botones "Escribinos".</p>
-          <!-- País + número local. settings.js los junta en el formato que usa WhatsApp (ej: 549 + 3765224107) -->
-          <div class="phone-field">
-            <div class="form-group phone-country">
-              <label for="setting-country">País</label>
-              <select id="setting-country" class="form-input">
-                <option value="549" selected>Argentina (+54 9)</option>
-                <option value="595">Paraguay (+595)</option>
-                <option value="55">Brasil (+55)</option>
-                <option value="598">Uruguay (+598)</option>
-                <option value="56">Chile (+56)</option>
-                <option value="591">Bolivia (+591)</option>
-                <option value="34">España (+34)</option>
-                <option value="1">Estados Unidos (+1)</option>
-              </select>
+          <h3 class="section-label">Configuración del negocio</h3>
+          <p class="form-hint settings-intro">Estos datos se muestran en la tienda, en los emails y en las páginas legales. Los cambios se ven enseguida.</p>
+
+          <!-- Pausar pedidos: arriba de todo porque es lo que se usa en vacaciones -->
+          <label class="checkbox-label biz-pause">
+            <input type="checkbox" id="biz-ordersPaused">
+            <span>Pausar los pedidos online <small class="form-hint">La tienda avisa y no deja enviar pedidos. Vos podés seguir cargándolos desde el panel.</small></span>
+          </label>
+
+          <div class="form-grid-2 biz-grid">
+            <div class="form-group form-group--full">
+              <label for="biz-name">Nombre del negocio</label>
+              <input type="text" id="biz-name" class="form-input" maxlength="80" required aria-describedby="biz-name-error">
+              <p class="form-error" id="biz-name-error" hidden></p>
             </div>
-            <div class="form-group phone-number">
-              <label for="setting-whatsapp">Número</label>
-              <input type="tel" id="setting-whatsapp" class="form-input" inputmode="tel" autocomplete="off" required placeholder="3765224107" aria-describedby="setting-whatsapp-hint setting-whatsapp-error">
+
+            <div class="form-group form-group--full">
+              <label for="biz-whatsapp">WhatsApp</label>
+              <!-- Formato argentino: se guarda como 549 + código de área + número (ej: 5493764159312) -->
+              <div class="phone-input">
+                <span class="phone-prefix" aria-hidden="true">+54 9</span>
+                <input type="tel" id="biz-whatsapp" class="form-input" inputmode="tel" autocomplete="off" required placeholder="3764 159312" aria-describedby="biz-whatsapp-hint biz-whatsapp-error">
+              </div>
+              <p class="form-hint" id="biz-whatsapp-hint">Código de área y número, sin el 0 ni el 15. A este número llegan los pedidos de la tienda.</p>
+              <p class="form-error" id="biz-whatsapp-error" hidden></p>
+              <p class="phone-preview" id="biz-whatsapp-preview" aria-live="polite"></p>
+              <a id="biz-whatsapp-test" class="btn btn-grey" href="#" target="_blank" rel="noopener">Probar el número</a>
+            </div>
+
+            <div class="form-group">
+              <label for="biz-email">Email de contacto</label>
+              <input type="email" id="biz-email" class="form-input" inputmode="email" maxlength="150" placeholder="dulcesuenos@gmail.com" aria-describedby="biz-email-error">
+              <p class="form-error" id="biz-email-error" hidden></p>
+            </div>
+            <div class="form-group">
+              <label for="biz-address">Dirección o zona</label>
+              <input type="text" id="biz-address" class="form-input" maxlength="200" placeholder="Posadas, Misiones">
+            </div>
+
+            <div class="form-group">
+              <label for="biz-instagram">Instagram</label>
+              <input type="text" id="biz-instagram" class="form-input" maxlength="80" autocomplete="off" placeholder="dulcessuenos_posadas" aria-describedby="biz-instagram-error">
+              <p class="form-error" id="biz-instagram-error" hidden></p>
+            </div>
+            <div class="form-group">
+              <label for="biz-facebook">Facebook</label>
+              <input type="text" id="biz-facebook" class="form-input" maxlength="120" autocomplete="off" placeholder="Usuario de la página (opcional)" aria-describedby="biz-facebook-error">
+              <p class="form-error" id="biz-facebook-error" hidden></p>
+            </div>
+
+            <div class="form-group form-group--full">
+              <label for="biz-openingHours">Horario de atención</label>
+              <input type="text" id="biz-openingHours" class="form-input" maxlength="200" placeholder="Lunes a sábado de 9 a 19 h">
+            </div>
+
+            <div class="form-group">
+              <label for="biz-minLeadDays">Días de anticipación para pedir</label>
+              <input type="number" id="biz-minLeadDays" class="form-input" min="0" max="60" step="1" inputmode="numeric" required aria-describedby="biz-minLeadDays-error">
+              <p class="form-error" id="biz-minLeadDays-error" hidden></p>
+            </div>
+            <div class="form-group">
+              <label for="biz-depositPercent">Seña sugerida (%)</label>
+              <input type="number" id="biz-depositPercent" class="form-input" min="0" max="100" step="1" inputmode="numeric" required aria-describedby="biz-depositPercent-error">
+              <p class="form-error" id="biz-depositPercent-error" hidden></p>
+            </div>
+
+            <div class="form-group form-group--full">
+              <label for="biz-storeBanner">Mensaje de la tienda (opcional)</label>
+              <input type="text" id="biz-storeBanner" class="form-input" maxlength="200" placeholder="Ej: ¡Ya podés pedir las tortas para el Día de la Madre!" aria-describedby="biz-storeBanner-hint">
+              <p class="form-hint" id="biz-storeBanner-hint">Se muestra arriba en la tienda. Dejalo vacío para no mostrar nada.</p>
             </div>
           </div>
-          <p class="form-hint" id="setting-whatsapp-hint">Código de área y número, sin el 0 ni el 15. Ejemplo: 3765224107.</p>
-          <p class="form-error" id="setting-whatsapp-error" hidden></p>
-          <p class="phone-preview" id="setting-whatsapp-preview" aria-live="polite"></p>
+
           <div class="form-actions">
-            <a id="setting-whatsapp-test" class="btn btn-grey" href="#" target="_blank" rel="noopener">Probar el número</a>
             <button type="submit" class="btn btn-pink">Guardar</button>
           </div>
           <p class="settings-status" id="settings-status" role="status" hidden></p>

@@ -25,7 +25,7 @@
     <meta name="description" th:content="${description}">
     <link rel="canonical" th:href="${siteUrl} + ${path}">
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="Dulce Sueños Posadas">
+    <meta property="og:site_name" th:content="${negocio != null ? negocio.name : 'Dulce Sueños Posadas'}">
     <meta property="og:locale" content="es_AR">
     <meta property="og:title" th:content="${title}">
     <meta property="og:description" th:content="${description}">

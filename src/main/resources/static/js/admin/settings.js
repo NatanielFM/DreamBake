@@ -135,140 +135,149 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('tabChanged', (e) => { if (e.detail === 'ajustes') loadMail(); });
   }
 
+  // ================= CONFIGURACIÓN DEL NEGOCIO (paso 6.4) =================
+  // Nombre, WhatsApp, email, dirección, redes, horario, anticipación, seña, mensaje de la tienda y pausa.
+  // El servidor (BusinessProfileService) valida todo de nuevo, guarda y audita el antes y el después.
   const form = document.getElementById('settings-form');
   if (!form) return;
 
-  const countrySelect = document.getElementById('setting-country');
-  const input = document.getElementById('setting-whatsapp');
-  const hint = document.getElementById('setting-whatsapp-hint');
-  const error = document.getElementById('setting-whatsapp-error');
-  const preview = document.getElementById('setting-whatsapp-preview');
+  const FIELDS = ['name', 'whatsapp', 'email', 'address', 'instagram', 'facebook', 'openingHours',
+                  'minLeadDays', 'depositPercent', 'storeBanner'];
+  const $ = (field) => document.getElementById(`biz-${field}`);
+  const paused = $('ordersPaused');
   const status = document.getElementById('settings-status');
-  const testLink = document.getElementById('setting-whatsapp-test');
+  const preview = document.getElementById('biz-whatsapp-preview');
+  const testLink = document.getElementById('biz-whatsapp-test');
 
-  // ================= PAÍS + NÚMERO LOCAL =================
-  // WhatsApp necesita el número completo, solo con dígitos: código de país + número.
-  // En Argentina, además, va un 9 después del 54 (celulares): 54 9 3765224107.
-  // Por eso la dueña elige el país y escribe el número como lo usa siempre (3765224107);
-  // acá se juntan las dos partes. Lo que se guarda en el servidor es "5493765224107".
-  const ARGENTINA = '549';
-  const isArgentina = () => countrySelect.value === ARGENTINA;
-  const digitsOf = (value) => value.replace(/\D/g, '');
-
-  // Limpia lo que escribió y devuelve solo el número local (sin código de país)
+  // ---- WhatsApp: la dueña escribe el número como lo usa siempre y acá se arma 549 + número ----
+  // Acepta "0376 15 4159312", "376 4159312" o pegado completo "+54 9 376 415-9312".
   function localNumber() {
-    let digits = digitsOf(input.value);
-    const code = countrySelect.value;
-    // Si pegó el número completo con el código de país (+54 9 376…), se lo sacamos
-    if (digits.startsWith(code) && digits.length > code.length + 6) digits = digits.slice(code.length);
-    else if (isArgentina() && digits.startsWith('54') && digits.length === 12) digits = digits.slice(2);
-    if (isArgentina()) {
-      // Forma argentina de siempre: 0 adelante del área y 15 adelante del número (0376 15 5224107)
-      if (digits.startsWith('0')) digits = digits.slice(1);
-      if (digits.length === 12) {
-        const pos = digits.indexOf('15', 2);
-        if (pos >= 2 && pos <= 4) digits = digits.slice(0, pos) + digits.slice(pos + 2);
-      }
+    let digits = $('whatsapp').value.replace(/\D/g, '');
+    if (digits.startsWith('549') && digits.length === 13) digits = digits.slice(3);
+    else if (digits.startsWith('54') && digits.length === 12) digits = digits.slice(2);
+    if (digits.startsWith('0')) digits = digits.slice(1);
+    if (digits.length === 12) {   // con el 15 adelante del número
+      const pos = digits.indexOf('15', 2);
+      if (pos >= 2 && pos <= 4) digits = digits.slice(0, pos) + digits.slice(pos + 2);
     }
     return digits;
   }
+  const whatsappError = (local) => !local ? 'Escribí el número de WhatsApp.'
+    : (local.length !== 10 ? 'Tiene que tener 10 dígitos: código de área + número, sin el 0 ni el 15 (ej: 3764 159312).' : '');
 
-  // Devuelve el mensaje de error, o '' si el número está bien
-  function validate(local) {
-    if (!local) return 'Escribí el número de WhatsApp.';
-    if (isArgentina() && local.length !== 10) {
-      return 'En Argentina el número tiene 10 dígitos: código de área + número, sin el 0 ni el 15 (ej: 3765224107).';
-    }
-    if (!isArgentina() && (local.length < 6 || countrySelect.value.length + local.length > 15)) {
-      return 'Revisá el número: escribilo sin el código de país.';
-    }
-    return '';
-  }
-
-  // Texto de ayuda, vista previa ("Así queda: +54 9 3765224107") y link para probarlo
-  function refresh() {
-    hint.textContent = isArgentina()
-      ? 'Código de área y número, sin el 0 ni el 15. Ejemplo: 3765224107.'
-      : 'El número sin el código de país.';
+  function refreshWhatsapp() {
     const local = localNumber();
-    const ok = local && !validate(local);
-    const code = countrySelect.value;
-    const shownCode = isArgentina() ? '+54 9' : `+${code}`;
-    preview.textContent = ok ? `Así queda: ${shownCode} ${local}` : '';
-    testLink.href = ok ? `https://wa.me/${code}${local}` : '#';
+    const ok = !whatsappError(local);
+    preview.textContent = ok ? `Así queda: +54 9 ${local}` : '';
+    testLink.href = ok ? `https://wa.me/549${local}` : '#';
     testLink.setAttribute('aria-disabled', ok ? 'false' : 'true');
   }
 
-  // Al cargar: separa el número guardado en país + número local
-  function fillFromSaved(full) {
-    const codes = [...countrySelect.options].map(o => o.value).sort((a, b) => b.length - a.length);
-    const code = codes.find(c => full.startsWith(c) && full.length > c.length);
-    if (code) {
-      countrySelect.value = code;
-      input.value = full.slice(code.length);
-    } else {
-      // Un país que no está en la lista: se muestra completo con Argentina elegida para que se corrija
-      countrySelect.value = ARGENTINA;
-      input.value = full;
-    }
-    refresh();
+  // ---- Errores por campo (los del navegador y los que devuelve el servidor) ----
+  function setError(field, message) {
+    const input = $(field);
+    const box = document.getElementById(`biz-${field}-error`);
+    if (input) input.setAttribute('aria-invalid', message ? 'true' : 'false');
+    if (box) { box.textContent = message || ''; box.hidden = !message; }
+  }
+  const clearErrors = () => FIELDS.forEach(f => setError(f, ''));
+
+  function validate() {
+    const errors = {};
+    if ($('name').value.trim().length < 2) errors.name = 'Escribí el nombre del negocio.';
+    const w = whatsappError(localNumber());
+    if (w) errors.whatsapp = w;
+    const email = $('email').value.trim();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Revisá el email (por ejemplo dulcesuenos@gmail.com).';
+    const lead = Number($('minLeadDays').value);
+    if ($('minLeadDays').value === '' || !Number.isInteger(lead) || lead < 0 || lead > 60) errors.minLeadDays = 'Un número entero de 0 a 60.';
+    const dep = Number($('depositPercent').value);
+    if ($('depositPercent').value === '' || !Number.isInteger(dep) || dep < 0 || dep > 100) errors.depositPercent = 'Un número entero de 0 a 100.';
+    return errors;
   }
 
-  function showError(message) {
-    error.textContent = message;
-    error.hidden = !message;
-    input.setAttribute('aria-invalid', message ? 'true' : 'false');
+  function fill(data) {
+    $('name').value = data.name || '';
+    $('whatsapp').value = (data.whatsapp || '').replace(/^549/, '');
+    ['email', 'address', 'instagram', 'facebook', 'openingHours', 'storeBanner'].forEach(f => { $(f).value = data[f] || ''; });
+    $('minLeadDays').value = data.minLeadDays ?? 3;
+    $('depositPercent').value = data.depositPercent ?? 50;
+    paused.checked = Boolean(data.ordersPaused);
+    refreshWhatsapp();
   }
 
   async function loadSettings() {
     try {
       const res = await fetch('/api/settings');
       if (!res.ok) return;
-      const data = await res.json();
-      fillFromSaved(data.whatsapp || '');
-    } catch (e) { console.error('No se pudieron cargar los ajustes', e); }
+      fill(await res.json());
+    } catch (e) { console.error('No se pudieron cargar los datos del negocio', e); }
   }
 
-  countrySelect.addEventListener('change', () => { status.hidden = true; showError(''); refresh(); });
-  input.addEventListener('input', () => {
-    refresh();
-    status.hidden = true;
-    if (input.getAttribute('aria-invalid') === 'true') showError(validate(localNumber()));
+  $('whatsapp').addEventListener('input', () => {
+    refreshWhatsapp();
+    if ($('whatsapp').getAttribute('aria-invalid') === 'true') setError('whatsapp', whatsappError(localNumber()));
   });
+  form.addEventListener('input', () => { status.hidden = true; });
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  async function save() {
+    clearErrors();
     status.hidden = true;
-    const local = localNumber();
-    const message = validate(local);
-    if (message) {
-      showError(message);
-      input.focus();
+    const errors = validate();
+    if (Object.keys(errors).length) {
+      Object.entries(errors).forEach(([f, m]) => setError(f, m));
+      $(Object.keys(errors)[0]).focus();
       return;
     }
-    showError('');
-
+    const body = {
+      name: $('name').value, whatsapp: '549' + localNumber(), email: $('email').value,
+      address: $('address').value, instagram: $('instagram').value, facebook: $('facebook').value,
+      openingHours: $('openingHours').value, minLeadDays: Number($('minLeadDays').value),
+      depositPercent: Number($('depositPercent').value), storeBanner: $('storeBanner').value,
+      ordersPaused: paused.checked
+    };
     const submitBtn = form.querySelector('button[type="submit"]');
     submitBtn.disabled = true;
     try {
       const res = await fetch('/api/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ whatsapp: countrySelect.value + local })
+        body: JSON.stringify(body)
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        fillFromSaved(data.whatsapp);
-        status.textContent = 'Guardado. La tienda ya usa este número.';
+        fill(data);
+        status.textContent = data.ordersPaused
+          ? 'Guardado. Los pedidos online quedaron PAUSADOS: la tienda ya lo avisa.'
+          : 'Guardado. La tienda ya muestra estos datos.';
         status.hidden = false;
+      } else if (data.errors) {
+        Object.entries(data.errors).forEach(([f, m]) => setError(f, m));
+        $(Object.keys(data.errors)[0])?.focus();
       } else {
-        showError(data.message || 'No se pudo guardar el número.');
+        window.showErrorAlert(data.message || 'No se pudieron guardar los datos.');
       }
     } catch (err) {
-      showError('No se pudo conectar con el servidor.');
+      window.showErrorAlert('No se pudo conectar con el servidor.');
     } finally {
       submitBtn.disabled = false;
     }
+  }
+
+  form.addEventListener('submit', (e) => { e.preventDefault(); save(); });
+
+  // Pausar o reanudar es una decisión importante: se pide confirmación y se guarda en el momento
+  paused.addEventListener('change', () => {
+    const pausing = paused.checked;
+    paused.checked = !pausing;   // hasta que confirme, queda como estaba
+    window.showConfirmModal(
+      pausing ? 'Pausar pedidos online' : 'Reanudar pedidos online',
+      pausing ? 'La tienda va a avisar que no toma pedidos y no va a dejar enviarlos. Podés seguir cargando pedidos desde el panel.'
+              : 'La tienda vuelve a aceptar pedidos.',
+      pausing ? 'Pausar' : 'Reanudar',
+      'btn-pink',
+      () => { paused.checked = pausing; save(); }
+    );
   });
 
   // Se carga al abrir la pestaña (y una vez al entrar, por si se abre directamente)

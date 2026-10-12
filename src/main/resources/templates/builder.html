@@ -9,9 +9,9 @@
   <th:block th:replace="~{fragments/seo :: icons}"></th:block>
   <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
   <script th:src="@{/js/csrf.js}"></script>
-  <title>Armá tu torta — Dulce Sueños Posadas</title>
+  <title th:text="'Armá tu torta — ' + ${negocio.name}">Armá tu torta — Dulce Sueños Posadas</title>
   <!-- Descripción y vista previa al compartir el link (fragments/seo.html, paso 6.3) -->
-  <th:block th:replace="~{fragments/seo :: share('Armá tu torta — Dulce Sueños Posadas', 'Elegí tamaño, cobertura, sabores y rellenos de tu torta y mirá el precio al instante.', '/builder')}"></th:block>
+  <th:block th:replace="~{fragments/seo :: share('Armá tu torta — ' + ${negocio.name}, 'Elegí tamaño, cobertura, sabores y rellenos de tu torta y mirá el precio al instante.', '/builder')}"></th:block>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -28,11 +28,13 @@
   <div th:replace="~{fragments/header :: header}"></div>
 
   <main id="main" class="shop-main">
+    <!-- Pedidos pausados o mensaje de la tienda (paso 6.4) -->
+    <th:block th:replace="~{fragments/store-notice :: notice}"></th:block>
     <!-- Encabezado -->
     <section class="shop-hero">
       <div class="site-container">
         <h1 class="text-h1">Armá tu torta</h1>
-        <p class="text-lead">Elegí cada detalle y mirá el precio al instante. Pedila con 3 días de anticipación.</p>
+        <p class="text-lead">Elegí cada detalle y mirá el precio al instante. Pedila con <th:block th:text="${negocio.minLeadDays}">3</th:block> días de anticipación.</p>
       </div>
     </section>
 
@@ -145,7 +147,7 @@
             <div data-sum-row="details"><dt>Detalles</dt><dd data-sum="details">Sin detalles</dd></div>
           </dl>
           <p class="summary-price"><span>Precio</span><strong data-sum="price">—</strong></p>
-          <p class="summary-note">Pedidos con 3 días de anticipación. El diseño final lo coordinamos por WhatsApp.</p>
+          <p class="summary-note">Pedidos con <th:block th:text="${negocio.minLeadDays}">3</th:block> días de anticipación. El diseño final lo coordinamos por WhatsApp.</p>
         </aside>
       </div>
     </section>

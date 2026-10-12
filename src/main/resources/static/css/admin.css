@@ -2220,3 +2220,14 @@ select.form-input.readonly-mode:disabled { opacity: 1; background-image: none; p
   .reminder-alerts { top: auto; right: var(--space-4); bottom: var(--space-4); left: var(--space-4); width: auto; }
   .reminder-alert__actions .btn { flex: 1 1 0; justify-content: center; }
 }
+
+/* ---------- Configuración del negocio (Ajustes, paso 6.4) ---------- */
+.settings-form .biz-grid { margin-top: var(--space-3); }
+.biz-pause { align-items: flex-start; margin: var(--space-2) 0; padding: var(--space-3) var(--space-4); border: 1px solid var(--admin-line); border-radius: var(--radius-sm); }
+.biz-pause input { margin-top: 3px; flex: none; }
+.biz-pause small { display: block; font-weight: var(--fw-regular, 400); }
+.biz-pause:has(input:checked) { border-color: var(--accent); background: var(--st-sched-bg); }
+.phone-input { display: flex; align-items: stretch; }
+.phone-prefix { display: inline-flex; align-items: center; padding: 0 var(--space-3); border: 1px solid var(--admin-input-line); border-right: 0; border-radius: var(--radius-sm) 0 0 var(--radius-sm); background: var(--admin-hover); color: var(--admin-heading); font-weight: var(--fw-semibold); white-space: nowrap; }
+.phone-input .form-input { border-top-left-radius: 0; border-bottom-left-radius: 0; min-width: 0; }
+#biz-whatsapp-test { margin-top: var(--space-2); align-self: flex-start; }

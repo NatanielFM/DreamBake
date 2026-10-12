@@ -31,6 +31,10 @@ import java.util.ArrayList;
 public class OrderRestController {
 
     @Autowired
+    private com.dreambake.service.BusinessProfileService businessProfile;   // pausa y anticipación (paso 6.4)
+
+
+    @Autowired
     private OrderRepository orderRepo;
 
     @Autowired
@@ -140,6 +144,12 @@ public class OrderRestController {
             }
             if (deliveryError != null) {
                 return ResponseEntity.badRequest().body(Map.of("message", deliveryError));
+            }
+            // Pedidos pausados (vacaciones) y días de anticipación mínima (paso 6.4, Ajustes del panel).
+            // La tienda ya lo avisa, pero el servidor lo vuelve a revisar: no se puede saltear desde el navegador.
+            String storeRule = businessProfile.checkStoreOrder(order.getDeliveryDate());
+            if (storeRule != null) {
+                return ResponseEntity.badRequest().body(Map.of("message", storeRule));
             }
 
             // Precios reales y cupón: los calcula el servidor (no se usa el total que manda el navegador)

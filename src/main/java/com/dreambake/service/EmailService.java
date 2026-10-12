@@ -64,9 +64,13 @@ public class EmailService {
     private final TemplateEngine templateEngine;
     private final AppProperties app;
     private final EmailLogRepository emailLogRepository;
+    // Nombre, WhatsApp y email del negocio que se editan en el panel (paso 6.4)
+    private final BusinessProfileService businessProfile;
 
     public EmailService(MailAccountService mailAccounts, TemplateEngine templateEngine,
-                        AppProperties app, EmailLogRepository emailLogRepository) {
+                        AppProperties app, EmailLogRepository emailLogRepository,
+                        BusinessProfileService businessProfile) {
+        this.businessProfile = businessProfile;
         this.mailAccounts = mailAccounts;
         this.templateEngine = templateEngine;
         this.app = app;
@@ -143,7 +147,7 @@ public class EmailService {
         Context ctx = new Context();
         ctx.setVariables(variables == null ? new HashMap<>() : new HashMap<>(variables));
         ctx.setVariable("asunto", asunto);
-        ctx.setVariable("negocio", app.getBusiness());
+        ctx.setVariable("negocio", businessProfile.get());   // name, whatsapp, email (panel → Ajustes)
         ctx.setVariable("publicUrl", app.getPublicUrl());
         ctx.setVariable("bajaUrl", bajaUrl);
         return templateEngine.process(plantilla, ctx);
@@ -187,9 +191,9 @@ public class EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(mensaje, true, StandardCharsets.UTF_8.name());
             // Gmail solo deja enviar "desde" la cuenta autenticada: el remitente es siempre el usuario SMTP,
             // con el nombre del negocio. Si hay un mail del negocio distinto, se usa para las respuestas.
-            helper.setFrom(username, app.getBusiness().getName());
-            String respuestas = app.getBusiness().getEmail();
-            if (!respuestas.isBlank()) helper.setReplyTo(respuestas);
+            helper.setFrom(username, businessProfile.get().getName());
+            String respuestas = businessProfile.get().getEmail();
+            if (respuestas != null && !respuestas.isBlank()) helper.setReplyTo(respuestas);
             helper.setTo(destinatario.trim());
             helper.setSubject(asunto);
             helper.setText(html, true);

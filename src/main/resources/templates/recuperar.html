@@ -11,7 +11,7 @@
   <th:block th:replace="~{fragments/seo :: icons}"></th:block>
   <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
   <script th:src="@{/js/csrf.js}"></script>
-  <title>Recuperar contraseña — Dulce Sueños Posadas</title>
+  <title th:text="'Recuperar contraseña — ' + ${negocio.name}">Recuperar contraseña — Dulce Sueños Posadas</title>
   <meta name="description" content="Pedí un link para elegir una contraseña nueva de tu cuenta de Dulce Sueños Posadas.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">

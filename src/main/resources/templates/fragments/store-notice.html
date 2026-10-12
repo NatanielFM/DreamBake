@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es-AR">
+<body>
+  <!--/*
+    Avisos de la tienda (paso 6.4), según Ajustes → Configuración del negocio:
+      - pedidos pausados (vacaciones): aviso fuerte; el carrito además no deja enviar el pedido.
+      - mensaje opcional de la tienda (ej: "¡Llegaron las tortas de Halloween!").
+    Va al principio del <main> en inicio, productos, armá tu torta y carrito:
+      <th:block th:replace="~{fragments/store-notice :: notice}"></th:block>
+    Todo con th:text (el mensaje lo escribe la dueña, pero igual se escapa).
+  */-->
+  <th:block th:fragment="notice">
+    <div class="store-notice store-notice--paused" th:if="${negocio != null and negocio.ordersPaused}" role="status">
+      <div class="site-container store-notice__inner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M10 9v6M14 9v6"/></svg>
+        <p>
+          <strong>Pausamos los pedidos por la web por unos días.</strong>
+          Podés mirar todo igual y escribirnos por <a th:href="|https://wa.me/${negocio.whatsapp}|" target="_blank" rel="noopener">WhatsApp</a>.
+        </p>
+      </div>
+    </div>
+    <div class="store-notice" th:if="${negocio != null and !#strings.isEmpty(negocio.storeBanner)}" role="status">
+      <div class="site-container store-notice__inner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 10v4h3l5 4V6L7 10H4Z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg>
+        <p th:text="${negocio.storeBanner}">Mensaje de la tienda</p>
+      </div>
+    </div>
+  </th:block>
+</body>
+</html>

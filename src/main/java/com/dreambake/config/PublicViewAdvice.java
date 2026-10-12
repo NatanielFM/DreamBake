@@ -24,6 +24,9 @@ public class PublicViewAdvice {
     private AppProperties app;
 
     @Autowired
+    private com.dreambake.service.BusinessProfileService businessProfile;
+
+    @Autowired
     private BusinessSettingService settingService;
 
     // Lista de redes sociales configuradas. Spring Boot solo la crea si hay credenciales cargadas.
@@ -49,6 +52,14 @@ public class PublicViewAdvice {
 
     // Número de WhatsApp del negocio (se cambia desde Panel → Ajustes). Lo usan los links
     // "Escribinos por WhatsApp" y store.js para armar el mensaje del pedido.
+    // Datos del negocio (paso 6.4, Ajustes → Configuración del negocio): nombre, WhatsApp, email,
+    // dirección, Instagram, Facebook, horario, anticipación, seña, mensaje de la tienda y pausa.
+    // Las plantillas los usan como ${negocio.name}, ${negocio.instagramUrl}, ${negocio.minLeadDays}…
+    @ModelAttribute("negocio")
+    public com.dreambake.entity.BusinessProfile negocio() {
+        return businessProfile.get();
+    }
+
     @ModelAttribute("whatsappNumber")
     public String whatsappNumber() {
         return settingService.getWhatsappNumber();

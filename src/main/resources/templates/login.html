@@ -9,9 +9,9 @@
   <th:block th:replace="~{fragments/seo :: icons}"></th:block>
   <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
   <script th:src="@{/js/csrf.js}"></script>
-  <title>Iniciar sesión — Dulce Sueños Posadas</title>
+  <title th:text="'Iniciar sesión — ' + ${negocio.name}">Iniciar sesión — Dulce Sueños Posadas</title>
   <!-- Descripción y vista previa al compartir el link (fragments/seo.html, paso 6.3) -->
-  <th:block th:replace="~{fragments/seo :: share('Iniciar sesión — Dulce Sueños Posadas', 'Entrá a tu cuenta de Dulce Sueños Posadas para pedir más rápido y ver tus pedidos.', '/login')}"></th:block>
+  <th:block th:replace="~{fragments/seo :: share('Iniciar sesión — ' + ${negocio.name}, 'Entrá a tu cuenta de Dulce Sueños Posadas para pedir más rápido y ver tus pedidos.', '/login')}"></th:block>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

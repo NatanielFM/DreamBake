@@ -4,7 +4,7 @@ import com.dreambake.audit.AuditText;
 import com.dreambake.entity.AuditAction;
 import com.dreambake.entity.AuditModule;
 import com.dreambake.service.AuditService;
-import com.dreambake.service.BusinessSettingService;
+import com.dreambake.service.BusinessProfileService;
 import com.dreambake.service.MailAccountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +19,7 @@ import java.util.Map;
 public class SettingsRestController {
 
     @Autowired
-    private BusinessSettingService settingService;
+    private BusinessProfileService businessProfile;
 
     @Autowired
     private MailAccountService mailAccountService;
@@ -28,28 +28,20 @@ public class SettingsRestController {
     @Autowired
     private AuditService audit;
 
+    // Datos del negocio (paso 6.4): BusinessProfile. Todo lo valida y audita BusinessProfileService.
     @GetMapping
-    public Map<String, String> getSettings() {
-        return Map.of("whatsapp", settingService.getWhatsappNumber());
-    }
-
-    public record SettingsRequest(String whatsapp) {
+    public com.dreambake.entity.BusinessProfile getSettings() {
+        return businessProfile.get();
     }
 
     @PutMapping
-    public ResponseEntity<?> updateSettings(@RequestBody SettingsRequest request) {
-        String before = settingService.getWhatsappNumber();
-        String error = settingService.saveWhatsappNumber(request.whatsapp());
-        if (error != null) {
-            return ResponseEntity.badRequest().body(Map.of("message", error));
+    public ResponseEntity<?> updateSettings(@RequestBody BusinessProfileService.Request request) {
+        Map<String, String> errors = businessProfile.save(request);
+        if (!errors.isEmpty()) {
+            // El primer error va en "message" (como el resto de los endpoints) y todos en "errors" (uno por campo)
+            return ResponseEntity.badRequest().body(Map.of("message", errors.values().iterator().next(), "errors", errors));
         }
-        String after = settingService.getWhatsappNumber();
-        if (!before.equals(after)) {
-            audit.log(AuditAction.CONFIG_CHANGE, AuditModule.SISTEMA, "Configuración", "whatsapp",
-                    "Cambió el número de WhatsApp del negocio de " + before + " a " + after,
-                    AuditText.change(Map.of("whatsapp", before), Map.of("whatsapp", after)));
-        }
-        return ResponseEntity.ok(Map.of("whatsapp", after));
+        return ResponseEntity.ok(businessProfile.get());
     }
 
     // ===== Correo de envío (Ajustes → Correo de envío) =====

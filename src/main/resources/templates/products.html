@@ -9,9 +9,9 @@
   <th:block th:replace="~{fragments/seo :: icons}"></th:block>
   <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
   <script th:src="@{/js/csrf.js}"></script>
-  <title>Productos — Dulce Sueños Posadas</title>
+  <title th:text="'Productos — ' + ${negocio.name}">Productos — Dulce Sueños Posadas</title>
   <!-- Descripción y vista previa al compartir el link (fragments/seo.html, paso 6.3) -->
-  <th:block th:replace="~{fragments/seo :: share('Productos — Dulce Sueños Posadas', 'Tortas, mesas dulces y souvenirs de Dulce Sueños Posadas con sus precios. Elegí y pedí por WhatsApp.', '/products')}"></th:block>
+  <th:block th:replace="~{fragments/seo :: share('Productos — ' + ${negocio.name}, 'Tortas, mesas dulces y souvenirs de Dulce Sueños Posadas con sus precios. Elegí y pedí por WhatsApp.', '/products')}"></th:block>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,6 +31,8 @@
   <div th:replace="~{fragments/header :: header}"></div>
 
   <main id="main" class="shop-main">
+    <!-- Pedidos pausados o mensaje de la tienda (paso 6.4) -->
+    <th:block th:replace="~{fragments/store-notice :: notice}"></th:block>
     <section class="shop-hero" aria-labelledby="products-title">
       <div class="site-container shop-hero-row">
         <div>

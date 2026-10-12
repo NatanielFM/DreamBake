@@ -9,9 +9,9 @@
   <th:block th:replace="~{fragments/seo :: icons}"></th:block>
   <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
   <script th:src="@{/js/csrf.js}"></script>
-  <title>Tu pedido — Dulce Sueños Posadas</title>
+  <title th:text="'Tu pedido — ' + ${negocio.name}">Tu pedido — Dulce Sueños Posadas</title>
   <!-- Descripción y vista previa al compartir el link (fragments/seo.html, paso 6.3) -->
-  <th:block th:replace="~{fragments/seo :: share('Tu pedido — Dulce Sueños Posadas', 'Revisá tu pedido de Dulce Sueños Posadas, aplicá tu cupón y confirmalo por WhatsApp.', '/cart')}"></th:block>
+  <th:block th:replace="~{fragments/seo :: share('Tu pedido — ' + ${negocio.name}, 'Revisá tu pedido de Dulce Sueños Posadas, aplicá tu cupón y confirmalo por WhatsApp.', '/cart')}"></th:block>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -28,6 +28,8 @@
   <div th:replace="~{fragments/header :: header}"></div>
 
   <main id="main" class="shop-main">
+    <!-- Pedidos pausados o mensaje de la tienda (paso 6.4) -->
+    <th:block th:replace="~{fragments/store-notice :: notice}"></th:block>
     <section class="shop-hero">
       <div class="site-container">
         <h1 class="text-h1">Tu pedido</h1>
@@ -133,7 +135,7 @@
               <div class="field">
                 <label class="field__label" for="chk-date">¿Para qué día?</label>
                 <input type="date" id="chk-date" class="input" required aria-describedby="chk-date-hint chk-date-error">
-                <p class="field__hint" id="chk-date-hint">Pedidos con 3 días de anticipación.</p>
+                <p class="field__hint" id="chk-date-hint">Pedidos con <th:block th:text="${negocio.minLeadDays}">3</th:block> días de anticipación.</p>
                 <p class="field__error" id="chk-date-error" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span></span></p>
               </div>
 
@@ -219,7 +221,9 @@
           </dl>
           <p class="summary-total"><span>Total</span><strong>$<span id="full-cart-total">0</span></strong></p>
 
-          <button type="submit" form="final-checkout-form" class="button button--ink button--lg button--block checkout-submit">
+          <!-- Pedidos pausados desde el panel (paso 6.4): el botón queda deshabilitado; el servidor también rechaza el pedido -->
+          <p class="checkout-paused" id="checkout-paused" role="status" th:hidden="${!negocio.ordersPaused}">Por ahora no tomamos pedidos por la web. Escribinos por WhatsApp.</p>
+          <button type="submit" form="final-checkout-form" class="button button--ink button--lg button--block checkout-submit" th:disabled="${negocio.ordersPaused}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
               <path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3Z"></path>
               <path d="M9.2 8.6c.2 2.9 3.3 6 6.2 6.2l1.1-1.4-1.9-1-.9.8c-1-.4-2-1.4-2.4-2.4l.8-.9-1-1.9-1.9.6Z" fill="currentColor" stroke="none"></path>

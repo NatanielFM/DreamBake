@@ -1026,3 +1026,11 @@
   .carousel-progress span { transition: none; }
   .showcase-add.is-added .showcase-added-icon { animation-name: fade-in; }
 }
+
+/* Avisos de la tienda en la home (paso 6.4): el hero ya deja lugar al header fijo, así que el primer
+   aviso toma ese espacio y el hero arranca más pegado. */
+.page-home #main > .store-notice:first-child { margin-top: var(--header-height); }
+.page-home #main > .store-notice ~ .home-hero { padding-top: var(--space-6); }
+@media (min-width: 64rem) {
+  .page-home #main > .store-notice ~ .home-hero { padding-top: var(--space-7); }
+}

@@ -59,6 +59,7 @@ public class OrderNoticeService {
     @Autowired private MailAccountService mailAccounts;
     @Autowired private BusinessSettingService settingService;
     @Autowired private AppProperties app;
+    @Autowired private BusinessProfileService businessProfile;   // nombre y email del negocio (paso 6.4)
     @Autowired private PlatformTransactionManager transactionManager;
 
     // Evita mandar dos veces el mismo aviso si dos cambios llegan casi juntos
@@ -238,7 +239,7 @@ public class OrderNoticeService {
     }
 
     private String businessEmail() {
-        String configured = app.getBusiness().getEmail();
+        String configured = businessProfile.get().getEmail();
         if (validEmail(configured)) return configured;
         return mailAccounts.current().map(MailAccountService.Account::username).orElse("");
     }
@@ -369,7 +370,7 @@ public class OrderNoticeService {
         if (v == null) return Optional.empty();
         String number = BirthdayService.toWhatsappNumber(v.phone);
         if (number == null) return Optional.empty();
-        String business = app.getBusiness().getName();
+        String business = businessProfile.get().getName();
         // En medio de una frase el día va en minúscula ("para el sábado 10 de octubre")
         String when = v.deliveryDay.toLowerCase(AR) + (v.shift.isEmpty() ? "" : " (" + v.shift.toLowerCase(AR) + ")");
         String hello = "Hola " + v.firstName + ", ";

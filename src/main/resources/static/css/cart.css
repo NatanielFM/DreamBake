@@ -338,3 +338,16 @@
   .qty-btn:active,
   .choice-card:active { transform: none; }
 }
+
+/* Pedidos pausados (paso 6.4) */
+.checkout-paused {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--cherry-50);
+  color: var(--cherry-700);
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-small);
+}
+.checkout-paused[hidden] { display: none; }
+.checkout-submit:disabled { opacity: 0.55; cursor: not-allowed; }

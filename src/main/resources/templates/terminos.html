@@ -9,9 +9,9 @@
   <th:block th:replace="~{fragments/seo :: icons}"></th:block>
   <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
   <script th:src="@{/js/csrf.js}"></script>
-  <title>Términos y condiciones — Dulce Sueños Posadas</title>
+  <title th:text="'Términos y condiciones — ' + ${negocio.name}">Términos y condiciones — Dulce Sueños Posadas</title>
   <!-- Descripción y vista previa al compartir el link (fragments/seo.html, paso 6.3) -->
-  <th:block th:replace="~{fragments/seo :: share('Términos y condiciones — Dulce Sueños Posadas', 'Cómo funcionan los pedidos, las señas, las cancelaciones y los recibos de Dulce Sueños Posadas.', '/terminos')}"></th:block>
+  <th:block th:replace="~{fragments/seo :: share('Términos y condiciones — ' + ${negocio.name}, 'Cómo funcionan los pedidos, las señas, las cancelaciones y los recibos de Dulce Sueños Posadas.', '/terminos')}"></th:block>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -50,7 +50,7 @@
 
       <section class="legal-section" aria-labelledby="who">
         <h2 id="who">Quiénes somos</h2>
-        <p>Este sitio es de <strong>Dulce Sueños Posadas</strong> (<mark class="legal-todo">[COMPLETAR: razón social o nombre del titular]</mark>, CUIT <mark class="legal-todo">[COMPLETAR: CUIT, si corresponde]</mark>, <mark class="legal-todo">[COMPLETAR: dirección]</mark>, Posadas, Misiones). Contacto: <mark class="legal-todo">[COMPLETAR: email de contacto]</mark> o por <a class="link" th:href="|https://wa.me/${whatsappNumber}|" target="_blank" rel="noopener">WhatsApp</a>. Al usar el sitio y hacer pedidos aceptás estos términos.</p>
+        <p>Este sitio es de <strong><th:block th:text="${negocio.name}">Dulce Sueños Posadas</th:block></strong> (<mark class="legal-todo">[COMPLETAR: razón social o nombre del titular]</mark>, CUIT <mark class="legal-todo">[COMPLETAR: CUIT, si corresponde]</mark>, <th:block th:if="${!#strings.isEmpty(negocio.address)}" th:text="${negocio.address}">Posadas, Misiones</th:block><mark class="legal-todo" th:if="${#strings.isEmpty(negocio.address)}">[COMPLETAR: dirección]</mark>). Contacto: <th:block th:if="${!#strings.isEmpty(negocio.email)}"><a class="link" th:href="|mailto:${negocio.email}|" th:text="${negocio.email}">hola@ejemplo.com</a></th:block><mark class="legal-todo" th:if="${#strings.isEmpty(negocio.email)}">[COMPLETAR: email de contacto]</mark> o por <a class="link" th:href="|https://wa.me/${whatsappNumber}|" target="_blank" rel="noopener">WhatsApp</a>. Al usar el sitio y hacer pedidos aceptás estos términos.</p>
       </section>
 
       <section class="legal-section" aria-labelledby="orders">
@@ -61,13 +61,13 @@
           <li>El pedido queda <strong>confirmado</strong> recién cuando pagás la seña y te lo confirmamos. Hasta entonces la fecha no está reservada.</li>
           <li>Te avisamos cuando está listo para retirar o en camino.</li>
         </ol>
-        <p>Los pedidos se hacen con al menos <strong>3 días de anticipación</strong>. Los precios del sitio están en pesos argentinos y pueden cambiar; para tu pedido vale el precio que te confirmamos por WhatsApp. Los cupones de descuento tienen usos limitados y se aplican al total.</p>
+        <p>Los pedidos se hacen con al menos <strong><th:block th:text="${negocio.minLeadDays}">3</th:block> días de anticipación</strong>. Los precios del sitio están en pesos argentinos y pueden cambiar; para tu pedido vale el precio que te confirmamos por WhatsApp. Los cupones de descuento tienen usos limitados y se aplican al total.</p>
       </section>
 
       <section class="legal-section" aria-labelledby="deposit">
         <h2 id="deposit">Señas y pagos</h2>
         <ul>
-          <li>Para confirmar el pedido pedimos una seña de <mark class="legal-todo">[COMPLETAR: porcentaje o monto de la seña]</mark>. Con la seña compramos los insumos de tu pedido.</li>
+          <li>Para confirmar el pedido pedimos una seña del <th:block th:text="${negocio.depositPercent}">50</th:block>&nbsp;% del total. Con la seña compramos los insumos de tu pedido.</li>
           <li>El resto se paga <mark class="legal-todo">[COMPLETAR: al retirar / antes del envío]</mark>.</li>
           <li>Medios de pago: <mark class="legal-todo">[COMPLETAR: efectivo, transferencia…]</mark>. El sitio no cobra en línea: nunca te vamos a pedir datos de tu tarjeta.</li>
         </ul>

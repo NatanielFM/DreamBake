@@ -9,9 +9,9 @@
   <th:block th:replace="~{fragments/seo :: icons}"></th:block>
   <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
   <script th:src="@{/js/csrf.js}"></script>
-  <title>Eliminar mis datos — Dulce Sueños Posadas</title>
+  <title th:text="'Eliminar mis datos — ' + ${negocio.name}">Eliminar mis datos — Dulce Sueños Posadas</title>
   <!-- Descripción y vista previa al compartir el link (fragments/seo.html, paso 6.3) -->
-  <th:block th:replace="~{fragments/seo :: share('Eliminar mis datos — Dulce Sueños Posadas', 'Cómo eliminar tu cuenta y tus datos personales de Dulce Sueños Posadas.', '/eliminar-datos')}"></th:block>
+  <th:block th:replace="~{fragments/seo :: share('Eliminar mis datos — ' + ${negocio.name}, 'Cómo eliminar tu cuenta y tus datos personales de Dulce Sueños Posadas.', '/eliminar-datos')}"></th:block>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -54,7 +54,7 @@
       <section class="legal-section" aria-labelledby="how">
         <h2 id="how">Si no tenés cuenta (o no podés entrar)</h2>
         <ol class="legal-steps">
-          <li>Escribinos a <mark class="legal-todo">[COMPLETAR: email de contacto]</mark> o por <a class="link" th:href="|https://wa.me/${whatsappNumber}|" target="_blank" rel="noopener">WhatsApp</a>.</li>
+          <li>Escribinos a <th:block th:if="${!#strings.isEmpty(negocio.email)}"><a class="link" th:href="|mailto:${negocio.email}|" th:text="${negocio.email}">hola@ejemplo.com</a></th:block><mark class="legal-todo" th:if="${#strings.isEmpty(negocio.email)}">[COMPLETAR: email de contacto]</mark> o por <a class="link" th:href="|https://wa.me/${whatsappNumber}|" target="_blank" rel="noopener">WhatsApp</a>.</li>
           <li>Mandalo desde el email o el celular que usaste en tus pedidos y decinos: <strong>"Quiero eliminar mis datos"</strong>. Así sabemos que sos vos.</li>
           <li>Borramos tus datos y te avisamos por el mismo medio dentro de los 5 días hábiles (Ley 25.326).</li>
         </ol>

@@ -37,6 +37,9 @@ public class WebController {
     private AppProperties app;
 
     @Autowired
+    private com.dreambake.service.BusinessProfileService businessProfile;   // datos del negocio (paso 6.4)
+
+    @Autowired
     private MailAccountService mailAccounts;
 
     // Sticker "Más vendido": los 3 productos del catálogo que más se pidieron
@@ -121,7 +124,7 @@ public class WebController {
     // Email de contacto del negocio: app.business.email o, si está vacío, la cuenta desde la que
     // se mandan los emails (Panel → Ajustes → Correo de envío). Puede ser null si no hay ninguno.
     private String contactEmail() {
-        String email = app.getBusiness().getEmail();
+        String email = businessProfile.get().getEmail();
         if (email != null && !email.isBlank()) return email;
         return mailAccounts.current().map(MailAccountService.Account::username).orElse(null);
     }

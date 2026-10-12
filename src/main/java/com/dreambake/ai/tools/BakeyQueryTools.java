@@ -635,9 +635,13 @@ public class BakeyQueryTools {
             new Guide("backups", List.of("backup", "copia", "respaldo", "restaur"), true,
                     "Pestaña Backups (administración): el sistema hace una copia de seguridad todos los días a las 3:00. "
                             + "Ahí se ve la última, se puede descargar o «Hacer backup ahora». Restaurar pide contraseña y la palabra RESTAURAR."),
-            new Guide("ajustes", List.of("ajuste", "configur", "correo", "email", "whatsapp", "mail"), true,
-                    "Pestaña Ajustes (administración): número de WhatsApp del negocio y la cuenta de correo desde la que se mandan "
-                            + "los emails (avisos de pedidos, cumpleaños, campañas)."),
+            new Guide("ajustes", List.of("ajuste", "configur", "correo", "email", "whatsapp", "mail", "pausa", "vacaciones",
+                    "instagram", "horario", "anticipacion", "seña", "banner"), true,
+                    "Pestaña Ajustes (administración) → Configuración del negocio: nombre, WhatsApp, email, dirección, Instagram, "
+                            + "Facebook, horario, días de anticipación para pedir, seña sugerida y un mensaje opcional para la tienda. "
+                            + "Ahí está también «Pausar los pedidos online» (por ejemplo en vacaciones: la tienda lo avisa y no deja "
+                            + "enviar pedidos; desde el panel se pueden seguir cargando). Más abajo, la cuenta de correo desde la que "
+                            + "se mandan los emails."),
             new Guide("bakey", List.of("bakey", "asistente", "chat", "confirmar tarjeta", "ia"), false,
                     "Bakey (el botón del cupcake abajo a la derecha): preguntale en palabras simples por pedidos, stock, recetas o "
                             + "recordatorios. Si le pedís un cambio, NO lo hace solo: te muestra una tarjeta y recién se hace cuando tocás "

@@ -9,9 +9,9 @@
   <th:block th:replace="~{fragments/seo :: icons}"></th:block>
   <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
   <script th:src="@{/js/csrf.js}"></script>
-  <title>Política de privacidad — Dulce Sueños Posadas</title>
+  <title th:text="'Política de privacidad — ' + ${negocio.name}">Política de privacidad — Dulce Sueños Posadas</title>
   <!-- Descripción y vista previa al compartir el link (fragments/seo.html, paso 6.3) -->
-  <th:block th:replace="~{fragments/seo :: share('Política de privacidad — Dulce Sueños Posadas', 'Qué datos personales guarda Dulce Sueños Posadas, para qué los usa, cuánto tiempo y cómo ejercer tus derechos (Ley 25.326).', '/privacidad')}"></th:block>
+  <th:block th:replace="~{fragments/seo :: share('Política de privacidad — ' + ${negocio.name}, 'Qué datos personales guarda Dulce Sueños Posadas, para qué los usa, cuánto tiempo y cómo ejercer tus derechos (Ley 25.326).', '/privacidad')}"></th:block>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -46,12 +46,12 @@
 
       <section class="legal-section" aria-labelledby="who">
         <h2 id="who">Quiénes somos</h2>
-        <p><strong>Dulce Sueños Posadas</strong> es una pastelería de Posadas, Misiones, que hace tortas personalizadas y mesas dulces. Somos responsables de los datos personales que nos dejás en este sitio.</p>
+        <p><strong><th:block th:text="${negocio.name}">Dulce Sueños Posadas</th:block></strong> es una pastelería de Posadas, Misiones, que hace tortas personalizadas y mesas dulces. Somos responsables de los datos personales que nos dejás en este sitio.</p>
         <ul>
           <li><strong>Responsable:</strong> <mark class="legal-todo">[COMPLETAR: razón social o nombre del titular]</mark></li>
           <li><strong>CUIT:</strong> <mark class="legal-todo">[COMPLETAR: CUIT, si corresponde]</mark></li>
-          <li><strong>Domicilio:</strong> <mark class="legal-todo">[COMPLETAR: dirección]</mark>, Posadas, Misiones.</li>
-          <li><strong>Contacto:</strong> <mark class="legal-todo">[COMPLETAR: email de contacto]</mark> o por <a class="link" th:href="|https://wa.me/${whatsappNumber}|" target="_blank" rel="noopener">WhatsApp</a>.</li>
+          <li><strong>Domicilio:</strong> <th:block th:if="${!#strings.isEmpty(negocio.address)}" th:text="${negocio.address}">Posadas, Misiones</th:block><mark class="legal-todo" th:if="${#strings.isEmpty(negocio.address)}">[COMPLETAR: dirección]</mark>.</li>
+          <li><strong>Contacto:</strong> <th:block th:if="${!#strings.isEmpty(negocio.email)}"><a class="link" th:href="|mailto:${negocio.email}|" th:text="${negocio.email}">hola@ejemplo.com</a></th:block><mark class="legal-todo" th:if="${#strings.isEmpty(negocio.email)}">[COMPLETAR: email de contacto]</mark> o por <a class="link" th:href="|https://wa.me/${whatsappNumber}|" target="_blank" rel="noopener">WhatsApp</a>.</li>
         </ul>
       </section>
 
@@ -112,7 +112,7 @@
           <li><strong>Rectificación:</strong> corregir o actualizar tus datos. Los de tu cuenta los podés cambiar vos en "Mi cuenta"; si no, lo hacemos dentro de los 5 días hábiles.</li>
           <li><strong>Supresión:</strong> que borremos tus datos. Mirá cómo en <a class="link" th:href="@{/eliminar-datos}">Eliminar mis datos</a>.</li>
         </ul>
-        <p><strong>Cómo pedirlo:</strong> escribinos a <mark class="legal-todo">[COMPLETAR: email de contacto]</mark> o por <a class="link" th:href="|https://wa.me/${whatsappNumber}|" target="_blank" rel="noopener">WhatsApp</a> desde el email o el celular con el que hiciste tus pedidos (así sabemos que sos vos) y contanos qué necesitás.</p>
+        <p><strong>Cómo pedirlo:</strong> escribinos a <th:block th:if="${!#strings.isEmpty(negocio.email)}"><a class="link" th:href="|mailto:${negocio.email}|" th:text="${negocio.email}">hola@ejemplo.com</a></th:block><mark class="legal-todo" th:if="${#strings.isEmpty(negocio.email)}">[COMPLETAR: email de contacto]</mark> o por <a class="link" th:href="|https://wa.me/${whatsappNumber}|" target="_blank" rel="noopener">WhatsApp</a> desde el email o el celular con el que hiciste tus pedidos (así sabemos que sos vos) y contanos qué necesitás.</p>
         <p class="legal-note">La AGENCIA DE ACCESO A LA INFORMACIÓN PÚBLICA, en su carácter de Órgano de Control de la Ley N° 25.326, tiene la atribución de atender las denuncias y reclamos que interpongan quienes resulten afectados en sus derechos por incumplimiento de las normas vigentes en materia de protección de datos personales. Más información en <a class="link" href="https://www.argentina.gob.ar/aaip" target="_blank" rel="noopener">argentina.gob.ar/aaip</a>.</p>
       </section>
 

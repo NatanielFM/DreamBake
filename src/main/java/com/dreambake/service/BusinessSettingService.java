@@ -18,12 +18,14 @@ public class BusinessSettingService {
     @Autowired
     private BusinessSettingRepository settingRepository;
 
-    // Número de WhatsApp del negocio, solo dígitos y con código de país (ej: 5493764159312)
+    // Datos del negocio editables (paso 6.4): el WhatsApp ahora vive ahí
+    @Autowired
+    private BusinessProfileService businessProfile;
+
+    // Número de WhatsApp del negocio, solo dígitos y con código de país (ej: 5493764159312).
+    // Desde el paso 6.4 sale de BusinessProfile (Ajustes → Configuración del negocio).
     public String getWhatsappNumber() {
-        return settingRepository.findById(WHATSAPP)
-                .map(BusinessSetting::getValue)
-                .filter(v -> v != null && !v.isBlank())
-                .orElse(DEFAULT_WHATSAPP);
+        return businessProfile.get().getWhatsapp();
     }
 
     // ===== Fidelización: saludo de cumpleaños (se maneja desde Clientes → Fidelización) =====
@@ -80,17 +82,6 @@ public class BusinessSettingService {
             return "El máximo de emails por día tiene que ser un número entre 1 y 2000.";
         }
         settingRepository.save(new BusinessSetting(CAMPAIGN_DAILY_LIMIT, String.valueOf(limit)));
-        return null;
-    }
-
-    // Devuelve null si el número es válido y se guardó, o el mensaje de error para mostrar
-    public String saveWhatsappNumber(String raw) {
-        // Se quitan espacios, guiones, paréntesis y el "+" que la gente suele escribir
-        String digits = raw == null ? "" : raw.replaceAll("[\\s\\-()+]", "");
-        if (!digits.matches("\\d{10,15}")) {
-            return "Escribí el número completo, solo con números: código de país, área y número (ej: 5493764159312).";
-        }
-        settingRepository.save(new BusinessSetting(WHATSAPP, digits));
         return null;
     }
 }

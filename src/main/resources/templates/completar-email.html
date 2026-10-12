@@ -11,7 +11,7 @@
   <th:block th:replace="~{fragments/seo :: icons}"></th:block>
   <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
   <script th:src="@{/js/csrf.js}"></script>
-  <title>Completá tu email — Dulce Sueños Posadas</title>
+  <title th:text="'Completá tu email — ' + ${negocio.name}">Completá tu email — Dulce Sueños Posadas</title>
   <meta name="description" content="Completá tu email para terminar de crear tu cuenta en Dulce Sueños Posadas.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
