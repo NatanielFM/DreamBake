@@ -20,7 +20,7 @@ public class SeoController {
 
     // Páginas públicas que conviene que Google encuentre (las de cuenta, carrito y recuperar contraseña no)
     private static final List<String> PUBLIC_PAGES = List.of(
-            "/", "/products", "/builder", "/privacidad", "/terminos", "/eliminar-datos");
+            "/", "/products", "/builder", "/seguimiento", "/privacidad", "/terminos", "/eliminar-datos");
 
     private final AppProperties app;
 

@@ -18,6 +18,7 @@
         ¡Gracias por elegirnos!
       </p>
       <div th:replace="~{email/pedido-detalle :: detalle(${p})}"></div>
+      <div th:replace="~{email/pedido-detalle :: seguimiento(${p})}"></div>
       <p th:if="${p.hasDeposit}" style="margin:0 0 16px 0;">
         Ya recibimos tu seña. El saldo de <strong th:text="'$' + ${p.balance}">$62.000</strong> se abona al
         <span th:text="${p.delivery} ? 'recibir el pedido' : 'retirarlo'">retirarlo</span>.
@@ -36,6 +37,7 @@
         ¡Que lo disfrutes!
       </p>
       <div th:replace="~{email/pedido-detalle :: detalle(${p})}"></div>
+      <div th:replace="~{email/pedido-detalle :: seguimiento(${p})}"></div>
     </th:block>
 
     <!--/* CANCELADO */-->
@@ -45,7 +47,7 @@
       </h1>
       <p style="margin:0 0 16px 0;">
         <span th:text="'Hola ' + ${p.firstName} + ','">Hola Ana,</span> tu pedido
-        <strong th:text="'#' + ${p.id}">#12</strong> fue cancelado. Si fue un error o tenés alguna consulta, escribinos
+        <strong th:text="'#' + ${p.id}">#12</strong><span th:if="${p.trackingCode != null}" th:text="' (código ' + ${p.trackingCode} + ')'"> (código DB-7K3P9Q)</span> fue cancelado. Si fue un error o tenés alguna consulta, escribinos
         y lo resolvemos.
       </p>
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px 0;">

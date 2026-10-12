@@ -91,6 +91,7 @@ public class OrderNoticeService {
         private boolean hasDeposit;
         private List<ItemView> items = new ArrayList<>();
         private String statusLabel;
+        private String trackingCode, trackingUrl;  // seguimiento (paso 6.5)
     }
 
     @Getter
@@ -128,6 +129,8 @@ public class OrderNoticeService {
         v.id = o.getId();
         v.status = o.getStatus();
         v.statusLabel = statusLabel(o.getStatus());
+        v.trackingCode = o.getTrackingCode();
+        v.trackingUrl = o.getTrackingCode() == null ? null : app.getPublicUrl() + "/seguimiento?codigo=" + o.getTrackingCode();
         v.customerName = o.getCustomerName() == null || o.getCustomerName().isBlank() ? "Cliente" : o.getCustomerName().trim();
         v.firstName = v.customerName.split("\\s+")[0];
         v.email = o.getCustomerEmail() == null ? "" : o.getCustomerEmail().trim();

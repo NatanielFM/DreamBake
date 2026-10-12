@@ -1,0 +1,120 @@
+<!doctype html>
+<!--/* Seguimiento de pedidos (paso 6.5, TrackingController): el cliente escribe su código (DB-7K3P9Q) y ve
+       una línea de tiempo con el estado. Sin datos personales completos (TrackingService.View). */-->
+<html lang="es-AR" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#fef9f9" />
+  <!-- Íconos en todos los tamaños (fragments/seo.html, paso 6.3) -->
+  <th:block th:replace="~{fragments/seo :: icons}"></th:block>
+  <!-- Token anti-CSRF para fetch (debe cargarse antes que cualquier otro script) -->
+  <script th:src="@{/js/csrf.js}"></script>
+  <title th:text="'Seguí tu pedido — ' + ${negocio.name}">Seguí tu pedido — Dulce Sueños Posadas</title>
+  <th:block th:replace="~{fragments/seo :: share('Seguí tu pedido — ' + ${negocio.name}, 'Escribí el código de tu pedido y mirá en qué estado está, sin escribirnos.', '/seguimiento')}"></th:block>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+  <link rel="stylesheet" th:href="@{/css/tokens.css}">
+  <link rel="stylesheet" th:href="@{/css/components.css}">
+  <link rel="stylesheet" th:href="@{/css/header.css}">
+  <link rel="stylesheet" th:href="@{/css/public.css}">
+  <link rel="stylesheet" th:href="@{/css/tracking.css}">
+  <link rel="stylesheet" th:href="@{/css/footer.css}">
+</head>
+<body class="page-shop page-tracking">
+
+  <div th:replace="~{fragments/header :: header}"></div>
+
+  <main id="main" class="shop-main">
+    <section class="shop-hero">
+      <div class="site-container site-container--narrow">
+        <h1 class="text-h1">Seguí tu pedido</h1>
+        <p class="text-lead">Escribí el código que te dimos al hacer el pedido y mirá en qué anda.</p>
+      </div>
+    </section>
+
+    <div class="site-container site-container--narrow tracking-page">
+      <!-- Formulario: GET para que el link de los emails (/seguimiento?codigo=…) abra el resultado directo -->
+      <form class="tracking-form" th:action="@{/seguimiento}" method="get" role="search" aria-label="Buscar pedido">
+        <div class="field">
+          <label for="codigo" class="field__label">Código de seguimiento</label>
+          <div class="tracking-form__row">
+            <input id="codigo" name="codigo" type="text" class="input tracking-code-input" maxlength="20"
+                   autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="DB-7K3P9Q"
+                   required th:value="${codigo}" aria-describedby="codigo-hint">
+            <button type="submit" class="button button--primary button--lg">Ver estado</button>
+          </div>
+          <p class="field__hint" id="codigo-hint">Está en el email que te mandamos y en la pantalla del final del pedido.</p>
+        </div>
+      </form>
+
+      <div th:if="${error != null}" class="login-alert login-alert--error tracking-alert" role="alert">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+        <span th:text="${error}">No encontramos un pedido con ese código.</span>
+      </div>
+
+      <!-- Resultado -->
+      <section th:if="${pedido != null}" class="tracking-card" aria-labelledby="tracking-title">
+        <div class="tracking-card__head">
+          <p class="tracking-code" th:text="${pedido.code}">DB-7K3P9Q</p>
+          <h2 id="tracking-title" class="tracking-title">
+            Pedido de <span th:text="${pedido.shortName}">María G.</span>
+          </h2>
+          <p class="tracking-status" th:classappend="${pedido.cancelled} ? 'tracking-status--cancelled'">
+            Estado: <strong th:text="${pedido.statusLabel}">Recibido</strong>
+          </p>
+        </div>
+
+        <!-- Pedido cancelado o rechazado: sin línea de tiempo -->
+        <p th:if="${pedido.cancelled}" class="tracking-cancelled">
+          Este pedido no sigue adelante. Si tenés dudas, escribinos por
+          <a class="link" th:href="|https://wa.me/${negocio.whatsapp}?text=${#uris.escapeQueryParam('Hola! Consulto por mi pedido ' + pedido.code)}|" target="_blank" rel="noopener">WhatsApp</a>.
+        </p>
+
+        <!-- Línea de tiempo: recibido → confirmado → en preparación → listo -->
+        <ol th:unless="${pedido.cancelled}" class="tracking-steps">
+          <li th:each="step : ${pedido.steps}" class="tracking-step" th:classappend="'tracking-step--' + ${step.state}"
+              th:attr="aria-current=${step.state == 'current'} ? 'step' : null">
+            <span class="tracking-step__dot" aria-hidden="true">
+              <svg th:if="${step.state == 'done'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+            </span>
+            <div class="tracking-step__text">
+              <p class="tracking-step__label">
+                <span th:text="${step.label}">Recibido</span>
+                <span class="visually-hidden" th:text="${step.state == 'done'} ? ' (listo)' : (${step.state == 'current'} ? ' (estado actual)' : ' (pendiente)')"></span>
+              </p>
+              <p class="tracking-step__hint" th:if="${step.state != 'todo'}" th:text="${step.hint}">Tenemos tu pedido.</p>
+            </div>
+          </li>
+        </ol>
+
+        <dl class="tracking-facts">
+          <div><dt>Entrega</dt><dd><span th:text="${pedido.deliveryDay}">Sábado 17 de octubre</span><th:block th:if="${!#strings.isEmpty(pedido.shift)}"> · <span th:text="${pedido.shift}">Por la tarde</span></th:block></dd></div>
+          <div><dt>Cómo</dt><dd th:text="${pedido.method}">Retiro en el local</dd></div>
+          <div th:if="${!#lists.isEmpty(pedido.items)}"><dt>Productos</dt>
+            <dd><ul class="tracking-items"><li th:each="it : ${pedido.items}" th:text="${it}">Torta de chocolate</li></ul></dd>
+          </div>
+        </dl>
+
+        <a class="button button--secondary button--lg tracking-whatsapp"
+           th:href="|https://wa.me/${negocio.whatsapp}?text=${#uris.escapeQueryParam('Hola! Consulto por mi pedido ' + pedido.code)}|" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3Z"></path>
+            <path d="M9.2 8.6c.2 2.9 3.3 6 6.2 6.2l1.1-1.4-1.9-1-.9.8c-1-.4-2-1.4-2.4-2.4l.8-.9-1-1.9-1.9.6Z" fill="currentColor" stroke="none"></path>
+          </svg>
+          Consultar por WhatsApp
+        </a>
+      </section>
+    </div>
+  </main>
+
+  <div th:replace="~{fragments/footer :: footer}"></div>
+
+  <script th:src="@{/js/header.js}" defer></script>
+  <script th:src="@{/js/public/store.js}" defer></script>
+</body>
+</html>

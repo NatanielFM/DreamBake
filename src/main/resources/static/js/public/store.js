@@ -1077,8 +1077,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const savedOrder = await res.json();
         const total = savedOrder.totalPrice;   // el total que calculó el servidor
 
-        // 3. Mensaje de WhatsApp con el número de pedido
-        let waMsg = `Hola! 👋 Confirmo mi pedido 🩷\n\n> N° Referencia: #${savedOrder.id}\n\n`;
+        // 3. Mensaje de WhatsApp con el número de pedido y el código de seguimiento (paso 6.5)
+        let waMsg = `Hola! 👋 Confirmo mi pedido 🩷\n\n> N° Referencia: #${savedOrder.id}\n> Código de seguimiento: ${savedOrder.trackingCode}\n\n`;
         waMsg += itemsText + '\n\n';
         if (appliedCoupon) {
           if (appliedCoupon.type === 'DESCUENTO') {
@@ -1107,6 +1107,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         const success = document.getElementById('checkout-success');
         if (success) {
           document.getElementById('success-order-id').textContent = `#${savedOrder.id}`;
+          // Código de seguimiento y resumen (paso 6.5). Todo con textContent: son datos que escribió el cliente.
+          document.getElementById('success-tracking-code').textContent = savedOrder.trackingCode || '';
+          const trackLink = document.getElementById('success-tracking-link');
+          if (trackLink && savedOrder.trackingCode) trackLink.href = `/seguimiento?codigo=${encodeURIComponent(savedOrder.trackingCode)}`;
+          const summary = document.getElementById('success-summary');
+          if (summary) {
+            summary.replaceChildren();
+            const row = (label, value) => {
+              const div = document.createElement('div');
+              const dt = document.createElement('dt'); dt.textContent = label;
+              const dd = document.createElement('dd'); dd.textContent = value;
+              div.append(dt, dd);
+              summary.append(div);
+            };
+            row('Productos', (savedOrder.items || []).map(i => i.productType).join(', '));
+            row('Entrega', `${cDate.split('-').reverse().join('/')} · ${cShift}`);
+            row('Cómo', cDelivery === 'Envío' ? `Envío a ${cAddress}` : 'Retiro en el local');
+            row('Total', `$${Number(total).toLocaleString('es-AR')}`);
+          }
           const waLink = document.getElementById('success-whatsapp');
           waLink.href = waUrl;
           document.querySelector('[data-cart-layout]').hidden = true;

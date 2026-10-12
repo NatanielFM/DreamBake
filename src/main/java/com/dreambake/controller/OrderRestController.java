@@ -121,6 +121,7 @@ public class OrderRestController {
 
         // Siempre es un pedido NUEVO: si viniera un id, save() pisaría un pedido existente
         order.setId(null);
+        order.setTrackingCode(null); // el código de seguimiento lo genera el servidor (Order.onCreate), nunca el navegador
         order.setCustomer(null); // el cliente se une al confirmar (ver linkCustomer)
         if (order.getItems() != null) {
             order.getItems().forEach(item -> item.setId(null));

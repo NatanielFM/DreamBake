@@ -11,6 +11,9 @@ import java.util.Collection;
 import java.util.List;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
+
+    // Seguimiento de pedidos (paso 6.5): se busca por el código que tiene el cliente
+    java.util.Optional<Order> findByTrackingCode(String trackingCode);
     
     @Query("SELECT CASE WHEN i.isCustomCake = true THEN 'Torta Personalizada' WHEN i.product IS NOT NULL THEN i.product.name ELSE COALESCE(i.productType, 'Desconocido') END, COUNT(i) FROM OrderItem i WHERE i.order.status IN :statuses GROUP BY CASE WHEN i.isCustomCake = true THEN 'Torta Personalizada' WHEN i.product IS NOT NULL THEN i.product.name ELSE COALESCE(i.productType, 'Desconocido') END ORDER BY COUNT(i) DESC")
     List<Object[]> findTopProductsAggregation(@Param("statuses") List<OrderStatus> statuses);

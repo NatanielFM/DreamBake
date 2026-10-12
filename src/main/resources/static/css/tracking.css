@@ -1,0 +1,139 @@
+/* =========================================================
+   tracking.css — Seguimiento de pedidos (/seguimiento, paso 6.5)
+   ---------------------------------------------------------
+   Requiere tokens.css, components.css y public.css (encabezado rosa).
+   Formulario con el código + tarjeta con la línea de tiempo del pedido.
+   ========================================================= */
+
+.tracking-page {
+  display: grid;
+  gap: var(--space-6);
+  padding-block: var(--space-7) var(--space-9);
+}
+
+/* ---------- Formulario ---------- */
+.tracking-form__row { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.tracking-form__row .input { flex: 1 1 12rem; }
+.tracking-code-input {
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.tracking-code-input::placeholder { text-transform: none; letter-spacing: 0.04em; }
+@media (max-width: 29.99rem) {
+  .tracking-form__row .button { width: 100%; }
+}
+
+/* Aviso de error (mismo estilo que los avisos del login) */
+.tracking-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--cherry-50);
+  color: var(--cherry-700);
+  font-weight: var(--fw-medium);
+  line-height: 1.45;
+}
+.tracking-alert svg { flex: none; width: 20px; height: 20px; margin-top: 1px; }
+
+/* ---------- Tarjeta del pedido ---------- */
+.tracking-card {
+  display: grid;
+  gap: var(--space-6);
+  padding: var(--space-6);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+}
+.tracking-card__head { display: grid; gap: var(--space-1); }
+.tracking-code {
+  margin: 0;
+  color: var(--accent);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.08em;
+}
+.tracking-title { margin: 0; color: var(--ink); font-size: var(--fs-h3); font-weight: var(--fw-bold); line-height: 1.2; }
+.tracking-status { margin: 0; color: var(--text-strong); }
+.tracking-status--cancelled strong { color: var(--cherry-700); }
+.tracking-cancelled { margin: 0; color: var(--text-strong); line-height: 1.6; }
+
+/* ---------- Línea de tiempo ---------- */
+.tracking-steps {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tracking-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: var(--space-3);
+  padding-bottom: var(--space-5);
+}
+.tracking-step:last-child { padding-bottom: 0; }
+/* La rayita que une los puntos */
+.tracking-step:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 15px;
+  top: 32px;
+  bottom: 0;
+  width: 2px;
+  background: var(--line);
+}
+.tracking-step--done:not(:last-child)::before { background: var(--accent); }
+.tracking-step__dot {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  background: var(--white);
+  color: var(--white);
+}
+.tracking-step__dot svg { width: 18px; height: 18px; }
+.tracking-step--done .tracking-step__dot { border-color: var(--accent); background: var(--accent); }
+.tracking-step--current .tracking-step__dot {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--rose-100);
+}
+.tracking-step--current .tracking-step__dot::after {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.tracking-step__text { padding-top: 4px; }
+.tracking-step__label { margin: 0; color: var(--text-muted); font-weight: var(--fw-semibold); }
+.tracking-step--done .tracking-step__label,
+.tracking-step--current .tracking-step__label { color: var(--ink); }
+.tracking-step--current .tracking-step__label { font-weight: var(--fw-bold); }
+.tracking-step__hint { margin: 2px 0 0; color: var(--text-strong); font-size: var(--fs-small); line-height: 1.5; }
+
+/* ---------- Datos de la entrega ---------- */
+.tracking-facts {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--line);
+}
+.tracking-facts > div { display: grid; grid-template-columns: 7rem 1fr; gap: var(--space-3); }
+.tracking-facts dt { color: var(--text-muted); font-size: var(--fs-small); font-weight: var(--fw-semibold); }
+.tracking-facts dd { margin: 0; color: var(--text-strong); }
+.tracking-items { margin: 0; padding-left: 1.1rem; }
+.tracking-whatsapp { justify-self: start; }
+@media (max-width: 29.99rem) {
+  .tracking-card { padding: var(--space-5); }
+  .tracking-facts > div { grid-template-columns: 1fr; gap: 2px; }
+  .tracking-whatsapp { width: 100%; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tracking-step--current .tracking-step__dot { transition: box-shadow var(--dur-base) var(--ease-out); }
+}

@@ -112,7 +112,7 @@ public class SecurityConfig {
                         // /baja: página para darse de baja de los emails promocionales (link de cada email)
                         // /privacidad y /eliminar-datos: páginas legales (Facebook las exige para publicar la app)
                         // /login/completar-email: pedir el email cuando Facebook no lo manda (SocialSignupController)
-                        .requestMatchers("/privacidad", "/terminos", "/eliminar-datos", "/login/completar-email", "/login/completar-email/**").permitAll()
+                        .requestMatchers("/privacidad", "/terminos", "/eliminar-datos", "/seguimiento", "/login/completar-email", "/login/completar-email/**").permitAll()
                         // "Olvidé mi contraseña" (paso 6.1)
                         .requestMatchers("/recuperar", "/recuperar/**").permitAll()
                         // Íconos, manifiesto y archivos para buscadores (paso 6.3)

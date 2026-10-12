@@ -121,7 +121,7 @@ Definido en `config/SecurityConfig.java`:
 
 | Ruta | Acceso |
 |---|---|
-| `/`, `/builder`, `/products`, `/cart`, `/register`, `/login`, `/recuperar/**`, `/baja`, `/privacidad`, `/terminos`, `/eliminar-datos`, `/login/completar-email/**`, `/css/**`, `/js/**`, `/img/**`, `/uploads/**` | Público |
+| `/`, `/builder`, `/products`, `/cart`, `/register`, `/login`, `/recuperar/**`, `/seguimiento`, `/baja`, `/privacidad`, `/terminos`, `/eliminar-datos`, `/login/completar-email/**`, `/css/**`, `/js/**`, `/img/**`, `/uploads/**` | Público |
 | `/oauth2/**`, `/login/oauth2/**` (Google/Facebook, solo si hay credenciales) | Público |
 | `POST /api/orders`, `GET /api/cake-config/public`, `GET /api/coupons/validate/**` | Público (lo usa la tienda) |
 | `/admin/**` | `ADMIN` |
@@ -146,6 +146,7 @@ Definido en `config/SecurityConfig.java`:
 - Producción: `application-prod.properties` (perfil `prod`) toma la base y las claves de variables de entorno, activa cookies `Secure` y oculta los detalles de los errores.
 - **Páginas legales (paso 6.2):** `/privacidad`, `/terminos`, `/eliminar-datos` (WebController, `legal.css`), enlazadas en el pie (`fragments/footer.html`). Los datos que faltan van en `<mark class="legal-todo">[COMPLETAR: …]</mark>` (email y dirección se completan solos si están cargados en Configuración del negocio; la seña y la anticipación salen de ahí) (buscar "COMPLETAR" antes de publicar). Registro y carrito muestran "Al continuar aceptás los Términos y la Política de privacidad". Aviso de cookies en el footer (`js/cookie-notice.js`, se recuerda en localStorage `dreamBakeCookieNotice`). Si cambia qué datos se guardan o un servicio externo, actualizar `privacidad.html`.
 - **Errores, íconos y SEO (paso 6.3):** páginas de error propias `templates/error/{404,403,500}.html` + `error.html` (diseño en `error/layout.html`, `error.css`; textos fijos, sin header/footer). `ErrorConfig` fuerza las respuestas de error mínimas (sin traza, excepción ni mensaje interno) aunque DevTools pida lo contrario. Íconos en `static/favicon.ico`, `static/img/icons/`, `static/site.webmanifest`; todas las páginas los incluyen con `fragments/seo :: icons`. Las páginas públicas indexables usan `fragments/seo :: share(título, descripción, ruta)` (descripción, canonical y Open Graph con `img/og-marca.jpg` 1200×630); `siteUrl` = `app.public-url`. `SeoController`: `/robots.txt` y `/sitemap.xml` (lista `PUBLIC_PAGES`). Todas las páginas con `lang="es-AR"`. Página pública nueva → agregarle `share(...)` y sumarla a `PUBLIC_PAGES`.
+- **Seguimiento de pedidos (paso 6.5):** cada pedido tiene `trackingCode` ("DB-" + 6 caracteres al azar sin 0/O/1/I/L, `TrackingCodes`; lo genera `Order.onCreate`, el navegador no puede elegirlo; `TrackingCodeBackfill` completa los viejos al arrancar). `/seguimiento?codigo=…` (TrackingController + TrackingService): línea de tiempo recibido → confirmado → en preparación → listo, sin datos personales completos (nombre abreviado, sin teléfono/email/dirección/montos); 10 búsquedas por minuto por IP. El código va en la pantalla de éxito del carrito, en el mensaje de WhatsApp y en los emails de pedidos (`email/pedido-detalle :: seguimiento(p)`).
 - Al agregar una ruta o endpoint nuevo, **actualizá SecurityConfig** si hace falta.
 
 ## Auditoría (fase 3)
@@ -191,7 +192,7 @@ Definido en `config/SecurityConfig.java`:
 | `User` (users) | email (login), password, name, phone, roles, enabled, authProvider (LOCAL/GOOGLE/FACEBOOK), providerId, avatarUrl, lastLoginAt, emailVerified | — |
 | `Customer` (customers) | name, email, phone, address, birthDate, totalPurchases (sin uso), dateAdded; `ordersCount`/`totalSpent` calculados (@Transient) | ManyToOne `CustomerTag` |
 | `CustomerTag` (customer_tags) | name, isDeletable, displayOrder | — |
-| `Order` (orders_table) | customerName/Phone/Email (texto), deliveryDate, deliveryShift, deliveryMethod ("Retiro"/"Envío"), deliveryAddress, couponCode, totalPrice, deposit (seña), status, stockStatus, createdAt | OneToMany `OrderItem`, ManyToOne `Customer` (se une al confirmar) |
+| `Order` (orders_table) | customerName/Phone/Email (texto), deliveryDate, deliveryShift, deliveryMethod ("Retiro"/"Envío"), deliveryAddress, couponCode, totalPrice, deposit (seña), status, stockStatus, createdAt, trackingCode (único, DB-XXXXXX, no se modifica) | OneToMany `OrderItem`, ManyToOne `Customer` (se une al confirmar) |
 | `OrderItem` (order_items) | productType, isCustomCake, details (TEXT), price | ManyToOne `Order`, ManyToOne `Product` |
 | `Product` (products) | name, description, price, enabled, imageUrl | ManyToOne `Category`, ManyToOne `Recipe` |
 | `Category` (categories) | name, isDeletable, displayOrder | — |

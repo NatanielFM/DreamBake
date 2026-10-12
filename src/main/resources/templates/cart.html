@@ -56,7 +56,23 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
         </span>
         <h2 class="text-h2" tabindex="-1">¡Listo! Tu pedido quedó registrado</h2>
-        <p class="text-lead">Número de pedido <strong id="success-order-id">#0</strong>. Para confirmarlo, mandanos el mensaje por WhatsApp: ya está escrito con todo el detalle.</p>
+        <!-- Código de seguimiento (paso 6.5): con él el cliente ve el estado en /seguimiento -->
+        <div class="success-code">
+          <p class="success-code__label">Tu código de seguimiento</p>
+          <p class="success-code__value" id="success-tracking-code">DB-XXXXXX</p>
+          <p class="success-code__hint">Pedido <strong id="success-order-id">#0</strong>. Guardalo: con este código ves en qué anda tu pedido.</p>
+        </div>
+
+        <!-- Resumen (lo completa store.js con lo que devolvió el servidor) -->
+        <dl class="success-summary" id="success-summary"></dl>
+
+        <!-- Pasos siguientes -->
+        <ol class="success-steps">
+          <li><strong>Mandanos el mensaje por WhatsApp</strong> (ya está escrito con el detalle y el código).</li>
+          <li><strong>Coordinamos la seña</strong><th:block th:if="${negocio.depositPercent > 0}"> (el <th:block th:text="${negocio.depositPercent}">50</th:block>&nbsp;% del total)</th:block> y el diseño final.</li>
+          <li><strong>Te confirmamos el pedido</strong> y podés seguirlo con tu código.</li>
+        </ol>
+
         <div class="success-actions">
           <a id="success-whatsapp" class="button button--ink button--lg" href="#" target="_blank" rel="noopener">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
@@ -65,8 +81,9 @@
             </svg>
             Enviar pedido por WhatsApp
           </a>
-          <a class="button button--secondary button--lg" th:href="@{/}">Volver al inicio</a>
+          <a id="success-tracking-link" class="button button--secondary button--lg" th:href="@{/seguimiento}">Seguir mi pedido</a>
         </div>
+        <p class="success-home"><a class="link" th:href="@{/}">Volver al inicio</a></p>
       </div>
 
       <!-- Carrito + formulario -->

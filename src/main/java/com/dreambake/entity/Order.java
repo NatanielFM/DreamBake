@@ -69,10 +69,19 @@ public class Order {
     @Transient
     private String stockStatus;
 
+    // Código de seguimiento para el cliente (paso 6.5), por ejemplo DB-7K3P9Q: corto para dictarlo por
+    // WhatsApp y al azar para que no se pueda adivinar (no es el número de pedido, que es correlativo).
+    // updatable = false: una vez creado no cambia nunca (ni aunque el panel mande el pedido sin él).
+    @Column(name = "tracking_code", unique = true, length = 12, updatable = false)
+    private String trackingCode;
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
+        }
+        if (trackingCode == null) {
+            trackingCode = TrackingCodes.generate();
         }
     }
 
