@@ -99,7 +99,8 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http,
             ObjectProvider<ClientRegistrationRepository> socialClients,
             CustomOidcUserService customOidcUserService,
-            CustomOAuth2UserService customOAuth2UserService) throws Exception {
+            CustomOAuth2UserService customOAuth2UserService,
+            MaintenanceMode maintenanceMode) throws Exception {
         http
                 // 2. CSRF: el token viaja en la cookie XSRF-TOKEN y el JS lo devuelve en el encabezado
                 //    X-XSRF-TOKEN (ver static/js/csrf.js). Los formularios con th:action lo incluyen solos.
@@ -150,6 +151,11 @@ public class SecurityConfig {
                         .contentSecurityPolicy(csp -> csp.policyDirectives(CONTENT_SECURITY_POLICY))
                         .frameOptions(frame -> frame.deny())
                         .referrerPolicy(ref -> ref.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)))
+
+                // Modo mantenimiento (paso 4.3): mientras se restaura un backup, todo responde "En mantenimiento".
+                // Va primero de todo en la cadena, antes incluso de leer la sesión.
+                .addFilterBefore(new MaintenanceFilter(maintenanceMode),
+                        org.springframework.security.web.context.SecurityContextHolderFilter.class)
 
                 // 5. Límite de pedidos y cupones por IP (antes del login)
                 .addFilterBefore(new RateLimitFilter(), UsernamePasswordAuthenticationFilter.class)

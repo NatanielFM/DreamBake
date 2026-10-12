@@ -82,6 +82,7 @@ public final class AuditText {
             case CONFIG_CHANGE -> "Configuración";
             case EMAIL_CAMPAIGN -> "Envío de emails";
             case BACKUP -> "Copia de seguridad";
+            case RESTORE -> "Restauración";
             case ASSISTANT_ACTION -> "Acción de Bakey";
         };
     }

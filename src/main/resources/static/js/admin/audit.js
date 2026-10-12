@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     CREATE: 'Alta', UPDATE: 'Modificación', DELETE: 'Baja', STATUS_CHANGE: 'Cambio de estado',
     LOGIN: 'Inicio de sesión', LOGIN_FAILED: 'Ingreso fallido', LOGOUT: 'Cierre de sesión',
     EXPORT: 'Exportación', DOWNLOAD: 'Descarga', CONFIG_CHANGE: 'Configuración',
-    EMAIL_CAMPAIGN: 'Envío de emails', BACKUP: 'Copia de seguridad', ASSISTANT_ACTION: 'Acción de Bakey'
+    EMAIL_CAMPAIGN: 'Envío de emails', BACKUP: 'Copia de seguridad', RESTORE: 'Restauración', ASSISTANT_ACTION: 'Acción de Bakey'
   };
   // Nombres legibles de los datos que aparecen en "details" (antes y después)
   const FIELDS = {
@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const td = document.createElement('td');
     td.dataset.label = 'Acción';
     const badge = document.createElement('span');
-    badge.className = 'audit-badge' + (item.action === 'LOGIN_FAILED' || item.action === 'DELETE' ? ' audit-badge--alert' : '');
+    badge.className = 'audit-badge' + (['LOGIN_FAILED', 'DELETE', 'RESTORE'].includes(item.action) ? ' audit-badge--alert' : '');
     badge.textContent = item.actionLabel;
     td.append(badge);
     return td;

@@ -160,6 +160,10 @@ Definido en `config/SecurityConfig.java`:
 - `BackupService` + `BackupScheduler`: todos los días a las 3:00 (y a los 2 min de arrancar si el último bueno tiene más de 24 h) mysqldump → `dreambake_AAAA-MM-DD_HHmm.zip` (base `.sql.gz` + `uploads/` + `config/secret.key`) + `.sha256`, en `backup.directory` (`diarios/` 7, `semanales/` 4, `mensuales/` 12, `manuales/` 10). Los viejos se borran solo si el nuevo salió bien. `POST /api/backups/run` (ADMIN) hace uno manual.
 - Si falla: email a los administradores con el error explicado (`BackupAlertService`). Más de 48 h sin backup bueno (o backups desactivados): aviso rojo en el Resumen del panel.
 - **Solo locales** (decisión del autor, alcance académico). La copia automática a Google Drive se hizo y se quitó; queda como mejora a futuro (código en el commit `e6e6716`).
+- **Pestaña "Backups"** del panel (`admin/backups.js`, solo admin): estado, espacio, lista, descargar (`GET /api/backups/{id}/download`, auditado) y "Hacer backup ahora".
+- **Restaurar** (`RestoreService`, `POST /api/backups/{id}/restore`): tilde + palabra RESTAURAR + contraseña (5 errores → 15 min) → huella SHA-256 → carga en `<base>_restore_stage` → compatibilidad de columnas → copia `PRE_RESTORE` (carpeta `antes-de-restaurar/`) → modo mantenimiento (`MaintenanceMode` + `MaintenanceFilter`: 503) → un solo `RENAME TABLE` atómico. **No restaura `audit_logs` ni `backup_records`.** Fotos: solo agrega las que faltan. Cierra la sesión → `/login?restored`. Auditoría `RESTORE`.
+- `MysqlClient`: corre mysqldump/mysql con archivo de opciones temporal (sin contraseña en la línea de comandos). El cliente `mysql` se busca al lado de mysqldump (o `backup.mysql-path`).
+- Guía para no técnicos: `docs/RESTAURAR-BACKUP.md`. Para probar restauraciones, usar una COPIA de la base (`spring.datasource.url` por `SPRING_APPLICATION_JSON`), nunca `dreambake_db`.
 
 ## Modelo de datos (entidades JPA)
 
@@ -183,7 +187,7 @@ Definido en `config/SecurityConfig.java`:
 | `EmailLog` (email_logs) | recipientEmail, type (`EmailType`, VARCHAR), subject, status, sentAt, campaignId, orderId | ManyToOne `Customer` |
 | `Campaign` (campaigns) | name, subject, contenido, audiencia, estado, contadores | ManyToOne `CustomerTag`, ManyToOne `Coupon` |
 | `AuditLog` (audit_logs) | timestamp, actor (email, nombre, rol), action, module, entidad, description, details (JSON), IP, navegador, previousHash, hash. **Inmutable** | — |
-| `BackupRecord` (backup_records) | fileName, type (`BackupType`: DAILY/WEEKLY/MONTHLY/MANUAL), status (OK/FAILED), sizeBytes, sha256, errorMessage, durationMs, createdAt | — |
+| `BackupRecord` (backup_records) | fileName, type (`BackupType`: DAILY/WEEKLY/MONTHLY/MANUAL/PRE_RESTORE), status (OK/FAILED), sizeBytes, sha256, errorMessage, durationMs, createdAt | — |
 
 Enums: `OrderStatus` = PENDING → CONFIRMED → IN_PROGRESS → COMPLETED (o CANCELLED). `CouponType` = DESCUENTO, ENVIO_GRATIS, REGALO.
 

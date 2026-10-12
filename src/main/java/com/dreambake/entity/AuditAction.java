@@ -14,5 +14,6 @@ public enum AuditAction {
     CONFIG_CHANGE,    // cambio de configuración (Ajustes)
     EMAIL_CAMPAIGN,   // envío de una campaña de emails
     BACKUP,           // copia de seguridad
+    RESTORE,          // restauración de una copia de seguridad (paso 4.3)
     ASSISTANT_ACTION  // acción hecha por Bakey, el asistente de IA
 }

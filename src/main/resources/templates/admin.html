@@ -79,6 +79,7 @@
           <button class="tab-btn" data-tab="armador"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 21h16M5 21v-7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7M5 16c1.5 0 1.5 1 3.5 1s2-1 3.5-1 1.5 1 3.5 1 2-1 3.5-1M12 12V8M12 5.5V5"/></svg><span>Armador de tortas</span></button>
           <button class="tab-btn" data-tab="equipo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 13a4 4 0 0 1-1-7.9A4 4 0 0 1 12 3a4 4 0 0 1 7 2.1A4 4 0 0 1 18 13v7H6v-7Z"/><path d="M6 17h12"/></svg><span>Equipo</span></button>
           <button class="tab-btn" data-tab="registro"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1Z"/><path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M8 11h8M8 15h5"/></svg><span>Registro de actividad</span></button>
+          <button class="tab-btn" data-tab="backups"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg><span>Backups</span></button>
           <button class="tab-btn" data-tab="ajustes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span>Ajustes</span></button>
         </div>
         <div class="sidebar-foot">
@@ -852,6 +853,60 @@
             Siguiente <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 18 6-6-6-6"/></svg>
           </button>
         </nav>
+      </section>
+
+      <!-- ==================== SECCIÓN BACKUPS (paso 4.3, solo admin) ====================
+           Lo arma admin/backups.js con GET /api/backups (BackupRestController). -->
+      <section id="backups" class="tab-content">
+        <div class="panel-head">
+          <div class="panel-head-text">
+            <h2 class="panel-title">Copias de seguridad</h2>
+            <p class="panel-sub">Se hacen solas todos los días a las 3:00 y se guardan en esta computadora.</p>
+          </div>
+          <div class="panel-actions">
+            <button type="button" id="btn-backup-now" class="btn btn-pink">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg> Hacer backup ahora
+            </button>
+          </div>
+        </div>
+
+        <!-- Aviso (backups desactivados, más de 48 h sin backup o el último intento falló) -->
+        <div class="audit-alert backup-alert" id="backup-panel-alert" role="alert" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17v.5"/></svg>
+          <div class="audit-alert__text" id="backup-panel-alert-text"></div>
+        </div>
+
+        <div class="backup-stats">
+          <div class="backup-stat">
+            <span class="backup-stat__label">Última copia</span>
+            <strong class="backup-stat__value" id="backup-last">—</strong>
+            <span class="backup-stat__sub" id="backup-last-sub"></span>
+          </div>
+          <div class="backup-stat">
+            <span class="backup-stat__label">Espacio que ocupan</span>
+            <strong class="backup-stat__value" id="backup-used">—</strong>
+            <span class="backup-stat__sub" id="backup-free"></span>
+          </div>
+          <div class="backup-stat">
+            <span class="backup-stat__label">Copias guardadas</span>
+            <strong class="backup-stat__value" id="backup-count">—</strong>
+            <span class="backup-stat__sub">Se guardan hasta 7 diarias, 4 semanales y 12 mensuales</span>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="admin-table backup-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>Tamaño</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="backup-tbody"></tbody>
+          </table>
+        </div>
       </section>
 
       <!-- ==================== SECCIÓN AJUSTES ==================== -->
@@ -1693,6 +1748,52 @@
     </div>
   </div>
 
+  <!-- Backups: restaurar una copia (paso 4.3, admin/backups.js). Tiene <form>, así que tocar el fondo NO la
+       cierra. El botón se habilita recién con el tilde, la palabra RESTAURAR y la contraseña; el servidor
+       vuelve a comprobar las tres cosas (RestoreService). -->
+  <div id="modal-restore" class="modal-overlay" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="restore-title">
+      <div class="modal-header">
+        <h3 id="restore-title">Restaurar copia de seguridad</h3>
+        <button type="button" class="close-modal" aria-label="Cerrar" data-close-modal="modal-restore">&times;</button>
+      </div>
+      <form id="form-restore" class="modal-body restore-form" novalidate>
+        <div class="audit-alert restore-warning">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17v.5"/></svg>
+          <div class="audit-alert__text">
+            <strong>Vas a volver los datos al <span id="restore-date">—</span>.</strong>
+            <span>Se pierde todo lo que se cargó después: pedidos, clientes, stock, recetas, productos…</span>
+          </div>
+        </div>
+        <ul class="restore-facts">
+          <li>Antes se guarda una copia de cómo está todo ahora (en "Antes de restaurar"), por si querés deshacerlo.</li>
+          <li>No se pierden el registro de actividad ni la lista de copias.</li>
+          <li>Mientras se restaura (unos segundos), el sitio muestra "En mantenimiento".</li>
+          <li>Al terminar vas a tener que volver a ingresar.</li>
+        </ul>
+        <label class="restore-check">
+          <input type="checkbox" id="restore-understood">
+          <span>Entiendo que se reemplazan los datos actuales.</span>
+        </label>
+        <div class="form-group">
+          <label for="restore-confirm">Escribí <strong>RESTAURAR</strong> para confirmar</label>
+          <input type="text" id="restore-confirm" class="form-input" autocomplete="off" autocapitalize="characters" spellcheck="false">
+        </div>
+        <div class="form-group">
+          <label for="restore-password">Tu contraseña</label>
+          <input type="password" id="restore-password" class="form-input" autocomplete="current-password">
+        </div>
+        <p class="form-error" id="restore-error" role="alert" hidden></p>
+        <p class="restore-progress" id="restore-progress" role="status" hidden>Restaurando… no cierres esta ventana.</p>
+        <div class="form-actions">
+          <button type="button" class="btn btn-grey btn-uniform" data-close-modal="modal-restore">Cancelar</button>
+          <button type="submit" class="btn btn-red btn-uniform" id="restore-submit" disabled>Restaurar</button>
+          <a th:href="@{/login(restored=1)}" class="btn btn-pink btn-uniform" id="restore-done" hidden>Ingresar de nuevo</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Registro de actividad: detalle de un registro (lo arma audit.js con el antes y el después) -->
   <div id="modal-audit-detail" class="modal-overlay" hidden>
     <div class="modal-card modal-large" role="dialog" aria-modal="true" aria-labelledby="audit-detail-title">
@@ -1770,6 +1871,7 @@
   <script th:src="@{/js/admin/dashboard.js}" defer></script>
   <script th:src="@{/js/admin/team.js}" defer></script>
   <script th:src="@{/js/admin/audit.js}" defer></script>
+  <script th:src="@{/js/admin/backups.js}" defer></script>
   <script th:src="@{/js/admin/settings.js}" defer></script>
   <script th:src="@{/js/admin/notifications-simple.js}" defer></script>
 

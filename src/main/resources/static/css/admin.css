@@ -1896,6 +1896,52 @@ select.form-input.readonly-mode:disabled { opacity: 1; background-image: none; p
 /* Mismo aviso rojo para las copias de seguridad (paso 4.2), dentro del Resumen: separado de los KPI */
 .backup-alert { margin: 0 0 var(--space-5); }
 
+/* ---------- Pestaña Backups (paso 4.3) — admin/backups.js ----------
+   Tarjetas de estado con el mismo aspecto que las del Resumen (.kpi-card), más chicas. */
+.backup-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: var(--space-4);
+  margin: 0 0 var(--space-5);
+}
+.backup-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--admin-surface);
+  box-shadow: 0 0 0 1px var(--admin-line), var(--shadow-1);
+}
+.backup-stat__label { color: var(--admin-text-soft); font-size: var(--fs-small); font-weight: var(--fw-semibold); }
+.backup-stat__value {
+  color: var(--admin-heading);
+  font-size: clamp(1.15rem, 1.05rem + 0.4vw, 1.35rem);
+  font-weight: var(--fw-bold);
+  line-height: 1.2;
+}
+.backup-stat__sub { color: var(--admin-text-soft); font-size: var(--fs-small); }
+.backup-table .cell-actions .action-buttons-container { flex-wrap: wrap; }
+
+/* Ventana "Restaurar copia de seguridad" */
+.restore-form { display: grid; gap: var(--space-4); }
+.restore-warning { margin: 0; }
+.restore-facts { margin: 0; padding-left: 1.25rem; color: var(--admin-text); line-height: 1.5; }
+.restore-facts li + li { margin-top: var(--space-1); }
+.restore-check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--admin-text);
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+}
+.restore-check input { width: 1.15rem; height: 1.15rem; margin-top: 0.15rem; flex: none; accent-color: var(--accent); }
+.restore-form .form-group { margin: 0; }
+.restore-form .form-error { margin: 0; }
+.restore-progress { margin: 0; color: var(--admin-heading); font-weight: var(--fw-semibold); }
+.restore-form .form-actions { margin-top: 0; }
+
 /* =========================================================
    REGISTRO DE ACTIVIDAD (auditoría, paso 3.4) — admin/audit.js
    ========================================================= */

@@ -18,12 +18,6 @@ import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.nio.file.attribute.AclEntry;
-import java.nio.file.attribute.AclEntryPermission;
-import java.nio.file.attribute.AclEntryType;
-import java.nio.file.attribute.AclFileAttributeView;
-import java.nio.file.attribute.PosixFileAttributeView;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.security.MessageDigest;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -31,9 +25,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.zip.Deflater;
@@ -57,6 +49,7 @@ import java.util.zip.ZipOutputStream;
  *   semanales/ 4   (copia de un diario: los domingos, o si el último semanal tiene 7 días o más)
  *   mensuales/ 12  (copia de un diario: el primero de cada mes que se haga)
  *   manuales/  10  (los que se piden a mano)
+ *   antes-de-restaurar/ 5 (copia automática del estado actual antes de restaurar otra, paso 4.3)
  *
  * Regla de oro: los backups viejos se borran SOLO si el nuevo salió bien.
  *
@@ -73,12 +66,14 @@ public class BackupService {
 
     // Cuántos backups se guardan en cada carpeta
     private static final Map<BackupType, Integer> RETENTION = Map.of(
-            BackupType.DAILY, 7, BackupType.WEEKLY, 4, BackupType.MONTHLY, 12, BackupType.MANUAL, 10);
+            BackupType.DAILY, 7, BackupType.WEEKLY, 4, BackupType.MONTHLY, 12, BackupType.MANUAL, 10,
+            BackupType.PRE_RESTORE, 5);
 
     // Carpeta de cada tipo, dentro de backup.directory
     private static final Map<BackupType, String> FOLDER = Map.of(
             BackupType.DAILY, "diarios", BackupType.WEEKLY, "semanales",
-            BackupType.MONTHLY, "mensuales", BackupType.MANUAL, "manuales");
+            BackupType.MONTHLY, "mensuales", BackupType.MANUAL, "manuales",
+            BackupType.PRE_RESTORE, "antes-de-restaurar");
 
     // Solo los archivos con este nombre exacto son backups. La retención nunca toca otros archivos.
     private static final Pattern BACKUP_NAME = Pattern.compile("dreambake_\\d{4}-\\d{2}-\\d{2}_\\d{4}(_\\d+)?\\.zip");
@@ -102,13 +97,15 @@ public class BackupService {
     private final BackupRecordRepository repository;
     private final AuditService auditService;
     private final BackupAlertService alertService;
+    private final MysqlClient mysql;
 
     public BackupService(Environment env, BackupRecordRepository repository, AuditService auditService,
-                         BackupAlertService alertService) {
+                         BackupAlertService alertService, MysqlClient mysql) {
         this.env = env;
         this.repository = repository;
         this.auditService = auditService;
         this.alertService = alertService;
+        this.mysql = mysql;
     }
 
     /**
@@ -118,7 +115,7 @@ public class BackupService {
     public record Outcome(boolean ran, BackupRecord record, String message) {}
 
     // Error "esperado" dentro del backup: el mensaje se guarda tal cual en errorMessage
-    private static class BackupException extends Exception {
+    static class BackupException extends MysqlClient.ClientException {
         BackupException(String message) { super(message); }
     }
 
@@ -129,7 +126,7 @@ public class BackupService {
     }
 
     private String mysqldumpPath() {
-        return env.getProperty("backup.mysqldump-path", "").trim();
+        return mysql.mysqldumpPath();
     }
 
     /** ¿Están cargadas las claves y existe mysqldump? Si no, los backups quedan desactivados. */
@@ -173,6 +170,80 @@ public class BackupService {
                 "La última copia buena es del "
                         + last.get().getCreatedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy 'a las' HH:mm")) + ".",
                 action);
+    }
+
+    // ===================== Panel de backups (paso 4.3) =====================
+
+    /** Carpeta de backups (ruta completa). */
+    Path base() {
+        return Paths.get(directory()).toAbsolutePath().normalize();
+    }
+
+    /** Último intento de backup, haya salido bien o mal. */
+    public Optional<BackupRecord> lastAttempt() {
+        return repository.findTopByOrderByCreatedAtDescIdDesc();
+    }
+
+    /**
+     * Backups que se pueden descargar o restaurar: los que salieron bien y cuyo archivo todavía existe
+     * (los que borró la retención siguen en backup_records como historial, pero no se muestran).
+     */
+    public List<BackupRecord> list() {
+        if (!isConfigured()) return List.of();
+        return repository.findByStatusOrderByCreatedAtDescIdDesc(BackupStatus.OK).stream()
+                .filter(r -> fileOf(r).map(Files::isRegularFile).orElse(false))
+                .toList();
+    }
+
+    /**
+     * Ruta del archivo de un backup, solo si es segura: el nombre tiene que tener la forma exacta de un
+     * backup y la ruta tiene que quedar dentro de la carpeta de backups (así nadie puede pedir otro
+     * archivo de la PC con un nombre como "../../config/application.properties").
+     */
+    public Optional<Path> fileOf(BackupRecord r) {
+        if (r == null || r.getFileName() == null || r.getType() == null) return Optional.empty();
+        if (!BACKUP_NAME.matcher(r.getFileName()).matches()) return Optional.empty();
+        Path base = base();
+        Path file = base.resolve(FOLDER.get(r.getType())).resolve(r.getFileName()).normalize();
+        return file.startsWith(base) ? Optional.of(file) : Optional.empty();
+    }
+
+    /** Espacio en disco: cuánto ocupan los backups y cuánto queda libre en ese disco. */
+    public record Storage(long usedBytes, long freeBytes) {}
+
+    public Storage storage() {
+        Path base = base();
+        if (!isConfigured() || !Files.isDirectory(base)) return new Storage(0, 0);
+        long used = 0;
+        try (Stream<Path> files = Files.walk(base)) {
+            used = files.filter(Files::isRegularFile).mapToLong(p -> {
+                try { return Files.size(p); } catch (IOException e) { return 0; }
+            }).sum();
+        } catch (IOException e) {
+            log.warn("No se pudo calcular el espacio de los backups: {}", e.getMessage());
+        }
+        long free = 0;
+        try {
+            free = Files.getFileStore(base).getUsableSpace();
+        } catch (IOException e) {
+            log.warn("No se pudo leer el espacio libre del disco: {}", e.getMessage());
+        }
+        return new Storage(used, free);
+    }
+
+    /**
+     * Ejecuta algo con el MISMO bloqueo de los backups (lo usa la restauración, paso 4.3): mientras
+     * tanto no puede empezar ningún backup ni otra restauración. Devuelve vacío si ya había algo en
+     * curso. El bloqueo es "reentrante": desde adentro se puede llamar a runBackup (la copia de
+     * seguridad del estado actual antes de restaurar) sin trabarse.
+     */
+    public <T> Optional<T> withLock(java.util.concurrent.Callable<T> task) throws Exception {
+        if (!lock.tryLock()) return Optional.empty();
+        try {
+            return Optional.ofNullable(task.call());
+        } finally {
+            lock.unlock();
+        }
     }
 
     // ===================== Backup completo =====================
@@ -273,7 +344,7 @@ public class BackupService {
                     copies.isEmpty() ? "" : " + copia " + String.join(" y ", copies));
         } catch (Exception e) {
             // Falló: se guarda el motivo y NO se borra ningún backup viejo
-            String msg = e instanceof BackupException ? e.getMessage()
+            String msg = e instanceof MysqlClient.ClientException ? e.getMessage()
                     : e.getClass().getSimpleName() + ": " + e.getMessage();
             // Si el zip se llegó a crear pero su fila no se pudo guardar (por ejemplo, se cayó la base),
             // se borra: no tiene que quedar ningún backup sin registrar.
@@ -282,7 +353,7 @@ public class BackupService {
                 deleteQuietly(shaFileOf(createdZip));
             }
             record.setStatus(BackupStatus.FAILED);
-            record.setErrorMessage(cut(hidePassword(msg), 500));
+            record.setErrorMessage(cut(mysql.hidePassword(msg), 500));
             record.setDurationMs(elapsedMs(start));
             log.error("Falló la copia de seguridad {} ({}): {}", typeName(type), reason, record.getErrorMessage());
             try {
@@ -308,90 +379,14 @@ public class BackupService {
     // ===================== 1. mysqldump =====================
 
     private void runMysqldump(Path dumpFile, Path errFile) throws Exception {
-        Connection db = connectionData();
-        Path optionsFile = null;
-        try {
-            // La contraseña NO va en la línea de comandos (cualquier programa de la PC puede ver los
-            // comandos que se están ejecutando). Va en un archivo de opciones temporal que solo puede
-            // leer el usuario actual, y que se borra en el finally aunque haya error.
-            optionsFile = Files.createTempFile("dreambake-mysqldump-", ".cnf");
-            restrictToOwner(optionsFile);
-            Files.writeString(optionsFile, "[client]\n"
-                    + "user=" + optionValue(db.user()) + "\n"
-                    + "password=" + optionValue(db.password()) + "\n"
-                    + "host=" + optionValue(db.host()) + "\n"
-                    + "port=" + db.port() + "\n", StandardCharsets.UTF_8);
-
-            List<String> command = List.of(
-                    mysqldumpPath(),
-                    // --defaults-extra-file tiene que ser la PRIMERA opción (regla de MySQL)
-                    "--defaults-extra-file=" + optionsFile.toAbsolutePath(),
-                    "--single-transaction",              // copia consistente sin bloquear la base (tablas InnoDB)
-                    "--routines",                         // incluye procedimientos y funciones
-                    "--triggers",                         // incluye los triggers (ej: los que protegen audit_logs)
-                    "--default-character-set=utf8mb4",   // tildes, ñ y emojis bien guardados
-                    "--no-tablespaces",                   // evita pedir el permiso PROCESS (usuario restringido, paso 7.2)
-                    db.database());
-
-            // La salida (el volcado) va directo a un archivo y los errores a otro. Si se leyeran
-            // por "tubería" y nadie los consumiera, el proceso podría quedarse trabado.
-            ProcessBuilder pb = new ProcessBuilder(command)
-                    .redirectOutput(dumpFile.toFile())
-                    .redirectError(errFile.toFile());
-            Process process = pb.start();
-            if (!process.waitFor(DUMP_TIMEOUT_MINUTES, TimeUnit.MINUTES)) {
-                process.destroyForcibly();
-                throw new BackupException("mysqldump tardó más de " + DUMP_TIMEOUT_MINUTES + " minutos y se cortó.");
-            }
-            if (process.exitValue() != 0) {
-                String err = Files.exists(errFile) ? Files.readString(errFile, StandardCharsets.UTF_8).trim() : "";
-                throw new BackupException("mysqldump terminó con error (código " + process.exitValue() + ")"
-                        + (err.isEmpty() ? "." : ": " + err));
-            }
-        } finally {
-            if (optionsFile != null) deleteQuietly(optionsFile);
-        }
-    }
-
-    // Datos de conexión: los mismos de la app (spring.datasource.*), sin claves nuevas
-    private record Connection(String host, int port, String database, String user, String password) {}
-
-    private Connection connectionData() throws BackupException {
-        String url = env.getProperty("spring.datasource.url", "");
-        // Formato: jdbc:mysql://host[:puerto]/base[?opciones]
-        Matcher m = Pattern.compile("^jdbc:mysql://([^/:?]+)(?::(\\d+))?/([^?;]+)").matcher(url);
-        if (!m.find()) throw new BackupException("No se entiende la dirección de la base (spring.datasource.url).");
-        int port = m.group(2) == null ? 3306 : Integer.parseInt(m.group(2));
-        return new Connection(m.group(1), port, m.group(3),
-                env.getProperty("spring.datasource.username", ""),
-                env.getProperty("spring.datasource.password", ""));
-    }
-
-    // Valor entre comillas para el archivo de opciones de MySQL (escapando \ y ")
-    private static String optionValue(String value) {
-        return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
-    }
-
-    // Deja el archivo legible solo por el usuario que corre la app
-    private static void restrictToOwner(Path file) throws IOException {
-        PosixFileAttributeView posix = Files.getFileAttributeView(file, PosixFileAttributeView.class);
-        if (posix != null) {                                   // Linux / Mac
-            posix.setPermissions(PosixFilePermissions.fromString("rw-------"));
-            return;
-        }
-        AclFileAttributeView acl = Files.getFileAttributeView(file, AclFileAttributeView.class);
-        if (acl != null) {                                     // Windows: un solo permiso, para el dueño
-            AclEntry onlyOwner = AclEntry.newBuilder()
-                    .setType(AclEntryType.ALLOW)
-                    .setPrincipal(acl.getOwner())
-                    .setPermissions(EnumSet.of(AclEntryPermission.READ_DATA, AclEntryPermission.WRITE_DATA,
-                            AclEntryPermission.APPEND_DATA, AclEntryPermission.READ_ATTRIBUTES,
-                            AclEntryPermission.WRITE_ATTRIBUTES, AclEntryPermission.READ_NAMED_ATTRS,
-                            AclEntryPermission.WRITE_NAMED_ATTRS, AclEntryPermission.READ_ACL,
-                            AclEntryPermission.SYNCHRONIZE, AclEntryPermission.DELETE))
-                    .build();
-            acl.setAcl(List.of(onlyOwner));
-        }
+        String database = mysql.connection().database();
+        mysql.run(mysqldumpPath(), List.of(
+                "--single-transaction",              // copia consistente sin bloquear la base (tablas InnoDB)
+                "--routines",                         // incluye procedimientos y funciones
+                "--triggers",                         // incluye los triggers (ej: los que protegen audit_logs)
+                "--default-character-set=utf8mb4",   // tildes, ñ y emojis bien guardados
+                "--no-tablespaces",                   // evita pedir el permiso PROCESS (usuario restringido, paso 7.2)
+                database), null, dumpFile, errFile, DUMP_TIMEOUT_MINUTES);
     }
 
     // ===================== Validación del volcado =====================
@@ -400,7 +395,7 @@ public class BackupService {
      * Un volcado completo pesa más de 1 KB y su última línea es "-- Dump completed on …".
      * Si mysqldump se cortó a la mitad (disco lleno, base caída), esa línea no está.
      */
-    private static void validateDump(Path dumpFile) throws Exception {
+    static void validateDump(Path dumpFile) throws Exception {
         long size = Files.exists(dumpFile) ? Files.size(dumpFile) : 0;
         if (size <= MIN_DUMP_BYTES) {
             throw new BackupException("El volcado de la base está vacío o incompleto (" + size + " bytes).");
@@ -488,7 +483,7 @@ public class BackupService {
         return HexFormat.of().formatHex(digest.digest());
     }
 
-    private static Path shaFileOf(Path zipFile) {
+    static Path shaFileOf(Path zipFile) {
         return zipFile.resolveSibling(zipFile.getFileName() + ".sha256");
     }
 
@@ -591,6 +586,7 @@ public class BackupService {
             case WEEKLY -> "semanal";
             case MONTHLY -> "mensual";
             case MANUAL -> "manual";
+            case PRE_RESTORE -> "antes de restaurar";
         };
     }
 
@@ -603,12 +599,6 @@ public class BackupService {
         return String.format(Locale.forLanguageTag("es-AR"), "%.1f MB", kb / 1024.0);
     }
 
-    // Por las dudas: la contraseña de la base nunca aparece en un mensaje de error guardado
-    private String hidePassword(String text) {
-        String password = env.getProperty("spring.datasource.password", "");
-        if (text == null || password.isEmpty()) return text;
-        return text.replace(password, "[oculto]");
-    }
 
     private static long elapsedMs(long startNanos) {
         return (System.nanoTime() - startNanos) / 1_000_000;
