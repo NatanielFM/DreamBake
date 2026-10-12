@@ -10,22 +10,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!sizesTbody || !optionsTbody) return;
 
+  // Paso 6.8: precios con formato argentino y nombres escapados
+  const money = (n) => window.DreamFormat ? window.DreamFormat.money(n) : '$ ' + Number(n || 0).toLocaleString('es-AR');
+  const esc = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+
   // SVGs uniformes de 20x20 como en Inventario y Clientes
   const svgEdit = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`;
   const svgTrash = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
 
+  let configLoaded = false;
   async function fetchConfig() {
+    if (!configLoaded) {
+      window.DreamUI?.tableLoading(sizesTbody, 6, 'Cargando tamaños…');
+      window.DreamUI?.tableLoading(optionsTbody, 4, 'Cargando sabores…');
+    }
     try {
       const res = await fetch('/api/cake-config/admin');
-      if (res.ok) {
-        const data = await res.json();
-        allSizes = data.sizes || [];
-        allOptions = data.options || [];
-        renderSizes();
-        renderOptions();
-      }
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      allSizes = data.sizes || [];
+      allOptions = data.options || [];
+      configLoaded = true;
+      renderSizes();
+      renderOptions();
     } catch (e) {
-      console.error("Error al cargar la configuración de tortas:", e);
+      if (!configLoaded) {
+        window.DreamUI?.tableMessage(sizesTbody, 6, 'No se pudo cargar el armador.', 'Revisá la conexión y recargá la página.', true);
+        window.DreamUI?.tableMessage(optionsTbody, 4, 'No se pudieron cargar los sabores.', '', true);
+      }
     }
   }
 
@@ -33,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // kind = "size" u "option": lo usa el listener de abajo para saber qué guardar.
   function storeSwitch(checked, kind, id, name) {
     return `<label class="toggle-switch">
-              <input type="checkbox" ${checked ? 'checked' : ''} data-cake-toggle="${kind}" data-id="${id}" aria-label="Mostrar ${name} en la tienda">
+              <input type="checkbox" ${checked ? 'checked' : ''} data-cake-toggle="${kind}" data-id="${id}" aria-label="Mostrar ${esc(name)} en la tienda">
               <span class="slider"></span>
               <span class="switch-text" aria-hidden="true"><span class="switch-on">Sí</span><span class="switch-off">No</span></span>
             </label>`;
@@ -48,8 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
     allSizes.forEach(s => {
       sizesTbody.innerHTML += `
         <tr>
-          <td class="cell-title cell-strong">${s.name}</td>
-          <td data-label="Precio" class="cell-money">$${Number(s.price).toLocaleString('es-AR')}</td>
+          <td class="cell-title cell-strong">${esc(s.name)}</td>
+          <td data-label="Precio" class="cell-money">${money(s.price)}</td>
           <td data-label="Rellenos">Hasta ${s.maxRellenos}</td>
           <td data-label="Bizcochuelos">${s.mixSponge ? '2 sabores' : '1 sabor'}</td>
           <td data-label="En la tienda">${storeSwitch(s.enabled, 'size', s.id, s.name)}</td>
@@ -78,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       optionsTbody.innerHTML += `
         <tr>
-          <td class="cell-title cell-strong">${o.name}</td>
+          <td class="cell-title cell-strong">${esc(o.name)}</td>
           <td data-label="Tipo"><span class="tag-badge">${badgeLabel}</span></td>
           <td data-label="En la tienda">${storeSwitch(o.enabled, 'option', o.id, o.name)}</td>
           <td class="cell-actions"><div class="action-buttons-container">
@@ -158,38 +170,51 @@ document.addEventListener('DOMContentLoaded', () => {
     const url = id ? `/api/cake-config/sizes/${id}` : '/api/cake-config/sizes';
     const method = id ? 'PUT' : 'POST';
 
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+    await window.DreamUI.busy(e.submitter || e.target.querySelector('button[type="submit"]'), async () => {
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          document.getElementById('modal-cake-size').hidden = true;
+          fetchConfig();
+        } else {
+          await window.DreamUI.fail(res, 'No se pudo guardar el tamaño. Revisá los datos.');
+        }
+      } catch (err) { window.DreamUI.offline(); }
     });
-
-    if (res.ok) {
-      document.getElementById('modal-cake-size').hidden = true;
-      fetchConfig();
-    }
   });
 
   window.toggleSizeEnabled = async function(id, isEnabled) {
     const s = allSizes.find(item => item.id === id);
     if (!s) return;
     s.enabled = isEnabled;
-    await fetch(`/api/cake-config/sizes/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(s)
-    });
+    try {
+      const res = await fetch(`/api/cake-config/sizes/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(s)
+      });
+      if (!res.ok) throw res;
+    } catch (err) {
+      // No se guardó: el interruptor vuelve a como estaba, así la pantalla muestra lo real
+      s.enabled = !isEnabled;
+      fetchConfig();
+      if (err instanceof Response) await window.DreamUI.fail(err, 'No se pudo cambiar. Probá de nuevo.');
+      else window.DreamUI.offline();
+    }
   };
 
   window.confirmDeleteSize = function(id) {
-    if (typeof window.showConfirmModal === 'function') {
-      window.showConfirmModal('Eliminar Tamaño', '¿Estás seguro de que deseas eliminar este tamaño de torta?', 'Eliminar', 'btn-red', async () => {
-        await fetch(`/api/cake-config/sizes/${id}`, { method: 'DELETE' });
-        fetchConfig();
-      });
-    } else if (confirm('¿Eliminar este tamaño de torta?')) {
-      fetch(`/api/cake-config/sizes/${id}`, { method: 'DELETE' }).then(() => fetchConfig());
-    }
+    window.showConfirmModal('Eliminar tamaño', '¿Seguro que querés eliminar este tamaño de torta?', 'Eliminar', 'btn-red', async () => {
+      try {
+        const res = await fetch(`/api/cake-config/sizes/${id}`, { method: 'DELETE' });
+        if (res.ok) fetchConfig();
+        else await window.DreamUI.fail(res, 'No se pudo eliminar el tamaño.');
+      } catch (e) { window.DreamUI.offline(); }
+    });
   };
 
   // --- CRUD OPCIONES (BIZCOCHUELOS Y RELLENOS) ---
@@ -225,38 +250,51 @@ document.addEventListener('DOMContentLoaded', () => {
     const url = id ? `/api/cake-config/options/${id}` : '/api/cake-config/options';
     const method = id ? 'PUT' : 'POST';
 
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+    await window.DreamUI.busy(e.submitter || e.target.querySelector('button[type="submit"]'), async () => {
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          document.getElementById('modal-cake-option').hidden = true;
+          fetchConfig();
+        } else {
+          await window.DreamUI.fail(res, 'No se pudo guardar el sabor. Revisá los datos.');
+        }
+      } catch (err) { window.DreamUI.offline(); }
     });
-
-    if (res.ok) {
-      document.getElementById('modal-cake-option').hidden = true;
-      fetchConfig();
-    }
   });
 
   window.toggleOptionEnabled = async function(id, isEnabled) {
     const o = allOptions.find(item => item.id === id);
     if (!o) return;
     o.enabled = isEnabled;
-    await fetch(`/api/cake-config/options/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(o)
-    });
+    try {
+      const res = await fetch(`/api/cake-config/options/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(o)
+      });
+      if (!res.ok) throw res;
+    } catch (err) {
+      // No se guardó: el interruptor vuelve a como estaba, así la pantalla muestra lo real
+      o.enabled = !isEnabled;
+      fetchConfig();
+      if (err instanceof Response) await window.DreamUI.fail(err, 'No se pudo cambiar. Probá de nuevo.');
+      else window.DreamUI.offline();
+    }
   };
 
   window.confirmDeleteOption = function(id) {
-    if (typeof window.showConfirmModal === 'function') {
-      window.showConfirmModal('Eliminar Opción', '¿Estás seguro de que deseas eliminar este sabor o relleno?', 'Eliminar', 'btn-red', async () => {
-        await fetch(`/api/cake-config/options/${id}`, { method: 'DELETE' });
-        fetchConfig();
-      });
-    } else if (confirm('¿Eliminar este sabor o relleno?')) {
-      fetch(`/api/cake-config/options/${id}`, { method: 'DELETE' }).then(() => fetchConfig());
-    }
+    window.showConfirmModal('Eliminar sabor', '¿Seguro que querés eliminar este sabor o relleno?', 'Eliminar', 'btn-red', async () => {
+      try {
+        const res = await fetch(`/api/cake-config/options/${id}`, { method: 'DELETE' });
+        if (res.ok) fetchConfig();
+        else await window.DreamUI.fail(res, 'No se pudo eliminar el sabor.');
+      } catch (e) { window.DreamUI.offline(); }
+    });
   };
 
   fetchConfig();
