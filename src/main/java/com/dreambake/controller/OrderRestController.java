@@ -3,6 +3,9 @@ package com.dreambake.controller;
 import com.dreambake.entity.*;
 import com.dreambake.util.InputSanitizer;
 import com.dreambake.util.MoneyVisibility;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 import com.dreambake.repository.CustomerRepository;
 import com.dreambake.repository.CustomerTagRepository;
 import com.dreambake.repository.OrderRepository;
@@ -34,6 +37,9 @@ public class OrderRestController {
     @Autowired
     private com.dreambake.service.BusinessProfileService businessProfile;   // pausa y anticipación (paso 6.4)
 
+
+    @Autowired
+    private JsonMapper jsonMapper;   // para leer el cuerpo del PUT de edición como árbol (ver updateOrderFull)
 
     @Autowired
     private OrderRepository orderRepo;
@@ -320,7 +326,17 @@ public class OrderRestController {
     // EDICIÓN COMPLETA DEL PEDIDO (Desde el botón "Editar" del Modal)
     @PutMapping("/{id}")
     @Transactional
-    public ResponseEntity<?> updateOrderFull(@PathVariable Long id, @RequestBody Order updatedOrder) {
+    public ResponseEntity<?> updateOrderFull(@PathVariable Long id, @RequestBody JsonNode body) {
+        // El cuerpo se lee como árbol JSON porque Order trae "items" como lista vacía por defecto: ya convertido
+        // a Order no se puede distinguir "no mandó items" de "mandó una lista vacía". Los ítems solo se
+        // reemplazan si la clave "items" viene explícita y no es null; si no, se conservan los actuales.
+        final Order updatedOrder;
+        try {
+            updatedOrder = jsonMapper.treeToValue(body, Order.class);
+        } catch (JacksonException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Los datos del pedido no son válidos."));
+        }
+        final boolean itemsSent = body.hasNonNull("items");
         return orderRepo.findById(id).map(order -> {
             Map<String, Object> before = AuditText.snapshot(order); // "foto" antes de editar
             order.setCustomerName(updatedOrder.getCustomerName());
@@ -369,7 +385,7 @@ public class OrderRestController {
 
             // Los productos solo se reemplazan si el panel los manda (si no se tocó el texto
             // de los productos, se conservan los originales con su precio y su receta)
-            if (updatedOrder.getItems() != null) {
+            if (itemsSent && updatedOrder.getItems() != null) {
                 // Precios actuales de los ítems (por id): si edita un pastelero no se pisan ni se borran
                 Map<Long, Double> oldPrices = new HashMap<>();
                 for (OrderItem old : order.getItems()) {
@@ -402,6 +418,14 @@ public class OrderRestController {
     @PutMapping("/{id}/status")
     @Transactional
     public ResponseEntity<?> updateStatus(@PathVariable Long id, @RequestBody StatusRequest req) {
+        // El pastelero solo agenda (Confirmar / Volver a agendado) y marca Entregado, igual que su panel y
+        // que Bakey. Rechazar y cancelar pedidos es del administrador (paso 9.3c). Se revisa acá además de
+        // SecurityConfig porque Bakey llama a este método directo, sin pasar por las reglas de rutas.
+        if (MoneyVisibility.isBakerOnly()
+                && req.status() != OrderStatus.CONFIRMED && req.status() != OrderStatus.COMPLETED) {
+            return ResponseEntity.status(403).body(Map.of("message",
+                    "Rechazar o cancelar un pedido lo hace la administración."));
+        }
         return orderRepo.findById(id).map(order -> {
             boolean force = req.force() != null ? req.force() : false;
             OrderStatus statusBefore = order.getStatus();

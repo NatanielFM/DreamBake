@@ -26,6 +26,11 @@ public final class MoneyVisibility {
 
     /** ¿La persona de esta sesión es PASTELERO sin ser ADMIN? (entonces no puede ver montos) */
     public static boolean hiddenForCurrentUser() {
+        return isBakerOnly();
+    }
+
+    /** Lo mismo, con el nombre que se usa para los permisos de escritura (estados de pedido, paso 9.3c). */
+    public static boolean isBakerOnly() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {
             return false;
