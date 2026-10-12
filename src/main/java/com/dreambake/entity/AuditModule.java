@@ -14,5 +14,6 @@ public enum AuditModule {
     FIDELIZACION,
     SISTEMA,
     SEGURIDAD,
-    BAKEY
+    BAKEY,
+    RECORDATORIOS   // recordatorios del equipo (paso 5.2)
 }

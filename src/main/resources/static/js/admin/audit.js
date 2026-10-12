@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
     PEDIDOS: 'Pedidos', PRODUCTOS: 'Productos', INVENTARIO: 'Inventario', RECETAS: 'Recetas',
     CLIENTES: 'Clientes', CUPONES: 'Cupones', GALERIA: 'Galería', EQUIPO: 'Equipo',
     ARMADOR: 'Armador de tortas', FIDELIZACION: 'Fidelización', SISTEMA: 'Sistema',
-    SEGURIDAD: 'Seguridad', BAKEY: 'Bakey'
+    SEGURIDAD: 'Seguridad', BAKEY: 'Bakey', RECORDATORIOS: 'Recordatorios'
   };
   const ACTIONS = {
     CREATE: 'Alta', UPDATE: 'Modificación', DELETE: 'Baja', STATUS_CHANGE: 'Cambio de estado',
@@ -62,7 +62,9 @@ document.addEventListener('DOMContentLoaded', () => {
     insumos: 'Insumos', insumo: 'Insumo', formato: 'Formato', registros: 'Registros incluidos',
     totalConFiltros: 'Total con esos filtros', fechas: 'Fechas', filtros: 'Filtros',
     selloRegistro: 'Sello: registro n°', selloHash: 'Sello: hash', emailIntentado: 'Email intentado',
-    motivo: 'Motivo', asunto: 'Asunto', audiencia: 'A quién', cupon: 'Cupón'
+    motivo: 'Motivo', asunto: 'Asunto', audiencia: 'A quién', cupon: 'Cupón',
+    titulo: 'Qué hay que hacer', notas: 'Notas', vence: 'Fecha y hora', pedido: 'Pedido (n°)',
+    hecho: 'Hecho', dueno: 'De quién es', creadoPorBakey: 'Lo creó Bakey', recordatoriosBorrados: 'Recordatorios borrados'
   };
   const MONEY_FIELDS = new Set(['total', 'sena', 'precio', 'costo']);
   const money = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });

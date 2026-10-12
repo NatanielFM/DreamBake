@@ -140,6 +140,7 @@ public class CustomerRestController {
             case PASSWORD_RESET -> "Recuperar contraseña";
             case AUDIT_ALERT -> "Alerta de auditoría";
             case BACKUP_ALERT -> "Alerta de copia de seguridad";
+            case TASK_REMINDER -> "Recordatorio de tarea";
         };
     }
 

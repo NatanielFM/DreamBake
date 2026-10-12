@@ -87,11 +87,14 @@ public class UserRestController {
     public ResponseEntity<?> deleteUser(@PathVariable Long id) {
         try {
             User before = userRepository.findById(id).orElse(null);
-            userService.deleteUser(id);
+            int reminders = userService.deleteUser(id);
             if (before != null) {
+                Map<String, Object> was = teamSnapshot(before);
+                if (reminders > 0) was.put("recordatoriosBorrados", reminders);
                 audit.log(AuditAction.DELETE, AuditModule.EQUIPO, "Usuario", id,
-                        "Dio de baja a " + before.getName() + " (" + before.getEmail() + ", rol " + before.getRoles() + ")",
-                        AuditText.change(teamSnapshot(before), null));
+                        "Dio de baja a " + before.getName() + " (" + before.getEmail() + ", rol " + before.getRoles() + ")"
+                                + (reminders > 0 ? " y borró sus " + reminders + " recordatorio" + (reminders == 1 ? "" : "s") : ""),
+                        AuditText.change(was, null));
             }
             return ResponseEntity.ok().build();
         } catch (Exception e) {

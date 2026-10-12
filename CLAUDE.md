@@ -101,7 +101,7 @@ uploads/           imágenes subidas desde el panel (servidas en /uploads/**)
 ```
 
 ### Detalles importantes del frontend
-- **`baker.html` reutiliza scripts del admin** (`admin/main.js`, `inventory.js`, `recipes.js`, `orders.js`). Un cambio en esos archivos afecta a **los dos paneles**: verificá que no rompa ninguno.
+- **`baker.html` reutiliza scripts del admin** (`admin/main.js`, `inventory.js`, `recipes.js`, `orders.js`, `reminders.js`). Un cambio en esos archivos afecta a **los dos paneles**: verificá que no rompa ninguno.
 - El panel admin cambia de sección con pestañas `data-tab` (resumen, pedidos, productos, inventario, recetas, clientes, galería, armador, equipo, ajustes); cada pestaña tiene su JS en `static/js/admin/` (Ajustes → `settings.js`).
 - **Sin JavaScript dentro del HTML**: la CSP no permite `<script>…</script>` ni `onclick="…"`/`onchange="…"` (tampoco en el HTML que arma el JS). Los botones se conectan con `addEventListener`, usando ids o atributos `data-*`: `data-close-modal="id"` cierra una ventana (main.js), `data-order-action` (orders.js), `data-cake-action`/`data-cake-toggle` (cake-config.js). El modo oscuro se aplica con `admin/theme-init.js` en el `<head>`.
 - Modales y confirmaciones globales: `window.showConfirmModal(...)` y `window.showErrorAlert(...)` en `admin/main.js`. Reutilizalos en vez de usar `alert()`/`confirm()`. Todas las ventanas (`.modal-overlay`) se cierran con Esc; las que no tienen formulario, también tocando el fondo.
@@ -124,7 +124,7 @@ Definido en `config/SecurityConfig.java`:
 | `POST /api/orders`, `GET /api/cake-config/public`, `GET /api/coupons/validate/**` | Público (lo usa la tienda) |
 | `/admin/**` | `ADMIN` |
 | `/baker/**` | `PASTELERO` |
-| `/api/orders/**`, `/api/inventory/**`, `/api/recipes/**`, `GET /api/products/**`, `GET /api/categories/**`, `POST /api/audit/download`, `/api/bakey/**` | `ADMIN` o `PASTELERO` |
+| `/api/orders/**`, `/api/inventory/**`, `/api/recipes/**`, `GET /api/products/**`, `GET /api/categories/**`, `POST /api/audit/download`, `/api/bakey/**`, `/api/reminders/**` (cada uno los suyos; ADMIN todos) | `ADMIN` o `PASTELERO` |
 | `/profile/**`, `/api/account/**` ("Mis pedidos": siempre del usuario de la sesión) | Cualquier usuario logueado |
 | resto de `/api/**` (usuarios, clientes, cupones, galería, configuración del creador, altas/bajas de productos, ajustes `/api/settings`, campañas, fidelización, auditoría `/api/audit/**`) | `ADMIN` |
 
@@ -172,6 +172,7 @@ Definido en `config/SecurityConfig.java`:
 - `BakeyService`: conversación guardada en la sesión (últimos 20 mensajes), mensajes amables (nunca errores técnicos); `BakeyRateLimiter`: límite propio por usuario (20/min y 200/día). `POST /api/bakey/chat`, `GET /api/bakey/status`, `POST /api/bakey/reset`.
 - Configuración `bakey.*` (`config/BakeyProperties`): clave en `bakey.gemini.api-key` o variable de entorno `GEMINI_API_KEY`; vacía = "no configurado" y el resto anda igual. Modelo por defecto `gemini-3.5-flash-lite`; timeout 30 s.
 - Charlar no se audita (no cambia datos). Las acciones que haga Bakey (paso 5.4) se auditan con `ASSISTANT_ACTION` / módulo `BAKEY`.
+- **Recordatorios (paso 5.2):** `ReminderService` (crear, listar, hecho/deshacer, borrar; `create(..., byAssistant)` lo va a usar Bakey y audita `ASSISTANT_ACTION`), `ReminderRestController` (`/api/reminders`, devuelve el record `ReminderView`), `ReminderScheduler` (cada minuto: email `TASK_REMINDER` 1 h antes, plantilla `email/recordatorio-tarea`, una sola vez por `emailSentAt`). Auditoría en el módulo `RECORDATORIOS`. Panel: caja `#reminders-box` (admin: en el Resumen; pastelero: arriba de Pedidos), ventana `#modal-reminder` y aviso `.reminder-alert` cuando llega la hora (`admin/reminders.js`, revisa cada minuto; los avisos cerrados se recuerdan en localStorage). Botones con clases propias (`.reminder-done`, `.reminder-delete`) porque baker.html oculta `.btn-edit`/`.btn-delete`/`button.btn-red`.
 - Plan gratuito de Gemini: Google usa lo que se le manda para mejorar sus productos → no mandarle datos personales completos de clientes (Ley 25.326).
 
 ## Modelo de datos (entidades JPA)
@@ -196,6 +197,7 @@ Definido en `config/SecurityConfig.java`:
 | `EmailLog` (email_logs) | recipientEmail, type (`EmailType`, VARCHAR), subject, status, sentAt, campaignId, orderId | ManyToOne `Customer` |
 | `Campaign` (campaigns) | name, subject, contenido, audiencia, estado, contadores | ManyToOne `CustomerTag`, ManyToOne `Coupon` |
 | `AuditLog` (audit_logs) | timestamp, actor (email, nombre, rol), action, module, entidad, description, details (JSON), IP, navegador, previousHash, hash. **Inmutable** | — |
+| `Reminder` (reminders) | title, notes, dueAt, relatedOrderId (solo el número), done, doneAt, createdAt, createdByAssistant, emailSentAt (evita repetir el email) | ManyToOne `User` (owner; se borran al dar de baja al usuario) |
 | `BackupRecord` (backup_records) | fileName, type (`BackupType`: DAILY/WEEKLY/MONTHLY/MANUAL/PRE_RESTORE), status (OK/FAILED), sizeBytes, sha256, errorMessage, durationMs, createdAt | — |
 
 Enums: `OrderStatus` = PENDING → CONFIRMED → IN_PROGRESS → COMPLETED (o CANCELLED). `CouponType` = DESCUENTO, ENVIO_GRATIS, REGALO.

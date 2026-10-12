@@ -64,6 +64,7 @@ public final class AuditText {
             case SISTEMA -> "Sistema";
             case SEGURIDAD -> "Seguridad";
             case BAKEY -> "Bakey";
+            case RECORDATORIOS -> "Recordatorios";
         };
     }
 

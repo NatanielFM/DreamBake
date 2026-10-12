@@ -4,8 +4,10 @@ import com.dreambake.entity.AuditAction;
 import com.dreambake.entity.AuditModule;
 import com.dreambake.entity.AuthProvider;
 import com.dreambake.entity.User;
+import com.dreambake.repository.ReminderRepository;
 import com.dreambake.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +23,9 @@ public class UserService {
     // Registro de auditoría (paso 3.3)
     @Autowired
     private AuditService auditService;
+
+    @Autowired
+    private ReminderRepository reminderRepository;
 
     public void registerUser(User user) {
         // Ciframos la contraseña antes de guardarla
@@ -96,7 +101,18 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public void deleteUser(Long id) {
-        userRepository.deleteById(id);
+    /**
+     * Da de baja a un usuario. Antes borra sus recordatorios (paso 5.2): son notas personales y,
+     * si quedaran, la base no dejaría borrar al usuario (apuntan a él).
+     * Todo en una transacción: si algo falla, no se borra nada.
+     * @return cuántos recordatorios se borraron (para la auditoría)
+     */
+    @Transactional
+    public int deleteUser(Long id) {
+        User user = userRepository.findById(id).orElse(null);
+        if (user == null) return 0;
+        int reminders = reminderRepository.deleteByOwner(user);
+        userRepository.delete(user);
+        return reminders;
     }
 }

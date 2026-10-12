@@ -71,6 +71,9 @@ public class CustomerAccountService {
     @Autowired
     private AuditService auditService;
 
+    @Autowired
+    private com.dreambake.repository.ReminderRepository reminderRepository;
+
     /** Un pedido como lo ve el cliente en "Mis pedidos" (solo lo necesario, sin datos internos). */
     public record MyOrder(Long id, LocalDate deliveryDate, String deliveryShift, String deliveryMethod,
                           String status, String statusLabel, Double total, List<String> items) {}
@@ -210,6 +213,9 @@ public class CustomerAccountService {
         // 4. Auditoría (antes de borrar el usuario, así figura su nombre) y 5. el usuario
         auditService.log(AuditAction.DELETE, AuditModule.SEGURIDAD, "Usuario", user.getId(),
                 "Eliminó su cuenta de cliente (derecho de supresión, Ley 25.326)", null);
+        // Por las dudas: si tuviera recordatorios (paso 5.2), se borran con la cuenta
+        // (los clientes no usan recordatorios, pero si quedara alguno la base no dejaría borrar el usuario)
+        reminderRepository.deleteByOwner(user);
         userRepository.delete(user);
         return true;
     }
