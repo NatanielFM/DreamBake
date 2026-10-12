@@ -92,6 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function loadBirthdays() {
+    if (!tbody.querySelector('tr:not(.state-row)')) window.DreamUI?.tableLoading(tbody, 4, 'Cargando cumpleaños…');
     const r = await call('/api/loyalty/birthdays');
     if (!r.ok) {
       tbody.innerHTML = '<tr><td colspan="4" class="cell-empty">No se pudieron cargar los cumpleaños.</td></tr>';

@@ -57,6 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ================= LISTA =================
   async function loadCampaigns() {
+    if (!tbody.querySelector('tr:not(.state-row)')) window.DreamUI?.tableLoading(tbody, 6, 'Cargando campañas…');
     const r = await call('/api/campaigns');
     if (!r.ok) {
       tbody.innerHTML = '<tr><td colspan="6" class="cell-empty">No se pudieron cargar las campañas.</td></tr>';
@@ -154,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const [tags, cps] = await Promise.all([call('/api/tags'), call('/api/coupons')]);
     const tagSelect = $('campaign-tag');
     tagSelect.innerHTML = (tags.ok ? tags.data : []).map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('');
-    const today = new Date().toISOString().slice(0, 10);
+    const today = window.DreamFormat ? window.DreamFormat.todayISO() : new Date().toISOString().slice(0, 10);   // fecha de acá, no la de Greenwich
     coupons = (cps.ok ? cps.data : []).filter(c => c.active && (c.unlimited || (c.usageLimit || 0) > 0)
       && (!c.expirationDate || c.expirationDate >= today));
     $('campaign-coupon').innerHTML = '<option value="">Sin cupón</option>' + coupons.map(c =>
