@@ -15,7 +15,7 @@ import java.util.Map;
  * API de Bakey, el asistente virtual (paso 5.1). Solo ADMIN y PASTELERO (regla en SecurityConfig).
  *
  *   GET  /api/bakey/status  → si Bakey está configurado (hay clave de Gemini) o no
- *   POST /api/bakey/chat    → {"message": "…"} → {"status": "OK", "reply": "…"}
+ *   POST /api/bakey/chat    → {"message": "…"} → {"status": "OK", "reply": "…", "tools": ["pedidos_por_fecha"]}
  *   POST /api/bakey/reset   → empieza una conversación nueva
  *
  * Siempre devuelve un "reply" que se puede mostrar tal cual a la persona (nunca errores técnicos).
@@ -47,6 +47,7 @@ public class BakeyRestController {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("status", answer.status());
         body.put("reply", answer.reply());
+        body.put("tools", answer.tools());   // qué consultó Bakey (solo los nombres; paso 5.3)
         return ResponseEntity.status(httpStatusFor(answer.status())).body(body);
     }
 

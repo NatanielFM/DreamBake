@@ -309,7 +309,8 @@ public class GeminiProvider implements AiProvider {
         }
         if (!apiKey.isEmpty()) detail = detail.replace(apiKey, "[clave oculta]");
         detail = detail.replaceAll("\\s+", " ").trim();
-        return detail.length() > 300 ? detail.substring(0, 300) + "…" : detail;
+        // 600 letras: en el 429 Google dice al final qué cuota se agotó (por minuto o por día)
+        return detail.length() > 600 ? detail.substring(0, 600) + "…" : detail;
     }
 
     // ¿El error de red fue por pasarse del tiempo de espera?

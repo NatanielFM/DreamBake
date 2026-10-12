@@ -11,6 +11,7 @@ import com.dreambake.audit.AuditText;
 import com.dreambake.service.AuditService;
 import com.dreambake.service.OrderNoticeService;
 import com.dreambake.service.OrderPricingService;
+import com.dreambake.service.StockCalculator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.ResponseEntity;
@@ -46,6 +47,9 @@ public class OrderRestController {
 
     @Autowired
     private OrderPricingService pricingService;
+
+    @Autowired
+    private StockCalculator stockCalculator;
 
     // Registro de auditoría (paso 3.3). En pedidos se llama directo (no con @Auditable) porque casi
     // todo necesita el antes y el después, o saber qué pasó adentro (por ejemplo, si se forzó el stock).
@@ -390,27 +394,10 @@ public class OrderRestController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
+    // Insumos que necesita el pedido según las recetas. El cálculo se pasó a StockCalculator (paso 5.3)
+    // para que también lo use Bakey; acá se sigue usando igual que antes.
     private Map<Long, Double> getRequiredStock(Order order) {
-        Map<Long, Double> requiredStock = new HashMap<>();
-        if (order.getItems() != null) {
-            for (OrderItem item : order.getItems()) {
-                Product product = item.getProduct();
-                if (product == null && item.getProductType() != null) {
-                    product = productRepo.findByNameIgnoreCase(item.getProductType()).orElse(null);
-                }
-                
-                if (product != null && product.getRecipe() != null && product.getRecipe().getItems() != null) {
-                    for (RecipeItem recipeItem : product.getRecipe().getItems()) {
-                        if (recipeItem.getInventoryItem() != null && recipeItem.getInventoryItem().getId() != null) {
-                            Long invId = recipeItem.getInventoryItem().getId();
-                            Double qty = recipeItem.getQuantityRequired();
-                            requiredStock.put(invId, requiredStock.getOrDefault(invId, 0.0) + qty);
-                        }
-                    }
-                }
-            }
-        }
-        return requiredStock;
+        return stockCalculator.requiredFor(order);
     }
 
     private ResponseEntity<?> checkStockForConfirmation(Order order, boolean force) {
