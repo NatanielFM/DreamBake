@@ -2,6 +2,10 @@ package com.dreambake.controller;
 
 import com.dreambake.entity.*;
 import com.dreambake.util.InputSanitizer;
+import com.dreambake.util.MoneyVisibility;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 import com.dreambake.repository.CustomerRepository;
 import com.dreambake.repository.CustomerTagRepository;
 import com.dreambake.repository.OrderRepository;
@@ -33,6 +37,9 @@ public class OrderRestController {
     @Autowired
     private com.dreambake.service.BusinessProfileService businessProfile;   // pausa y anticipación (paso 6.4)
 
+
+    @Autowired
+    private JsonMapper jsonMapper;   // para leer el cuerpo del PUT de edición como árbol (ver updateOrderFull)
 
     @Autowired
     private OrderRepository orderRepo;
@@ -187,6 +194,15 @@ public class OrderRestController {
             if (deliveryError != null) {
                 return ResponseEntity.badRequest().body(Map.of("message", deliveryError));
             }
+            // Un pastelero no maneja montos: el pedido queda sin total, sin seña y sin precios en los ítems
+            // (el admin los completa al editarlo). Así nadie puede cargar un monto desde el panel del pastelero.
+            if (MoneyVisibility.hiddenForCurrentUser()) {
+                order.setTotalPrice(0.0);
+                order.setDeposit(0.0);
+                if (order.getItems() != null) {
+                    order.getItems().forEach(item -> item.setPrice(0.0));
+                }
+            }
             // El personal no puede dar el consentimiento en nombre de un cliente: lo da el cliente en la tienda
             order.setMarketingConsent(false);
             order.setMarketingConsentAt(null);
@@ -271,7 +287,12 @@ public class OrderRestController {
             }
 
             order.setStatus(OrderStatus.CONFIRMED);
-            order.setDeposit(req.deposit() != null ? req.deposit() : 0.0);
+            // El pastelero no maneja montos: si confirma, la seña que ya tenía el pedido no se toca
+            if (MoneyVisibility.hiddenForCurrentUser()) {
+                if (order.getDeposit() == null) order.setDeposit(0.0);
+            } else {
+                order.setDeposit(req.deposit() != null ? req.deposit() : 0.0);
+            }
 
             if (req.deliveryDate() != null) {
                 order.setDeliveryDate(req.deliveryDate());
@@ -305,14 +326,28 @@ public class OrderRestController {
     // EDICIÓN COMPLETA DEL PEDIDO (Desde el botón "Editar" del Modal)
     @PutMapping("/{id}")
     @Transactional
-    public ResponseEntity<?> updateOrderFull(@PathVariable Long id, @RequestBody Order updatedOrder) {
+    public ResponseEntity<?> updateOrderFull(@PathVariable Long id, @RequestBody JsonNode body) {
+        // El cuerpo se lee como árbol JSON porque Order trae "items" como lista vacía por defecto: ya convertido
+        // a Order no se puede distinguir "no mandó items" de "mandó una lista vacía". Los ítems solo se
+        // reemplazan si la clave "items" viene explícita y no es null; si no, se conservan los actuales.
+        final Order updatedOrder;
+        try {
+            updatedOrder = jsonMapper.treeToValue(body, Order.class);
+        } catch (JacksonException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Los datos del pedido no son válidos."));
+        }
+        final boolean itemsSent = body.hasNonNull("items");
         return orderRepo.findById(id).map(order -> {
             Map<String, Object> before = AuditText.snapshot(order); // "foto" antes de editar
             order.setCustomerName(updatedOrder.getCustomerName());
             order.setCustomerPhone(updatedOrder.getCustomerPhone());
             order.setDeliveryDate(updatedOrder.getDeliveryDate());
-            order.setTotalPrice(updatedOrder.getTotalPrice());
-            order.setDeposit(updatedOrder.getDeposit());
+            // Solo el admin cambia el total y la seña (el pastelero ni los ve: lo que mande se ignora)
+            boolean hideMoney = MoneyVisibility.hiddenForCurrentUser();
+            if (!hideMoney) {
+                order.setTotalPrice(updatedOrder.getTotalPrice());
+                order.setDeposit(updatedOrder.getDeposit());
+            }
 
             // Estos datos solo se cambian si vienen en la petición
             // (antes el email se borraba al editar porque el panel no lo mandaba)
@@ -350,9 +385,19 @@ public class OrderRestController {
 
             // Los productos solo se reemplazan si el panel los manda (si no se tocó el texto
             // de los productos, se conservan los originales con su precio y su receta)
-            if (updatedOrder.getItems() != null) {
+            if (itemsSent && updatedOrder.getItems() != null) {
+                // Precios actuales de los ítems (por id): si edita un pastelero no se pisan ni se borran
+                Map<Long, Double> oldPrices = new HashMap<>();
+                for (OrderItem old : order.getItems()) {
+                    if (old.getId() != null) oldPrices.put(old.getId(), old.getPrice());
+                }
                 order.getItems().clear();
                 for (OrderItem item : updatedOrder.getItems()) {
+                    Long oldId = item.getId();
+                    item.setId(null);   // se guardan como ítems nuevos (con un id existente Hibernate falla: "detached entity")
+                    if (hideMoney) {
+                        item.setPrice(oldId != null ? oldPrices.getOrDefault(oldId, 0.0) : 0.0);
+                    }
                     item.setOrder(order);
                     order.getItems().add(item);
                 }
@@ -373,6 +418,14 @@ public class OrderRestController {
     @PutMapping("/{id}/status")
     @Transactional
     public ResponseEntity<?> updateStatus(@PathVariable Long id, @RequestBody StatusRequest req) {
+        // El pastelero solo agenda (Confirmar / Volver a agendado) y marca Entregado, igual que su panel y
+        // que Bakey. Rechazar y cancelar pedidos es del administrador (paso 9.3c). Se revisa acá además de
+        // SecurityConfig porque Bakey llama a este método directo, sin pasar por las reglas de rutas.
+        if (MoneyVisibility.isBakerOnly()
+                && req.status() != OrderStatus.CONFIRMED && req.status() != OrderStatus.COMPLETED) {
+            return ResponseEntity.status(403).body(Map.of("message",
+                    "Rechazar o cancelar un pedido lo hace la administración."));
+        }
         return orderRepo.findById(id).map(order -> {
             boolean force = req.force() != null ? req.force() : false;
             OrderStatus statusBefore = order.getStatus();

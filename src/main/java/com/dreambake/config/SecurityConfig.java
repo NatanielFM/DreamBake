@@ -137,7 +137,21 @@ public class SecurityConfig {
                         // "Quién descargó qué" (informe, lista de compras, recibos): lo avisan los dos paneles
                         .requestMatchers(HttpMethod.POST, "/api/audit/download").hasAnyAuthority("ADMIN", "PASTELERO")
 
-                        // API que usan el panel del pastelero y el del admin
+                        // Estadísticas con dinero (facturación, más vendidos): solo el administrador (paso 9.3b).
+                        // Tiene que ir ANTES de la regla de /api/orders/** de abajo.
+                        .requestMatchers("/api/orders/stats/**").hasAuthority("ADMIN")
+
+                        // Escrituras que el panel del pastelero NO usa (paso 9.3c): solo el administrador.
+                        // Eliminar un pedido y editarlo completo (PUT con un solo tramo: /api/orders/{id}).
+                        // Confirmar y cambiar el estado llevan dos tramos (/{id}/confirm, /{id}/status) y siguen abiertos.
+                        .requestMatchers(HttpMethod.DELETE, "/api/orders/**").hasAuthority("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/orders/*").hasAuthority("ADMIN")
+                        // Insumos y recetas: el pastelero solo los lee; crear, editar y borrar es del administrador.
+                        .requestMatchers(HttpMethod.GET, "/api/inventory/**", "/api/recipes/**").hasAnyAuthority("ADMIN", "PASTELERO")
+                        .requestMatchers("/api/inventory/**", "/api/recipes/**").hasAuthority("ADMIN")
+
+                        // API que usan el panel del pastelero y el del admin. Al pastelero, MoneyResponseAdvice
+                        // le saca de las respuestas los montos (totales, señas, precios y costos).
                         .requestMatchers("/api/orders/**", "/api/inventory/**", "/api/recipes/**").hasAnyAuthority("ADMIN", "PASTELERO")
                         .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/categories/**").hasAnyAuthority("ADMIN", "PASTELERO")
                         // Bakey, el asistente virtual (paso 5.1): lo usan los dos paneles

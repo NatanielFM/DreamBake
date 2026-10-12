@@ -9,10 +9,7 @@ import java.util.Optional;
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
     List<Customer> findByTag(CustomerTag tag);
 
-    // NUEVO MÉTODO PARA AUTO-CREACIÓN DE CLIENTES
-    Optional<Customer> findByPhone(String phone);
-
-    // Igual que findByPhone, pero no falla si por error hay dos clientes con el mismo teléfono
+    // Busca al cliente por teléfono (auto-creación de clientes); no falla si por error hay dos con el mismo teléfono
     Optional<Customer> findFirstByPhone(String phone);
 
     // Cliente dueño de un link de baja (/baja?token=...)
