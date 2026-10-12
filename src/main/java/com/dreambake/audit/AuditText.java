@@ -18,8 +18,6 @@ public final class AuditText {
 
     private AuditText() {}
 
-    private static final NumberFormat PESOS = NumberFormat.getNumberInstance(Locale.of("es", "AR"));
-    static { PESOS.setMaximumFractionDigits(0); }
 
     /** El estado con el mismo nombre que muestra el panel (orders.js / clients.js). */
     public static String status(OrderStatus status) {
@@ -34,9 +32,17 @@ public final class AuditText {
         };
     }
 
-    /** $ 15.000 */
+    /**
+     * Precio con formato argentino (paso 6.8, igual que DreamFormat.money del JS):
+     * 15000 → "$ 15.000"; 15000.5 → "$ 15.000,50" (centavos solo si los tiene).
+     */
     public static String money(Double amount) {
-        return "$" + PESOS.format(amount == null ? 0 : amount);
+        double v = amount == null ? 0 : amount;
+        boolean cents = Math.round(Math.abs(v) * 100) % 100 != 0;
+        NumberFormat f = NumberFormat.getNumberInstance(Locale.of("es", "AR"));
+        f.setMinimumFractionDigits(cents ? 2 : 0);
+        f.setMaximumFractionDigits(cents ? 2 : 0);
+        return "$ " + f.format(v);
     }
 
     /** 5.0 → "5", 2.5 → "2,5" (cantidades de stock en las descripciones) */

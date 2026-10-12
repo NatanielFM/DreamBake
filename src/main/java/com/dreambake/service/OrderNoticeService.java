@@ -104,8 +104,10 @@ public class OrderNoticeService {
         }
     }
 
+    // Número con formato argentino, sin el "$" (lo pone la plantilla: "$ " + total): 82.000 o 82.000,50
     private static String money(double v) {
-        return String.format(AR, "%,.0f", v);
+        boolean cents = Math.round(Math.abs(v) * 100) % 100 != 0;
+        return String.format(AR, cents ? "%,.2f" : "%,.0f", v);
     }
 
     private static String capitalize(String s) {

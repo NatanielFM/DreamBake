@@ -11,6 +11,8 @@
   <header th:fragment="header" class="site-header" id="siteHeader">
     <!-- Primer elemento enfocable: permite saltear el menú con el teclado -->
     <a class="skip-link" href="#main">Saltar al contenido</a>
+    <!-- Formatos argentinos de precios y fechas para el JS de la tienda (paso 6.8, DreamFormat) -->
+    <script th:src="@{/js/format.js}" defer></script>
 
     <div class="header-inner">
       <!-- Marca: isotipo (cupcake) + nombre -->

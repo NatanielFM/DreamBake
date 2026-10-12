@@ -19,6 +19,9 @@
   <link rel="stylesheet" th:href="@{/css/bakey.css}">
   <!-- Modo oscuro guardado: se aplica antes de dibujar la página (sin "defer") -->
   <script th:src="@{/js/admin/theme-init.js}"></script>
+  <!-- Formatos argentinos ($ 12.345,50, dd/mm/aaaa) y ayudas de carga/envío (paso 6.8) -->
+  <script th:src="@{/js/format.js}"></script>
+  <script th:src="@{/js/admin/ui.js}"></script>
   <style>
     /* Hide admin financial data and actions for bakers */
     #pedidos table.admin-table th:nth-child(5),

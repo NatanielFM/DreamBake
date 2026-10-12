@@ -19,7 +19,7 @@
     <div th:replace="~{email/pedido-detalle :: seguimiento(${p})}"></div>
 
     <p th:if="${p.hasDeposit}" style="margin:0 0 16px 0;">
-      Acordate del saldo a abonar: <strong th:text="'$' + ${p.balance}">$62.000</strong>.
+      Acordate del saldo a abonar: <strong th:text="'$ ' + ${p.balance}">$62.000</strong>.
     </p>
     <p style="margin:0;font-size:14px;line-height:22px;color:#666666;">
       ¿Necesitás cambiar algo? Escribinos hoy por
