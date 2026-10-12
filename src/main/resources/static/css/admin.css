@@ -1630,8 +1630,13 @@ button.gallery-item:not(.upload-item) { border: 0; }
   animation: admin-modal-in var(--dur-base) var(--ease-out);
 }
 .notification-dropdown[hidden] { display: none !important; }
-.notif-title { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--admin-line); color: var(--admin-heading); font-weight: var(--fw-bold); }
-#notif-list { max-height: 320px; overflow-y: auto; }
+/* Encabezado: "Avisos" + "Marcar todas como leídas" (paso 6.6) */
+.notif-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4); border-bottom: 1px solid var(--admin-line); }
+.notif-title { color: var(--admin-heading); font-weight: var(--fw-bold); }
+.notif-link { min-height: 40px; padding: 0 var(--space-2); border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--accent); font: inherit; font-size: var(--fs-small); font-weight: var(--fw-semibold); cursor: pointer; }
+.notif-link[hidden] { display: none; }
+@media (hover: hover) and (pointer: fine) { .notif-link:hover { background: var(--admin-hover); } }
+#notif-list { max-height: min(420px, 60vh); overflow-y: auto; }
 .notif-item {
   display: grid;
   gap: 2px;
@@ -1649,8 +1654,20 @@ button.gallery-item:not(.upload-item) { border: 0; }
 @media (hover: hover) and (pointer: fine) {
   .notif-item:hover { background: var(--admin-hover); }
 }
-.notif-item strong { color: var(--admin-heading); font-size: var(--fs-label); }
-.notif-item span { color: var(--admin-text-soft); font-size: var(--fs-small); }
+.notif-item { grid-template-columns: 22px 1fr; align-items: start; column-gap: var(--space-3); }
+.notif-icon { width: 20px; height: 20px; margin-top: 2px; fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.notif-item--backup .notif-icon, .notif-item--expiring .notif-icon { stroke: var(--st-cancel-text); }
+.notif-body { display: grid; gap: 2px; min-width: 0; }
+.notif-item strong { color: var(--admin-heading); font-size: var(--fs-label); overflow-wrap: anywhere; }
+.notif-body > span { color: var(--admin-text-soft); font-size: var(--fs-small); overflow-wrap: anywhere; }
+/* No leído: fondo suave y puntito; leído: más apagado */
+.notif-item:not(.is-read) { background: var(--st-sched-bg); }
+.notif-item:not(.is-read) strong::after { content: ""; display: inline-block; width: 8px; height: 8px; margin-left: 6px; border-radius: 50%; background: var(--accent); vertical-align: middle; }
+.notif-item.is-read strong { font-weight: var(--fw-semibold); }
+.notif-item.is-read .notif-icon { stroke: var(--admin-text-soft); }
+/* Sonido opcional */
+.notif-sound { display: flex; align-items: center; gap: var(--space-2); min-height: 48px; padding: 0 var(--space-4); border-top: 1px solid var(--admin-line); color: var(--admin-text-soft); font-size: var(--fs-small); cursor: pointer; }
+.notif-sound input { width: 18px; height: 18px; accent-color: var(--accent); }
 .notif-empty { padding: var(--space-5) var(--space-4); color: var(--admin-text-soft); font-size: var(--fs-small); text-align: center; }
 
 

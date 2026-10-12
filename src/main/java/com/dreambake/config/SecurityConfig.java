@@ -144,6 +144,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/bakey/**").hasAnyAuthority("ADMIN", "PASTELERO")
                         // Recordatorios (paso 5.2): cada uno ve los suyos y el admin los de todos (ReminderService)
                         .requestMatchers("/api/reminders/**").hasAnyAuthority("ADMIN", "PASTELERO")
+                        // Campanita de avisos (paso 6.6): cada uno ve los suyos según su rol
+                        .requestMatchers("/api/notifications/**").hasAnyAuthority("ADMIN", "PASTELERO")
 
                         // Área del cliente ("Mis pedidos"): cualquier usuario logueado, y cada uno ve solo lo suyo
                         // (AccountRestController toma el usuario de la sesión, nunca de un parámetro)

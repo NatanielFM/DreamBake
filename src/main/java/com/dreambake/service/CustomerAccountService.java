@@ -77,6 +77,9 @@ public class CustomerAccountService {
     @Autowired
     private com.dreambake.repository.PasswordResetTokenRepository resetTokenRepository;
 
+    @Autowired
+    private com.dreambake.repository.NotificationReadRepository notificationReadRepository;
+
     /** Un pedido como lo ve el cliente en "Mis pedidos" (solo lo necesario, sin datos internos). */
     public record MyOrder(Long id, LocalDate deliveryDate, String deliveryShift, String deliveryMethod,
                           String status, String statusLabel, Double total, List<String> items) {}
@@ -220,6 +223,7 @@ public class CustomerAccountService {
         // (los clientes no usan recordatorios, pero si quedara alguno la base no dejaría borrar el usuario)
         reminderRepository.deleteByOwner(user);
         resetTokenRepository.deleteByUser(user);   // links de "Olvidé mi contraseña" (paso 6.1)
+        notificationReadRepository.deleteByUser(user);   // avisos leídos (paso 6.6)
         userRepository.delete(user);
         return true;
     }
