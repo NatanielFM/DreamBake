@@ -139,6 +139,7 @@ public class CustomerRestController {
             case ACCOUNT_VERIFICATION -> "Código de verificación";
             case PASSWORD_RESET -> "Recuperar contraseña";
             case AUDIT_ALERT -> "Alerta de auditoría";
+            case BACKUP_ALERT -> "Alerta de copia de seguridad";
         };
     }
 

@@ -121,6 +121,17 @@
           </div>
         </div>
 
+        <!-- Aviso de copias de seguridad (paso 4.2, BackupService.staleWarning): más de 48 horas sin un
+             backup bueno o backups desactivados. No tiene botón: se va solo cuando hay un backup bueno. -->
+        <div class="audit-alert backup-alert" role="alert" th:if="${backupWarning != null}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17v.5"/></svg>
+          <div class="audit-alert__text">
+            <strong th:text="${backupWarning.title}">Hace más de 2 días que no se hace una copia de seguridad.</strong>
+            <span th:text="${backupWarning.detail}">La última copia buena es del 09/10/2026 a las 03:00.</span>
+            <span th:text="${backupWarning.action}">Revisá que la computadora haya estado prendida a las 3:00.</span>
+          </div>
+        </div>
+
         <!-- FILA 1: TARJETAS KPI -->
         <div class="kpi-grid">
           <div class="kpi-card kpi-accent">

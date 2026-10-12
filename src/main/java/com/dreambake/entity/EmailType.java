@@ -15,7 +15,8 @@ public enum EmailType {
     TEST,                // email de prueba del panel
     ACCOUNT_VERIFICATION, // código de 6 números para confirmar un email (cuenta con Facebook o "Confirmá tu email")
     PASSWORD_RESET,      // recuperar contraseña
-    AUDIT_ALERT;         // aviso a los administradores: el registro de auditoría fue alterado (paso 3.2)
+    AUDIT_ALERT,         // aviso a los administradores: el registro de auditoría fue alterado (paso 3.2)
+    BACKUP_ALERT;        // aviso a los administradores: falló una copia de seguridad o la copia externa (paso 4.2)
 
     public boolean isPromotional() {
         return this == BIRTHDAY || this == PROMOTION;
