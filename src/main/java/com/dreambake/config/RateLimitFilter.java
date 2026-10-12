@@ -15,7 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Límite de envíos por IP para las acciones públicas (sin iniciar sesión):
- * crear pedidos, validar/consumir cupones, registrarse, iniciar sesión y darse de baja de los emails.
+ * crear pedidos, validar/consumir cupones, registrarse, iniciar sesión, darse de baja de los emails
+ * y recuperar la contraseña.
  *
  * Evita que alguien llene la base de pedidos falsos, pruebe miles de códigos
  * de cupón o pruebe contraseñas en muchas cuentas con un programa. Funciona con
@@ -38,6 +39,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private static final int MAX_LOGINS = 20;                // intentos de inicio de sesión (cualquier cuenta)
     private static final int MAX_UNSUBSCRIBES = 20;          // bajas de emails (botón de /baja)
     private static final int MAX_EMAIL_CODES = 15;           // "Completá tu email": pedir código o probarlo
+    private static final int MAX_PASSWORD_RESETS = 10;       // "Olvidé mi contraseña": pedir el link o guardar la nueva
 
     private final Map<String, Deque<Long>> hits = new ConcurrentHashMap<>();
 
@@ -62,6 +64,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
         else if ("POST".equals(method) && (path.startsWith("/login/completar-email") || path.startsWith("/profile/email/"))) {
             limit = MAX_EMAIL_CODES; bucket = "email-code";   // también "Confirmá tu email" del perfil
         }
+        // Recuperar contraseña: además del límite de 3 por email por hora (PasswordResetService),
+        // frena a quien prueba muchos emails distintos desde la misma IP
+        else if ("POST".equals(method) && path.startsWith("/recuperar")) { limit = MAX_PASSWORD_RESETS; bucket = "password-reset"; }
 
         if (limit != null && tooMany(bucket + ":" + ClientIpResolver.resolve(request), limit)) {
             response.setStatus(429);

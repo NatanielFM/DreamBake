@@ -27,6 +27,9 @@ public class UserService {
     @Autowired
     private ReminderRepository reminderRepository;
 
+    @Autowired
+    private com.dreambake.repository.PasswordResetTokenRepository resetTokenRepository;
+
     public void registerUser(User user) {
         // Ciframos la contraseña antes de guardarla
         String encodedPassword = passwordEncoder.encode(user.getPassword());
@@ -112,6 +115,7 @@ public class UserService {
         User user = userRepository.findById(id).orElse(null);
         if (user == null) return 0;
         int reminders = reminderRepository.deleteByOwner(user);
+        resetTokenRepository.deleteByUser(user);   // links de "Olvidé mi contraseña" (paso 6.1)
         userRepository.delete(user);
         return reminders;
     }

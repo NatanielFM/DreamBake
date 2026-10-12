@@ -138,6 +138,7 @@ public class CustomerRestController {
             case TEST -> "Prueba";
             case ACCOUNT_VERIFICATION -> "Código de verificación";
             case PASSWORD_RESET -> "Recuperar contraseña";
+            case PASSWORD_CHANGED -> "Contraseña cambiada";
             case AUDIT_ALERT -> "Alerta de auditoría";
             case BACKUP_ALERT -> "Alerta de copia de seguridad";
             case TASK_REMINDER -> "Recordatorio de tarea";

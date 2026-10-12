@@ -84,6 +84,7 @@ src/main/resources/
 ├── templates/     Vistas Thymeleaf
 │   ├── index.html, products.html, builder.html, cart.html   → tienda pública
 │   ├── login.html, register.html, profile.html               → autenticación y perfil
+│   ├── recuperar.html, recuperar-nueva.html                  → "Olvidé mi contraseña"
 │   ├── admin.html   → panel de administración (una sola página con pestañas, ~1200 líneas)
 │   ├── baker.html   → panel del pastelero
 │   └── fragments/header.html → header compartido (th:replace)
@@ -120,7 +121,7 @@ Definido en `config/SecurityConfig.java`:
 
 | Ruta | Acceso |
 |---|---|
-| `/`, `/builder`, `/products`, `/cart`, `/register`, `/login`, `/baja`, `/privacidad`, `/eliminar-datos`, `/login/completar-email/**`, `/css/**`, `/js/**`, `/img/**`, `/uploads/**` | Público |
+| `/`, `/builder`, `/products`, `/cart`, `/register`, `/login`, `/recuperar/**`, `/baja`, `/privacidad`, `/eliminar-datos`, `/login/completar-email/**`, `/css/**`, `/js/**`, `/img/**`, `/uploads/**` | Público |
 | `/oauth2/**`, `/login/oauth2/**` (Google/Facebook, solo si hay credenciales) | Público |
 | `POST /api/orders`, `GET /api/cake-config/public`, `GET /api/coupons/validate/**` | Público (lo usa la tienda) |
 | `/admin/**` | `ADMIN` |
@@ -137,6 +138,7 @@ Definido en `config/SecurityConfig.java`:
 - Encabezados: Content-Security-Policy (orígenes permitidos en `SecurityConfig`; si se agrega un CDN nuevo, sumarlo ahí; `script-src` **no** permite JavaScript dentro del HTML), `X-Frame-Options: DENY`, `Referrer-Policy`, cookie de sesión `SameSite=Lax`.
 - Login: bloqueo de 15 min tras 5 intentos fallidos (`LoginAttemptService`). Cuentas con `enabled=false` no pueden entrar.
 - `RateLimitFilter`: límite por IP de pedidos, cupones y registros.
+- **"Olvidé mi contraseña" (paso 6.1):** `PasswordResetController` (`/recuperar`, `/recuperar/nueva`) + `PasswordResetService`. Siempre responde lo mismo exista o no el email; código al azar de 256 bits y en la base solo su huella SHA-256 (`PasswordResetToken`); vence a los 30 min y sirve una vez (al usarlo se anulan todos los links de esa persona); el código del link pasa a la sesión y la dirección queda limpia. Contraseña nueva: 8 a 72 caracteres. Al cambiarla: auditoría (`SEGURIDAD`), email "Tu contraseña fue cambiada" (`PASSWORD_CHANGED`) y el email queda confirmado. 3 pedidos por email por hora (en memoria) + 10 por IP cada 10 min (`RateLimitFilter`). Clientes con Google/Facebook reciben un email que explica que entren con ese botón (el personal siempre puede recuperar la suya). Sin cuenta de correo configurada, la pantalla lo dice y ofrece WhatsApp.
 - Pedidos públicos: el servidor fuerza `PENDING`, seña 0 y pedido nuevo, exige nombre/teléfono/fecha/ítems y limpia los textos (`util/InputSanitizer`) para evitar XSS en el panel.
 - **El precio lo calcula el servidor** (`OrderPricingService`): el carrito manda `product.id` o `cakeSizeId` y el código del cupón; el servidor busca los precios en `products` y `cake_sizes`, valida el cupón, le descuenta un uso y calcula el total. El total que mande el navegador se ignora.
 - Registro: solo se aceptan `name`, `email`, `phone`, `password` (`@InitBinder`) y el email debe ser único.
@@ -203,6 +205,7 @@ Definido en `config/SecurityConfig.java`:
 | `Campaign` (campaigns) | name, subject, contenido, audiencia, estado, contadores | ManyToOne `CustomerTag`, ManyToOne `Coupon` |
 | `AuditLog` (audit_logs) | timestamp, actor (email, nombre, rol), action, module, entidad, description, details (JSON), IP, navegador, previousHash, hash. **Inmutable** | — |
 | `Reminder` (reminders) | title, notes, dueAt, relatedOrderId (solo el número), done, doneAt, createdAt, createdByAssistant, emailSentAt (evita repetir el email) | ManyToOne `User` (owner; se borran al dar de baja al usuario) |
+| `PasswordResetToken` (password_reset_tokens) | tokenHash (SHA-256, nunca el código), createdAt, expiresAt (30 min), used, usedAt | ManyToOne `User` (se borran al dar de baja al usuario) |
 | `BackupRecord` (backup_records) | fileName, type (`BackupType`: DAILY/WEEKLY/MONTHLY/MANUAL/PRE_RESTORE), status (OK/FAILED), sizeBytes, sha256, errorMessage, durationMs, createdAt | — |
 
 Enums: `OrderStatus` = PENDING → CONFIRMED → IN_PROGRESS → COMPLETED (o CANCELLED). `CouponType` = DESCUENTO, ENVIO_GRATIS, REGALO.

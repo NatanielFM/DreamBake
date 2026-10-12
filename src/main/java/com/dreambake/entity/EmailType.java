@@ -14,7 +14,8 @@ public enum EmailType {
     DELIVERY_SUMMARY,    // resumen diario de entregas próximas (al negocio)
     TEST,                // email de prueba del panel
     ACCOUNT_VERIFICATION, // código de 6 números para confirmar un email (cuenta con Facebook o "Confirmá tu email")
-    PASSWORD_RESET,      // recuperar contraseña
+    PASSWORD_RESET,      // recuperar contraseña: link para elegir una nueva (o "entrá con Google/Facebook") (paso 6.1)
+    PASSWORD_CHANGED,    // aviso "Tu contraseña fue cambiada" (paso 6.1)
     AUDIT_ALERT,         // aviso a los administradores: el registro de auditoría fue alterado (paso 3.2)
     BACKUP_ALERT,        // aviso a los administradores: falló una copia de seguridad (paso 4.2)
     TASK_REMINDER;       // "Falta 1 hora": recordatorio de una persona del equipo (paso 5.2)

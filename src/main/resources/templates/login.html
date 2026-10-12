@@ -90,6 +90,11 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
             <span>Eliminamos tu cuenta y tus datos personales. ¡Gracias por haber sido parte!</span>
           </div>
+          <!-- Contraseña nueva guardada con el link del email (PasswordResetController, paso 6.1) -->
+          <div th:if="${param.reset}" class="login-alert" role="status">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+            <span>¡Listo, cambiaste tu contraseña! Ingresá con la nueva.</span>
+          </div>
           <div th:if="${param.logout}" class="login-alert" role="status">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
             <span>Cerraste sesión. ¡Hasta pronto!</span>
@@ -119,6 +124,8 @@
                   </button>
                 </div>
                 <p class="field__error" id="password-error" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span></span></p>
+                <!-- "Olvidé mi contraseña" (paso 6.1, PasswordResetController) -->
+                <a class="link auth-forgot" th:href="@{/recuperar}">¿Olvidaste tu contraseña?</a>
               </div>
 
               <!-- "remember-me": SecurityConfig vuelve a iniciar la sesión durante 14 días -->

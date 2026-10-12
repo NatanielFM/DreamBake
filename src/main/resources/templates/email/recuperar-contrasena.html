@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<!--/* "Olvidé mi contraseña" (paso 6.1, PasswordResetService.requestReset): link para elegir una contraseña nueva.
+       El link lleva el código al azar; en la base solo queda su huella. Todo con th:text / th:href (se escapa). */-->
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{email/base :: layout(~{::#cuerpo})}">
+<body>
+  <div id="cuerpo">
+    <h1 style="margin:0 0 12px 0;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:24px;line-height:32px;font-weight:600;color:#481729;">
+      <th:block th:if="${nombre != null and !nombre.isEmpty()}">¡Hola, <span th:text="${nombre}">Ana</span>!</th:block>
+      <th:block th:unless="${nombre != null and !nombre.isEmpty()}">¡Hola!</th:block>
+    </h1>
+    <p style="margin:0 0 16px 0;">
+      Nos pediste cambiar la contraseña de tu cuenta en <strong th:text="${negocio.name}">Dulce Sueños Posadas</strong>.
+      Tocá el botón para elegir una nueva:
+    </p>
+    <!--/* Botón: se arma con una tabla porque Outlook y Gmail no respetan el padding de un link común */-->
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px 0;">
+      <tr>
+        <td align="center" bgcolor="#be3d6c" style="border-radius:999px;background-color:#be3d6c;">
+          <a th:href="${link}" href="#"
+             style="display:inline-block;padding:13px 28px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:20px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:999px;">
+            Elegir contraseña nueva
+          </a>
+        </td>
+      </tr>
+    </table>
+    <p style="margin:0 0 8px 0;">
+      El link vale <span th:text="${minutos}">30</span> minutos y sirve una sola vez.
+    </p>
+    <p style="margin:0 0 8px 0;font-size:13px;line-height:20px;color:#666666;word-break:break-all;">
+      Si el botón no funciona, copiá esta dirección en el navegador:<br>
+      <a th:href="${link}" th:text="${link}" style="color:#9d3259;">https://…/recuperar/nueva?token=…</a>
+    </p>
+    <p style="margin:16px 0 0 0;font-size:13px;line-height:20px;color:#666666;">
+      Si no fuiste vos, ignorá este mensaje: tu contraseña no cambia hasta que alguien use el link.
+    </p>
+  </div>
+</body>
+</html>

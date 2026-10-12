@@ -113,6 +113,8 @@ public class SecurityConfig {
                         // /privacidad y /eliminar-datos: páginas legales (Facebook las exige para publicar la app)
                         // /login/completar-email: pedir el email cuando Facebook no lo manda (SocialSignupController)
                         .requestMatchers("/privacidad", "/eliminar-datos", "/login/completar-email", "/login/completar-email/**").permitAll()
+                        // "Olvidé mi contraseña" (paso 6.1)
+                        .requestMatchers("/recuperar", "/recuperar/**").permitAll()
                         .requestMatchers("/", "/builder", "/products", "/cart", "/register", "/login", "/baja",
                                 "/css/**", "/js/**", "/img/**", "/uploads/**", "/error").permitAll()
 

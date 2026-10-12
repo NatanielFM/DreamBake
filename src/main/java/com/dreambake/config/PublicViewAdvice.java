@@ -1,6 +1,7 @@
 package com.dreambake.config;
 
 import com.dreambake.controller.AuthController;
+import com.dreambake.controller.PasswordResetController;
 import com.dreambake.controller.ProfileController;
 import com.dreambake.controller.SocialSignupController;
 import com.dreambake.controller.UnsubscribeController;
@@ -17,7 +18,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 // Se limita a los controladores de vistas públicas (assignableTypes) para no hacer
 // consultas de más en cada llamada a la API.
 @ControllerAdvice(assignableTypes = { WebController.class, AuthController.class, ProfileController.class,
-        UnsubscribeController.class, SocialSignupController.class })
+        UnsubscribeController.class, SocialSignupController.class, PasswordResetController.class })
 public class PublicViewAdvice {
 
     @Autowired
