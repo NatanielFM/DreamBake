@@ -1,5 +1,9 @@
 // /js/admin/inventory.js - Módulo de Inventario (Con SVGs más grandes)
 document.addEventListener('DOMContentLoaded', () => {
+  // Paso 6.8: formato argentino y textos escapados
+  const esc = (t) => String(t ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  const money = (n) => window.DreamFormat ? window.DreamFormat.money(n) : '$ ' + Number(n || 0).toLocaleString('es-AR');
+  const num = (n) => window.DreamFormat ? window.DreamFormat.number(n) : String(n);   // 1500.5 → "1.500,5"
 
   // ================= COSTO POR UNIDAD (solo panel del admin) =================
   // La columna "Costo" existe solo en admin.html; el panel del pastelero no muestra dinero.
@@ -9,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function costText(item) {
     if (item.unitCost == null) return 'Sin cargar';
-    return `$${Number(item.unitCost).toLocaleString('es-AR', { maximumFractionDigits: 2 })} / ${unitSingular(item.unit)}`;
+    return `${money(item.unitCost)} / ${esc(unitSingular(item.unit))}`;
   }
 
   // Texto de ayuda del formulario: "Lo que cuesta 1 kg"
@@ -77,14 +81,19 @@ document.addEventListener('DOMContentLoaded', () => {
     return diffDays >= 0 && diffDays <= 7;
   }
 
+  let invLoaded = false;
   async function loadInventoryFromServer() {
+    const cols = showCost ? 7 : 6;
+    if (!invLoaded) window.DreamUI?.tableLoading(inventoryTbody, cols, 'Cargando insumos…');
     try {
       const res = await fetch('/api/inventory');
-      if (res.ok) {
-        dbInventory = await res.json();
-        renderInventory();
-      }
-    } catch (e) { console.error(e); }
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      dbInventory = await res.json();
+      invLoaded = true;
+      renderInventory();
+    } catch (e) {
+      if (!invLoaded) window.DreamUI?.tableMessage(inventoryTbody, cols, 'No se pudo cargar el inventario.', 'Revisá la conexión y recargá la página.', true);
+    }
   }
 
   // Lógica de Eventos de Ordenamiento (Sort)
@@ -151,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const emptyText = hasQuery ? 'Ningún insumo coincide con la búsqueda.'
         : currentInvFilter === 'low' ? 'Ningún insumo tiene stock bajo.'
         : currentInvFilter === 'expiring' ? 'Ningún insumo vence en los próximos 7 días.'
-        : 'Todavía no hay insumos cargados.';
+        : 'Todavía no hay insumos cargados. Agregá el primero con "Nuevo insumo".';
       inventoryTbody.innerHTML = `<tr><td colspan="${showCost ? 7 : 6}" class="cell-empty">${emptyText}</td></tr>`;
       return;
     }
@@ -180,9 +189,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // data-label: en el celular cada fila se ve como tarjeta con "Etiqueta: valor"
       tr.innerHTML = `
-        <td class="cell-title"><span class="cell-strong">${item.name}</span>${stateBadge ? `<div class="status-stack">${stateBadge}</div>` : ''}</td>
-        <td data-label="Stock actual" class="${isLowStock ? 'text-danger' : ''}">${item.currentStock} ${item.unit}</td>
-        <td data-label="Stock mínimo">${item.minimumStock} ${item.unit}</td>
+        <td class="cell-title"><span class="cell-strong">${esc(item.name)}</span>${stateBadge ? `<div class="status-stack">${stateBadge}</div>` : ''}</td>
+        <td data-label="Stock actual" class="${isLowStock ? 'text-danger' : ''}">${num(item.currentStock)} ${esc(item.unit)}</td>
+        <td data-label="Stock mínimo">${num(item.minimumStock)} ${esc(item.unit)}</td>
         ${showCost ? `<td data-label="Costo" class="${item.unitCost == null ? 'cell-soft' : 'cell-money'}">${costText(item)}</td>` : ''}
         <td data-label="Actualizado" class="cell-soft">${dateAddText}</td>
         <td data-label="Vence" class="${expClass}">${expText}</td>
@@ -291,27 +300,36 @@ document.addEventListener('DOMContentLoaded', () => {
       const url = id ? `/api/inventory/${id}` : '/api/inventory';
       const method = id ? 'PUT' : 'POST';
 
-      try {
-        const res = await fetch(url, {
-          method: method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        if (res.ok) {
-          document.getElementById('modal-inventory-form').hidden = true;
-          loadInventoryFromServer();
-          document.dispatchEvent(new CustomEvent('inventoryUpdated'));
-        } else if (res.status === 400) {
-          window.showErrorAlert(await res.json());
-        }
-      } catch(e) { window.showErrorAlert("Error de conexión"); }
+      // Botón bloqueado mientras se guarda: un doble clic creaba el insumo dos veces
+      await window.DreamUI.busy(e.submitter || inventoryForm.querySelector('button[type="submit"]'), async () => {
+        try {
+          const res = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+          if (res.ok) {
+            document.getElementById('modal-inventory-form').hidden = true;
+            loadInventoryFromServer();
+            document.dispatchEvent(new CustomEvent('inventoryUpdated'));
+          } else if (res.status === 400 && (res.headers.get('content-type') || '').includes('json')) {
+            const body = await res.json();
+            window.showErrorAlert(body.message || body);   // errores por campo de la validación
+          } else {
+            await window.DreamUI.fail(res, 'No se pudo guardar el insumo.');
+          }
+        } catch(err) { window.DreamUI.offline(); }
+      });
     });
   }
 
   function deleteInventoryItem(item) {
-    window.showConfirmModal('Eliminar Insumo', `¿Seguro que deseas eliminar "${item.name}" del inventario?`, 'Eliminar', 'btn-red', async () => {
-      await fetch(`/api/inventory/${item.id}`, { method: 'DELETE' });
-      loadInventoryFromServer();
+    window.showConfirmModal('Eliminar insumo', `¿Seguro que querés eliminar "${item.name}" del inventario?`, 'Eliminar', 'btn-red', async () => {
+      try {
+        const res = await fetch(`/api/inventory/${item.id}`, { method: 'DELETE' });
+        if (res.ok) loadInventoryFromServer();
+        else await window.DreamUI.fail(res, 'No se pudo eliminar el insumo (puede estar en una receta).');
+      } catch (e) { window.DreamUI.offline(); }
     });
   }
 
@@ -334,7 +352,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div style="font-family: Arial, sans-serif; color: #222; max-width: 900px; margin: 0 auto; padding: 2cm;">
           <div style="border-bottom: 3px solid var(--accent, #e0487f); margin-bottom: 20px; padding-bottom: 10px;">
             <h1 style="margin: 0; color: #333;">Pedido de Compra Sugerido</h1>
-            <p style="margin: 5px 0 0 0; color: #666;">Sistema DreamBake - Generado el ${new Date().toLocaleDateString()}</p>
+            <p style="margin: 5px 0 0 0; color: #666;">Sistema DreamBake - Generado el ${window.DreamFormat ? window.DreamFormat.date(new Date()) : new Date().toLocaleDateString('es-AR')}</p>
           </div>
           
           <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 15px;">
@@ -356,8 +374,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         printHtml += `
           <tr>
-            <td style="border: 1px solid #ddd; padding: 12px; font-weight: bold;">${i.name}</td>
-            <td style="border: 1px solid #ddd; padding: 12px; ${stockStyle}">${i.currentStock} ${i.unit}</td>
+            <td style="border: 1px solid #ddd; padding: 12px; font-weight: bold;">${esc(i.name)}</td>
+            <td style="border: 1px solid #ddd; padding: 12px; ${stockStyle}">${num(i.currentStock)} ${esc(i.unit)}</td>
             <td style="border: 1px solid #ddd; padding: 12px; ${expStyle}">${expText}</td>
           </tr>
         `;
