@@ -2,6 +2,7 @@ package com.dreambake.controller;
 
 import com.dreambake.entity.*;
 import com.dreambake.util.InputSanitizer;
+import com.dreambake.util.MoneyVisibility;
 import com.dreambake.repository.CustomerRepository;
 import com.dreambake.repository.CustomerTagRepository;
 import com.dreambake.repository.OrderRepository;
@@ -187,6 +188,15 @@ public class OrderRestController {
             if (deliveryError != null) {
                 return ResponseEntity.badRequest().body(Map.of("message", deliveryError));
             }
+            // Un pastelero no maneja montos: el pedido queda sin total, sin seña y sin precios en los ítems
+            // (el admin los completa al editarlo). Así nadie puede cargar un monto desde el panel del pastelero.
+            if (MoneyVisibility.hiddenForCurrentUser()) {
+                order.setTotalPrice(0.0);
+                order.setDeposit(0.0);
+                if (order.getItems() != null) {
+                    order.getItems().forEach(item -> item.setPrice(0.0));
+                }
+            }
             // El personal no puede dar el consentimiento en nombre de un cliente: lo da el cliente en la tienda
             order.setMarketingConsent(false);
             order.setMarketingConsentAt(null);
@@ -271,7 +281,12 @@ public class OrderRestController {
             }
 
             order.setStatus(OrderStatus.CONFIRMED);
-            order.setDeposit(req.deposit() != null ? req.deposit() : 0.0);
+            // El pastelero no maneja montos: si confirma, la seña que ya tenía el pedido no se toca
+            if (MoneyVisibility.hiddenForCurrentUser()) {
+                if (order.getDeposit() == null) order.setDeposit(0.0);
+            } else {
+                order.setDeposit(req.deposit() != null ? req.deposit() : 0.0);
+            }
 
             if (req.deliveryDate() != null) {
                 order.setDeliveryDate(req.deliveryDate());
@@ -311,8 +326,12 @@ public class OrderRestController {
             order.setCustomerName(updatedOrder.getCustomerName());
             order.setCustomerPhone(updatedOrder.getCustomerPhone());
             order.setDeliveryDate(updatedOrder.getDeliveryDate());
-            order.setTotalPrice(updatedOrder.getTotalPrice());
-            order.setDeposit(updatedOrder.getDeposit());
+            // Solo el admin cambia el total y la seña (el pastelero ni los ve: lo que mande se ignora)
+            boolean hideMoney = MoneyVisibility.hiddenForCurrentUser();
+            if (!hideMoney) {
+                order.setTotalPrice(updatedOrder.getTotalPrice());
+                order.setDeposit(updatedOrder.getDeposit());
+            }
 
             // Estos datos solo se cambian si vienen en la petición
             // (antes el email se borraba al editar porque el panel no lo mandaba)
@@ -351,8 +370,18 @@ public class OrderRestController {
             // Los productos solo se reemplazan si el panel los manda (si no se tocó el texto
             // de los productos, se conservan los originales con su precio y su receta)
             if (updatedOrder.getItems() != null) {
+                // Precios actuales de los ítems (por id): si edita un pastelero no se pisan ni se borran
+                Map<Long, Double> oldPrices = new HashMap<>();
+                for (OrderItem old : order.getItems()) {
+                    if (old.getId() != null) oldPrices.put(old.getId(), old.getPrice());
+                }
                 order.getItems().clear();
                 for (OrderItem item : updatedOrder.getItems()) {
+                    Long oldId = item.getId();
+                    item.setId(null);   // se guardan como ítems nuevos (con un id existente Hibernate falla: "detached entity")
+                    if (hideMoney) {
+                        item.setPrice(oldId != null ? oldPrices.getOrDefault(oldId, 0.0) : 0.0);
+                    }
                     item.setOrder(order);
                     order.getItems().add(item);
                 }

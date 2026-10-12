@@ -17,6 +17,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Escapa texto antes de meterlo en HTML (dirección, turno, cupón…)
   const money = (n) => window.DreamFormat ? window.DreamFormat.money(n) : '$ ' + Number(n || 0).toLocaleString('es-AR');
+  // Los montos solo los ve el admin: al pastelero el servidor no se los manda (llegan sin el campo).
+  // moneyText muestra vacío en vez de "$ 0,00" o "$ NaN" cuando el dato no existe.
+  const moneyText = (n) => (n == null ? '' : money(n));
   const esc = (text) => String(text ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
   const months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
@@ -249,7 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td class="cell-strong" data-label="Cliente">${esc(o.customerName || 'Sin nombre')}</td>
         <td class="cell-soft" data-label="Teléfono">${esc(o.customerPhone || '—')}</td>
         <td data-label="Entrega">${o.deliveryDate ? `${day}/${month}/${year}` : 'Sin fecha'}${deliveryInfo(o)}</td>
-        <td class="cell-money" data-label="Total">${money(o.totalPrice)}</td>
+        <td class="cell-money" data-label="Total">${moneyText(o.totalPrice)}</td>
         <td data-label="Estado"><div class="status-stack">${getStatusBadge(o.status)}${stockBadge}</div></td>
         <td class="cell-actions"><div class="action-buttons-container">${actionsHtml}</div></td>
       `;
@@ -315,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function proceedToConfirmModal() {
     document.getElementById('co-id-label').innerText = orderToConfirm.id;
     document.getElementById('co-date').value = orderToConfirm.deliveryDate;
-    document.getElementById('co-hidden-total').value = orderToConfirm.totalPrice;
+    document.getElementById('co-hidden-total').value = orderToConfirm.totalPrice ?? '';
     document.getElementById('co-payment-type').value = 'total';
     document.getElementById('co-deposit-group').style.display = 'none';
     document.getElementById('co-deposit').value = '';
@@ -334,13 +337,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const newDate = document.getElementById('co-date').value;
     const isSena = document.getElementById('co-payment-type').value === 'sena';
     const total = parseFloat(document.getElementById('co-hidden-total').value);
-    let depositValue = isSena ? parseFloat(document.getElementById('co-deposit').value) : total;
+    // Sin total (panel del pastelero: el servidor no manda montos) no se pide ni se manda seña
+    const noMoney = Number.isNaN(total);
+    let depositValue = noMoney ? null : (isSena ? parseFloat(document.getElementById('co-deposit').value) : total);
 
-    if (isSena && (isNaN(depositValue) || depositValue <= 0)) {
+    if (!noMoney && isSena && (isNaN(depositValue) || depositValue <= 0)) {
       window.showErrorAlert("Por favor, ingresa un monto válido para la seña.");
       return;
     }
-    if (depositValue > total) {
+    if (!noMoney && depositValue > total) {
       window.showErrorAlert(`La seña (${money(depositValue)}) no puede ser mayor al total del pedido (${money(total)}).`);
       return;
     }
@@ -426,8 +431,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('vo-name').value = order.customerName || '';
     document.getElementById('vo-phone').value = order.customerPhone || '';
     document.getElementById('vo-date-input').value = order.deliveryDate;
-    document.getElementById('vo-total').value = order.totalPrice;
-    document.getElementById('vo-deposit').value = order.deposit;
+    document.getElementById('vo-total').value = order.totalPrice ?? '';
+    document.getElementById('vo-deposit').value = order.deposit ?? '';
     document.getElementById('vo-email').value = order.customerEmail || '';
     document.getElementById('vo-shift').value = order.deliveryShift || '';
     document.getElementById('vo-delivery').value = order.deliveryMethod || '';
@@ -478,7 +483,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelBtn = document.getElementById('btn-cancel-view-order');
     
     if (printBtn) {
-      if (viewingOrder.status === 'CONFIRMED' || viewingOrder.status === 'COMPLETED') {
+      // El recibo lleva montos: sin ellos (pastelero) el botón no se muestra
+      if ((viewingOrder.status === 'CONFIRMED' || viewingOrder.status === 'COMPLETED') && viewingOrder.totalPrice != null) {
         printBtn.style.display = 'flex';
       } else {
         printBtn.style.display = 'none';
@@ -561,7 +567,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Botón "Imprimir Recibo"
   document.getElementById('btn-print-receipt')?.addEventListener('click', () => {
-    if (!viewingOrder) return;
+    if (!viewingOrder || viewingOrder.totalPrice == null) return;   // sin montos no hay recibo
     window.logDownload?.('recibo', viewingOrder.id); // auditoría: quién imprimió el recibo
     
     const printSection = document.getElementById('print-receipt-section');
@@ -644,8 +650,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const newDate = document.getElementById('vo-date-input').value;
     const newTotal = parseFloat(document.getElementById('vo-total').value);
     const newDeposit = parseFloat(document.getElementById('vo-deposit').value);
+    // Sin montos (panel del pastelero) no se manda total, seña ni precio: el servidor conserva los que ya tiene
+    const hasMoney = !Number.isNaN(newTotal);
 
-    if (newDeposit > newTotal) {
+    if (hasMoney && newDeposit > newTotal) {
       window.showErrorAlert("La seña no puede ser mayor al total del pedido.");
       return;
     }
@@ -666,13 +674,12 @@ document.addEventListener('DOMContentLoaded', () => {
       deliveryShift: document.getElementById('vo-shift').value,
       deliveryMethod: delivery,
       deliveryAddress: address,
-      totalPrice: newTotal,
-      deposit: newDeposit,
+      ...(hasMoney ? { totalPrice: newTotal, deposit: newDeposit } : {}),
       status: viewingOrder.status,
       // Si no se tocó el texto de los productos, no se mandan: el servidor conserva los
       // productos originales (con su precio y su receta para descontar insumos)
       items: itemsText.trim() === originalItemsText ? null
-        : [{ productType: "Detalles del Pedido", details: itemsText, price: newTotal }]
+        : [{ productType: "Detalles del Pedido", details: itemsText, ...(hasMoney ? { price: newTotal } : {}) }]
     };
 
     handleDateWarning(newDate, () => window.DreamUI.busy(document.getElementById('btn-save-edit'), async () => {
@@ -695,6 +702,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.openManualOrderModal = async function() {
     document.getElementById('form-manual-order').reset();
+    // Panel del pastelero: los campos de monto están ocultos. Un campo obligatorio y oculto no deja
+    // enviar el formulario, así que acá no se exigen (el servidor guarda estos pedidos en $ 0).
+    ['mo-total', 'mo-deposit'].forEach(id => {
+      const field = document.getElementById(id);
+      if (field && getComputedStyle(field).display === 'none') { field.required = false; field.value = '0'; }
+    });
     document.getElementById('mo-address-group').hidden = true;
     const container = document.getElementById('mo-items-container');
     if (container) container.innerHTML = '';
@@ -883,7 +896,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <tr>
           <td class="cell-id" data-label="Pedido">#${o.id}</td>
           <td data-label="Cliente"><span class="cell-strong">${esc(o.customerName)}</span><br><span class="cell-soft">${esc(o.customerPhone)}</span></td>
-          <td class="cell-money" data-label="Total">${money(o.totalPrice)}</td>
+          <td class="cell-money" data-label="Total">${moneyText(o.totalPrice)}</td>
           <td data-label="Estado">${getStatusBadge(o.status)}</td>
           <td class="cell-actions"><div class="action-buttons-container">${actionsHtml}</div></td>
         </tr>

@@ -96,7 +96,10 @@ public class InventoryRestController {
         item.setMinimumStock(req.minimumStock() != null ? req.minimumStock() : 0.0);
         item.setUnit(req.unit());
         item.setExpirationDate(req.expirationDate());
-        item.setUnitCost(req.unitCost());
+        // El costo es un monto: solo el admin lo cambia. Si edita un pastelero (stock, vencimiento), se conserva el que había.
+        if (!com.dreambake.util.MoneyVisibility.hiddenForCurrentUser()) {
+            item.setUnitCost(req.unitCost());
+        }
         return inventoryRepo.save(item);
     }
 

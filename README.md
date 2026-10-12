@@ -86,7 +86,7 @@ Solo se listan funciones que existen en el código. Cuando algo no se probó con
 
 ### Panel del pastelero (rol Pastelero)
 
-Versión reducida para quien produce: **Pedidos** (confirmar, marcar entregado, volver a agendado, crear pedidos sin montos), **Inventario** y **Recetas**, más recordatorios, avisos y Bakey. No muestra montos ni costos.
+Versión reducida para quien produce: **Pedidos** (confirmar, marcar entregado, volver a agendado, crear pedidos sin montos), **Inventario** y **Recetas**, más recordatorios, avisos y Bakey. El servidor no le envía montos, señas, precios ni costos (solo el administrador los ve), y no puede cambiarlos.
 
 ![Panel del pastelero](docs/capturas/pastelero-pedidos.png)
 
@@ -234,14 +234,14 @@ Definidos en `src/main/java/com/dreambake/config/SecurityConfig.java`. Los roles
 |---|---|
 | **Visitante** (sin sesión) | Ver la tienda, productos y armador (`/`, `/products`, `/builder`, `/cart`); crear pedidos (`POST /api/orders`); validar cupones; seguir un pedido por código (`/seguimiento`); registrarse, iniciar sesión y recuperar la contraseña; ver las páginas legales y darse de baja de los emails. |
 | **Cliente** (sesión sin rol de personal) | Todo lo anterior, más su perfil (`/profile`) y sus datos y pedidos (`/api/account/**`, siempre los de su propia sesión): cambiar datos, cumpleaños y consentimiento, vincular Google y eliminar su cuenta. |
-| **Pastelero** (`PASTELERO`) | Panel `/baker`. API de pedidos, inventario y recetas, lectura de productos y categorías, y los recordatorios, avisos y Bakey propios. Con Bakey solo puede crear pedidos sin montos, confirmar, marcar entregado y volver a agendado; no cancela ni rechaza, ni toca el stock. |
+| **Pastelero** (`PASTELERO`) | Panel `/baker`. API de pedidos, inventario y recetas (sin montos: el servidor los quita de las respuestas y no deja que los pise; las estadísticas de facturación son solo del administrador), lectura de productos y categorías, y los recordatorios, avisos y Bakey propios. Con Bakey solo puede crear pedidos sin montos, confirmar, marcar entregado y volver a agendado; no cancela ni rechaza, ni toca el stock. |
 | **Administrador** (`ADMIN`) | Panel `/admin` y todo el resto de `/api/**`: usuarios, clientes, cupones, campañas, fidelización, galería, productos, armador, ajustes, registro de actividad, backups y restauración, además de lo que puede el pastelero. |
 
 Después de iniciar sesión: ADMIN → `/admin`, PASTELERO → `/baker`, otro → `/`. Cualquier ruta no listada exige estar autenticado.
 
 ## 9. Seguridad, backups y auditoría
 
-**Seguridad.** Las contraseñas se guardan con BCrypt. La protección CSRF está activada en toda la aplicación (el token viaja en la cookie `XSRF-TOKEN` y lo agrega `static/js/csrf.js` en cada `fetch`). Se envían los encabezados `Content-Security-Policy` (que no permite JavaScript dentro del HTML), `X-Frame-Options: DENY` y `Referrer-Policy`, y la cookie de sesión usa `SameSite=Lax`. Tras 5 intentos de inicio de sesión fallidos, la cuenta se bloquea 15 minutos. Un filtro limita por IP los pedidos (10), cupones (30), registros (10), intentos de login (20) y pedidos de recuperación de contraseña (10) en ventanas de 10 minutos. El precio de un pedido de la tienda **lo calcula el servidor** a partir de la base: el total que mande el navegador se ignora. Los textos de los pedidos públicos se sanean, las subidas de imágenes se validan por su contenido real, los links de recuperación de contraseña vencen a los 30 minutos y sirven una sola vez (solo se guarda su huella SHA-256), y las páginas de error no muestran detalles internos. El perfil de producción (`application-prod.properties`) toma las claves de variables de entorno y activa cookies `Secure`, pero **no se usó todavía en un despliegue real** (ver sección 11).
+**Seguridad.** Las contraseñas se guardan con BCrypt. La protección CSRF está activada en toda la aplicación (el token viaja en la cookie `XSRF-TOKEN` y lo agrega `static/js/csrf.js` en cada `fetch`). Se envían los encabezados `Content-Security-Policy` (que no permite JavaScript dentro del HTML), `X-Frame-Options: DENY` y `Referrer-Policy`, y la cookie de sesión usa `SameSite=Lax`. Tras 5 intentos de inicio de sesión fallidos, la cuenta se bloquea 15 minutos. Un filtro limita por IP los pedidos (10), cupones (30), registros (10), intentos de login (20) y pedidos de recuperación de contraseña (10) en ventanas de 10 minutos. Los montos del negocio (totales, señas, precios, costos) solo los recibe el ADMIN: al pastelero el servidor se los quita de las respuestas, no por CSS. El precio de un pedido de la tienda **lo calcula el servidor** a partir de la base: el total que mande el navegador se ignora. Los textos de los pedidos públicos se sanean, las subidas de imágenes se validan por su contenido real, los links de recuperación de contraseña vencen a los 30 minutos y sirven una sola vez (solo se guarda su huella SHA-256), y las páginas de error no muestran detalles internos. El perfil de producción (`application-prod.properties`) toma las claves de variables de entorno y activa cookies `Secure`, pero **no se usó todavía en un despliegue real** (ver sección 11).
 
 **Backups.** Una vez configurados (sección 6), se hace un backup todos los días a las 3:00 (y otro a los 2 minutos de arrancar si el último bueno tiene más de 24 horas). Cada backup es un `.zip` con la base (volcado `mysqldump` comprimido), la carpeta `uploads/` y `config/secret.key`, acompañado de un `.sha256` para verificar que no se dañó. Se guardan por niveles: 7 diarios, 4 semanales, 12 mensuales y 10 manuales; los viejos se borran solo si el nuevo salió bien. Si un backup falla, se avisa por email a los administradores, y el Resumen muestra un aviso rojo si pasaron más de 48 horas sin un backup bueno. Desde el panel se puede descargar, hacer uno manual y **restaurar** (pide tilde, la palabra RESTAURAR y la contraseña; verifica la huella, prueba la restauración en una base aparte, hace una copia previa y recién entonces reemplaza los datos). Los backups son **solo locales**: no hay copia automática fuera de la PC. La guía para quien no es técnico está en [docs/RESTAURAR-BACKUP.md](docs/RESTAURAR-BACKUP.md).
 
@@ -272,7 +272,6 @@ Esta versión es una **beta de prueba**: el sistema está completo en lo funcion
 
 - No se envió ningún correo real ni se probó el ingreso con Google/Facebook contra los proveedores reales (ver sección 3).
 - No hay reporte de márgenes y las tortas del armador no descuentan insumos.
-- El panel del pastelero oculta los montos con CSS, pero la API de pedidos sigue devolviéndolos a ese rol.
 - Los backups son solo locales.
 - Chart.js se carga desde un CDN sin versión fija.
 
