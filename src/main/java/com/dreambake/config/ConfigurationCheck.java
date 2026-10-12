@@ -39,15 +39,6 @@ public class ConfigurationCheck implements ApplicationRunner {
                 "spring.security.oauth2.client.registration.facebook.client-secret");
         aviso("Asistente Bakey (IA)", "bakey.gemini.api-key");
         aviso("Copias de seguridad", "backup.directory", "backup.mysqldump-path");
-        // La copia externa (Google Drive, paso 4.2) es opcional: solo se informa
-        String offsite = env.getProperty("backup.offsite-directory", "").trim();
-        if (offsite.isEmpty()) {
-            log.info("Copia externa de backups: no configurada (opcional, backup.offsite-directory)");
-        } else if (!java.nio.file.Files.isDirectory(java.nio.file.Paths.get(offsite))) {
-            log.warn("Copia externa de backups: la carpeta {} no existe (¿Google Drive está abierto?)", offsite);
-        } else {
-            log.info("Copia externa de backups: {}", offsite);
-        }
         log.info("Zona horaria de la app: {}", java.util.TimeZone.getDefault().getID());
     }
 

@@ -155,6 +155,12 @@ Definido en `config/SecurityConfig.java`:
 - **Limpiar datos de prueba de `audit_logs`:** como root, `DROP TRIGGER audit_logs_no_update; DROP TRIGGER audit_logs_no_delete;`, después `DELETE` + `ALTER TABLE audit_logs AUTO_INCREMENT = 1`, y reiniciar la app (recrea los triggers).
 - El hash incluye la hora: la zona horaria está fija en `DreambakeApplication.main` y la URL de la base usa `serverTimezone=UTC`. No cambiar ninguna de las dos.
 
+## Copias de seguridad (fase 4)
+
+- `BackupService` + `BackupScheduler`: todos los días a las 3:00 (y a los 2 min de arrancar si el último bueno tiene más de 24 h) mysqldump → `dreambake_AAAA-MM-DD_HHmm.zip` (base `.sql.gz` + `uploads/` + `config/secret.key`) + `.sha256`, en `backup.directory` (`diarios/` 7, `semanales/` 4, `mensuales/` 12, `manuales/` 10). Los viejos se borran solo si el nuevo salió bien. `POST /api/backups/run` (ADMIN) hace uno manual.
+- Si falla: email a los administradores con el error explicado (`BackupAlertService`). Más de 48 h sin backup bueno (o backups desactivados): aviso rojo en el Resumen del panel.
+- **Solo locales** (decisión del autor, alcance académico). La copia automática a Google Drive se hizo y se quitó; queda como mejora a futuro (código en el commit `e6e6716`).
+
 ## Modelo de datos (entidades JPA)
 
 | Entidad (tabla) | Contenido principal | Relaciones |
@@ -177,6 +183,7 @@ Definido en `config/SecurityConfig.java`:
 | `EmailLog` (email_logs) | recipientEmail, type (`EmailType`, VARCHAR), subject, status, sentAt, campaignId, orderId | ManyToOne `Customer` |
 | `Campaign` (campaigns) | name, subject, contenido, audiencia, estado, contadores | ManyToOne `CustomerTag`, ManyToOne `Coupon` |
 | `AuditLog` (audit_logs) | timestamp, actor (email, nombre, rol), action, module, entidad, description, details (JSON), IP, navegador, previousHash, hash. **Inmutable** | — |
+| `BackupRecord` (backup_records) | fileName, type (`BackupType`: DAILY/WEEKLY/MONTHLY/MANUAL), status (OK/FAILED), sizeBytes, sha256, errorMessage, durationMs, createdAt | — |
 
 Enums: `OrderStatus` = PENDING → CONFIRMED → IN_PROGRESS → COMPLETED (o CANCELLED). `CouponType` = DESCUENTO, ENVIO_GRATIS, REGALO.
 

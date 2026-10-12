@@ -48,34 +48,12 @@ public class BackupAlertService {
                 ex, r.getErrorMessage(), r);
     }
 
-    /** El backup salió bien en la PC, pero no se pudo copiar a la carpeta externa (Google Drive). */
-    public void offsiteFailed(BackupRecord r, String offsiteDir, String error) {
-        Explanation ex = explain(error);
-        send("La copia de seguridad no se pudo subir a Google Drive",
-                "La copia de seguridad " + r.getFileName() + " se guardó bien en la computadora, pero no se pudo "
-                        + "copiar a la carpeta externa (" + offsiteDir + "). Si la computadora se rompe, esa copia se pierde.",
-                ex, error, r);
-    }
-
     /**
      * Traduce los errores más comunes a lenguaje simple. Se buscan palabras clave en el mensaje técnico;
      * si no coincide ninguna, se da una explicación general.
      */
     static Explanation explain(String error) {
         String t = error == null ? "" : error.toLowerCase();
-        if (t.contains("no se encontró la carpeta externa")) {
-            return new Explanation("No se encontró la carpeta de Google Drive.",
-                    "Fijate que Google Drive para escritorio esté abierto y con la sesión iniciada (el ícono de la nube "
-                            + "al lado del reloj) y que la unidad (por ejemplo G:) aparezca en \"Este equipo\".");
-        }
-        if (t.contains("huella sha-256 no coincide")) {
-            return new Explanation("La copia en Google Drive quedó distinta del original (se dañó al copiarse).",
-                    "Suele ser un problema pasajero. Si se repite, revisá el espacio libre en Google Drive y en el disco.");
-        }
-        if (t.contains("dentro de la carpeta de backups")) {
-            return new Explanation("La carpeta externa está mal configurada.",
-                    "backup.offsite-directory tiene que ser otra carpeta (la de Google Drive), no la misma de los backups.");
-        }
         if (t.contains("1045") || t.contains("access denied")) {
             return new Explanation("La base de datos rechazó el usuario o la contraseña.",
                     "Si cambiaron la contraseña de MySQL, hay que actualizarla también en la configuración del sistema.");
@@ -86,7 +64,7 @@ public class BackupAlertService {
         }
         if (t.contains("no space") || t.contains("espacio") || t.contains("disk full")) {
             return new Explanation("No hay espacio libre en el disco.",
-                    "Liberá espacio en el disco donde se guardan los backups (o en Google Drive).");
+                    "Liberá espacio en el disco donde se guardan los backups.");
         }
         if (t.contains("accessdenied") || t.contains("being used by another process") || t.contains("otro proceso")) {
             return new Explanation("Windows no dejó escribir el archivo (permisos o archivo abierto).",

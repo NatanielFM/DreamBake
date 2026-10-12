@@ -60,10 +60,11 @@ import java.util.zip.ZipOutputStream;
  *
  * Regla de oro: los backups viejos se borran SOLO si el nuevo salió bien.
  *
- * Paso 4.2: si backup.offsite-directory está configurada (por ejemplo la carpeta de Google Drive),
- * cada backup bueno se copia también ahí, con la misma estructura y retención, y se comprueba la
- * huella de la copia. Si el backup o la copia externa fallan, se avisa por email (BackupAlertService),
- * y si pasan más de 48 horas sin un backup bueno, el Resumen del panel muestra un aviso rojo.
+ * Paso 4.2: si un backup falla, se avisa por email a los administradores (BackupAlertService), y si
+ * pasan más de 48 horas sin un backup bueno, el Resumen del panel muestra un aviso rojo.
+ *
+ * Los backups quedan solo en esta computadora (decisión del proyecto: alcance académico). Copiarlos
+ * fuera de la PC (por ejemplo a Google Drive) queda como mejora a futuro.
  */
 @Service
 public class BackupService {
@@ -218,7 +219,6 @@ public class BackupService {
         List<BackupRecord> created = new ArrayList<>();   // el backup y sus copias semanal/mensual
         List<String> copies = new ArrayList<>();
         List<String> deleted = new ArrayList<>();
-        String offsiteError = null;                       // por qué falló la copia externa (null = bien o no configurada)
         try {
             Files.createDirectories(folder);
 
@@ -271,10 +271,6 @@ public class BackupService {
             log.info("Copia de seguridad {} creada: {} ({}, {} ms){}", typeName(type), record.getFileName(),
                     humanSize(record.getSizeBytes()), record.getDurationMs(),
                     copies.isEmpty() ? "" : " + copia " + String.join(" y ", copies));
-
-            // 6. Copia externa (paso 4.2): a la carpeta que sincroniza Google Drive, si está configurada.
-            //    Si falla, el backup local igual quedó bien (status OK): solo se avisa por email.
-            offsiteError = copyOffsite(base, created, deleted);
         } catch (Exception e) {
             // Falló: se guarda el motivo y NO se borra ningún backup viejo
             String msg = e instanceof BackupException ? e.getMessage()
@@ -300,82 +296,13 @@ public class BackupService {
             if (partFile != null) deleteQuietly(partFile);
         }
 
-        String offsiteSummary = record.getStatus() != BackupStatus.OK || offsiteDirectory().isEmpty() ? null
-                : offsiteError == null ? "Copiada a " + offsiteDirectory() : "Falló: " + offsiteError;
-        audit(record, reason, copies, deleted, offsiteSummary);
+        audit(record, reason, copies, deleted);
 
-        // Avisos por email al administrador (paso 4.2): si falló el backup, o si falló la copia externa
+        // Si falló, se avisa por email a los administradores (paso 4.2)
         if (record.getStatus() == BackupStatus.FAILED) {
             alertService.backupFailed(record, reason);
-        } else if (offsiteError != null) {
-            alertService.offsiteFailed(record, offsiteDirectory(), offsiteError);
         }
         return record;
-    }
-
-    // ===================== 6. Copia externa (paso 4.2) =====================
-
-    private String offsiteDirectory() {
-        return env.getProperty("backup.offsite-directory", "").trim();
-    }
-
-    /**
-     * Copia a la carpeta externa (backup.offsite-directory, por ejemplo la de Google Drive) cada archivo
-     * creado en este backup, con la misma estructura de carpetas (diarios/, semanales/…).
-     * Por cada uno: copia como .part, comprueba que la huella SHA-256 de la copia sea igual a la del
-     * original, recién ahí le pone el nombre final, escribe el .sha256 y marca offsiteCopied.
-     * Después aplica la misma retención que en la carpeta local.
-     *
-     * Devuelve null si salió bien (o si no hay carpeta externa configurada), o el motivo del error.
-     * Nunca tira excepción: el backup local ya está bien guardado pase lo que pase acá.
-     */
-    private String copyOffsite(Path base, List<BackupRecord> created, List<String> deleted) {
-        String dir = offsiteDirectory();
-        if (dir.isEmpty()) return null;   // copia externa no configurada (es opcional)
-        Path offsite = Paths.get(dir).toAbsolutePath().normalize();
-        Path part = null;
-        try {
-            // Si la carpeta no existe, NO se crea: lo más probable es que Google Drive esté cerrado o
-            // sin sesión (la unidad G: no aparece). Crear la carpeta en otro lado escondería el problema.
-            if (!Files.isDirectory(offsite)) {
-                throw new BackupException("No se encontró la carpeta externa " + offsite + ".");
-            }
-            if (offsite.startsWith(base) || base.startsWith(offsite)) {
-                throw new BackupException("La carpeta externa no puede estar dentro de la carpeta de backups (ni al revés).");
-            }
-            for (BackupRecord r : created) {
-                Path source = base.resolve(FOLDER.get(r.getType())).resolve(r.getFileName());
-                Path folder = offsite.resolve(FOLDER.get(r.getType()));
-                Files.createDirectories(folder);
-                Path target = folder.resolve(r.getFileName());
-                part = target.resolveSibling(target.getFileName() + ".part");
-
-                Files.copy(source, part, StandardCopyOption.REPLACE_EXISTING);
-                String copyHash = sha256(part);
-                if (!copyHash.equals(r.getSha256())) {
-                    throw new BackupException("La copia de " + r.getFileName() + " en la carpeta externa quedó distinta del original (la huella SHA-256 no coincide).");
-                }
-                Files.move(part, target, StandardCopyOption.REPLACE_EXISTING);
-                part = null;
-                Files.writeString(shaFileOf(target), copyHash + "  " + target.getFileName() + "\n", StandardCharsets.US_ASCII);
-
-                r.setOffsiteCopied(true);
-                repository.save(r);
-            }
-            // Misma retención que en la carpeta local
-            for (BackupRecord r : created) {
-                for (String gone : applyRetention(offsite, r.getType())) deleted.add("externa/" + gone);
-            }
-            log.info("Copia externa: {} archivo(s) copiado(s) y comprobado(s) en {}", created.size(), offsite);
-            return null;
-        } catch (Exception e) {
-            String msg = e instanceof BackupException ? e.getMessage()
-                    : e.getClass().getSimpleName() + ": " + e.getMessage();
-            log.error("El backup quedó bien, pero falló la copia externa: {}", msg);
-            return cut(msg, 400);
-        } finally {
-            if (part != null) deleteQuietly(part);
-        }
     }
 
     // ===================== 1. mysqldump =====================
@@ -607,12 +534,9 @@ public class BackupService {
 
     // ===================== 5. Retención =====================
 
-    /**
-     * Borra los backups más viejos de la carpeta del tipo, dejando los N más nuevos. Devuelve los borrados.
-     * root es la carpeta de backups local o la externa (las dos tienen la misma estructura).
-     */
-    private List<String> applyRetention(Path root, BackupType type) {
-        Path folder = root.resolve(FOLDER.get(type));
+    /** Borra los backups más viejos de la carpeta del tipo, dejando los N más nuevos. Devuelve los borrados. */
+    private List<String> applyRetention(Path base, BackupType type) {
+        Path folder = base.resolve(FOLDER.get(type));
         int keep = RETENTION.get(type);
         List<String> deleted = new ArrayList<>();
         if (!Files.isDirectory(folder)) return deleted;
@@ -638,11 +562,10 @@ public class BackupService {
 
     // ===================== Auditoría =====================
 
-    private void audit(BackupRecord r, String reason, List<String> copies, List<String> deleted, String offsiteSummary) {
+    private void audit(BackupRecord r, String reason, List<String> copies, List<String> deleted) {
         String description = r.getStatus() == BackupStatus.OK
                 ? "Copia de seguridad " + typeName(r.getType()) + " creada: " + r.getFileName()
                     + " (" + humanSize(r.getSizeBytes()) + ")"
-                    + (offsiteSummary != null && offsiteSummary.startsWith("Falló") ? ", pero falló la copia externa" : "")
                 : "Falló la copia de seguridad " + typeName(r.getType()) + ": " + r.getErrorMessage();
 
         Map<String, Object> details = new LinkedHashMap<>();
@@ -654,7 +577,6 @@ public class BackupService {
         if (r.getSha256() != null) details.put("sha256", r.getSha256());
         details.put("duración", r.getDurationMs() + " ms");
         if (!copies.isEmpty()) details.put("copias", String.join(", ", copies));
-        if (offsiteSummary != null) details.put("copiaExterna", offsiteSummary);
         if (!deleted.isEmpty()) details.put("borradosPorRetención", deleted);
         if (r.getErrorMessage() != null) details.put("error", r.getErrorMessage());
 

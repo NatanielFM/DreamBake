@@ -54,13 +54,9 @@ public class BackupRecord {
 
     private LocalDateTime createdAt;
 
-    // ¿Ya se copió al disco externo? (lo completa el paso 4.2)
-    private Boolean offsiteCopied;
-
-    // Valores por defecto al guardar por primera vez
+    // Valor por defecto al guardar por primera vez
     @PrePersist
     void onCreate() {
         if (createdAt == null) createdAt = LocalDateTime.now();
-        if (offsiteCopied == null) offsiteCopied = false;
     }
 }

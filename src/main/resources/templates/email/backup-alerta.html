@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!--/* Aviso a los administradores: falló una copia de seguridad o la copia externa (paso 4.2,
+<!--/* Aviso a los administradores: falló una copia de seguridad (paso 4.2,
        BackupAlertService). Va a cada usuario ADMIN. Todo con th:text (se escapa). */-->
 <html xmlns:th="http://www.thymeleaf.org" th:replace="~{email/base :: layout(~{::#cuerpo})}">
 <body>
@@ -8,8 +8,7 @@
         th:text="${titulo}">
       Falló la copia de seguridad
     </h1>
-    <!--/* word-break: la ruta de la carpeta externa es larga y sin espacios; sin esto se sale de la pantalla del celular */-->
-    <p style="margin:0 0 16px 0;word-break:break-word;overflow-wrap:anywhere;">
+    <p style="margin:0 0 16px 0;">
       Hola<th:block th:if="${nombre != null and !nombre.isEmpty()}">, <span th:text="${nombre}">Ana</span></th:block>.
       <span th:text="${resumen}">No se pudo hacer la copia de seguridad diaria.</span>
     </p>
